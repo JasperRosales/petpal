@@ -1,6 +1,6 @@
 # Concept
 
-PetPal is an offline habit pet. You raise one pixel pet, and it only grows from things the phone can check: steps counted by the hardware sensor, and battles. There's no account, no server and no internet. Battles run over Bluetooth or a phone hotspot.
+PetPal is an offline habit pet. You raise one pixel pet, and it only grows from things the phone can check: steps counted by the hardware sensor, and battles. There's no account, no server, and no internet needed to play (the app only goes online to check GitHub for updates). Battles run over Bluetooth or a phone hotspot.
 
 ## Your pet
 

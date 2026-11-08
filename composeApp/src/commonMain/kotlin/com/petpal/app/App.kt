@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.petpal.app.ui.components.SplashScreen
+import com.petpal.app.ui.components.UpdatePrompt
 import com.petpal.app.ui.navigation.PetPalNavHost
 import com.petpal.app.ui.theme.PetPalTheme
 import org.koin.compose.KoinContext
@@ -21,6 +22,7 @@ fun App(stepPermissionGranted: Boolean = false) {
                 AnimatedVisibility(splash, exit = fadeOut(tween(400))) {
                     SplashScreen { splash = false }
                 }
+                if (!splash) UpdatePrompt()
             }
         }
     }

@@ -9,6 +9,8 @@ import com.petpal.app.platform.sound.AndroidSoundPlayer
 import com.petpal.app.platform.link.BluetoothTransport
 import com.petpal.app.platform.link.LanTransport
 import com.petpal.app.platform.AndroidStepCounter
+import com.petpal.app.platform.AndroidAppUpdater
+import com.petpal.app.domain.platform.AppUpdater
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
@@ -16,5 +18,6 @@ val androidModule = module {
     single { buildDatabase(databaseBuilder(androidContext())) }
     single<StepCounter> { AndroidStepCounter(androidContext()) }
     single<SoundPlayer> { AndroidSoundPlayer(androidContext()) }
+    single<AppUpdater> { AndroidAppUpdater(androidContext()) }
     single { BattleLinks(listOf(BluetoothTransport(androidContext()), LanTransport(androidContext()))) }
 }

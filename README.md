@@ -2,7 +2,7 @@
 
 # PetPal
 
-An offline-first habit pet app for Android. Raise a pixel pet that grows from your real steps, and battle friends nearby over Bluetooth or a phone hotspot. No account, no internet.
+An offline-first habit pet app for Android. Raise a pixel pet that grows from your real steps, and battle friends nearby over Bluetooth or a phone hotspot. No account, and no internet needed to play.
 
 ## Docs
 
@@ -18,7 +18,7 @@ An offline-first habit pet app for Android. Raise a pixel pet that grows from yo
 - **Language / UI:** Kotlin Multiplatform + Compose Multiplatform (Material 3), Android first, iOS-ready
 - **Libraries:** Room (KMP) + bundled SQLite · Koin · kotlinx-coroutines · kotlinx-datetime · Navigation Compose · KSP
 - **Platform:** Android, minSdk 26
-- **Network:** none. The `INTERNET` permission is only for local hotspot sockets
+- **Network:** battles are local only. The one internet call is an update check on launch against GitHub releases; if a newer APK exists the app offers to download and install it in place (silently skipped when offline)
 
 ```
 composeApp/src/

@@ -4,6 +4,7 @@ import com.petpal.app.data.local.PetPalDatabase
 import com.petpal.app.data.repository.*
 import com.petpal.app.domain.platform.TimeProvider
 import com.petpal.app.ui.battle.BattleViewModel
+import com.petpal.app.ui.components.UpdateViewModel
 import com.petpal.app.ui.navigation.RootViewModel
 import com.petpal.app.ui.onboarding.OnboardingViewModel
 import com.petpal.app.ui.habits.HabitsViewModel
@@ -30,4 +31,5 @@ val sharedModule = module {
     viewModel { BattleViewModel(get(), get()) }
     viewModel { OnboardingViewModel(get()) }
     viewModel { RootViewModel(get()) }
+    viewModel { UpdateViewModel(get()) }
 }

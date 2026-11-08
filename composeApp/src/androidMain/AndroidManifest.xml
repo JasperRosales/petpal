@@ -9,9 +9,11 @@
 
     <uses-feature android:name="android.hardware.sensor.stepcounter" android:required="false" />
 
-    <!-- Battles: local only. INTERNET is required by Android for any socket, including
-         LAN/hotspot ones; PetPal never talks to the internet. -->
+    <!-- Battles are local only (INTERNET is still required for LAN/hotspot sockets).
+         The only internet use is checking GitHub releases for app updates. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- In-app updates: hand the downloaded APK to the system installer -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
 
@@ -40,5 +42,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.updates"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/update_paths" />
+        </provider>
     </application>
 </manifest>
