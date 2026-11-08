@@ -134,8 +134,8 @@ private fun Result(species: Species, onAdopt: (String) -> Unit) {
                 Text(passive.description, style = MaterialTheme.typography.bodySmall)
                 Text("Moves", style = MaterialTheme.typography.titleSmall)
                 val learnset = SpeciesKit.learnset(species)
-                val (kidUnique, adultUnique) = SpeciesKit.uniques(species)
-                learnset.filter { it.level <= 1 }.forEach { (m, _) ->
+                val (babyUnique, kidUnique, adultUnique) = SpeciesKit.uniques(species)
+                SpeciesKit.starters(species).forEach { m ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(m.icon(), null, Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
@@ -144,9 +144,9 @@ private fun Result(species: Species, onAdopt: (String) -> Unit) {
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(kidUnique.icon(), null, Modifier.size(18.dp))
+                    Icon(babyUnique.icon(), null, Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("${kidUnique.label} → ${adultUnique.label}", style = MaterialTheme.typography.bodyMedium,
+                    Text("${babyUnique.label} → ${kidUnique.label} → ${adultUnique.label}", style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.weight(1f))
                     Text("Unique", style = MaterialTheme.typography.labelSmall)
                 }
@@ -170,7 +170,8 @@ private fun Result(species: Species, onAdopt: (String) -> Unit) {
             modifier = Modifier.fillMaxWidth(),
         )
         Text(
-            "Walk to hatch it: your egg hatches at 50 XP (about 3,000 steps).",
+            "Walk to hatch it: your egg hatches at Lv ${PetEngine.HATCH_LEVEL} (about 2,000 steps). " +
+                "Evolves at Lv ${PetEngine.KID_LEVEL} and Lv ${PetEngine.ADULT_LEVEL}.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

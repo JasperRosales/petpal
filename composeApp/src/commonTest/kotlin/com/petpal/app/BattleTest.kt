@@ -25,7 +25,7 @@ class BattleTest {
         val cheat = FighterInfo("C", Species.KITTY, Stage.BABY, 5,
             listOf(Move.FIRE_BREATH, Move.GIGA_IMPACT, Move.HOWL, Move.SPARK, Move.INFERNO, Move.TACKLE))
         // wrong type, level too low, banned for Kitty, unique
-        assertEquals(listOf(Move.SPARK, Move.TACKLE), cheat.loadout)
+        assertEquals(listOf(Move.SPARK, Move.TACKLE, Move.SHADOW_SWIPE), cheat.loadout) // + Baby unique
     }
 
     @Test fun uniqueIsSlotFive() {
@@ -36,7 +36,8 @@ class BattleTest {
 
     @Test fun uniqueUpgradesWithStage() {
         fun u(st: Stage) = FighterInfo("D", Species.DRAKE, st, 30).loadout.filter { it.category == MoveCategory.UNIQUE }
-        assertEquals(emptyList(), u(Stage.BABY))
+        assertEquals(emptyList(), u(Stage.EGG))
+        assertEquals(listOf(Move.FLAME_BURST), u(Stage.BABY))
         assertEquals(listOf(Move.INFERNO), u(Stage.KID))
         assertEquals(listOf(Move.DRAGON_FURY), u(Stage.ADULT))
     }
@@ -47,7 +48,7 @@ class BattleTest {
         assertEquals(uniques.toSet(), Move.entries.filter { it.category == MoveCategory.UNIQUE }.toSet())
         Species.entries.forEach { s ->
             val set = SpeciesKit.learnset(s).map { it.move }
-            assertTrue(set.count { it.level <= 1 } in 3..SpeciesKit.MAX_MOVES, s.name)
+            assertEquals(SpeciesKit.STARTERS, SpeciesKit.learnset(s).count { it.level <= 1 }, s.name)
             assertTrue(set.size < Move.entries.size - uniques.size, s.name) // some moves are off-limits
             assertTrue(set.any { it.element != Element.NORMAL && it.element !in SpeciesKit.affinity(s) }, s.name)
             assertTrue(SpeciesKit.banned(s).none { SpeciesKit.canLearn(s, it) }, s.name)

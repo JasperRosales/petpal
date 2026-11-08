@@ -23,8 +23,8 @@ enum class HitShape {
     STRIKE,     // lands on the aimed spot from above (lightning)
 }
 
-private val BEAMS = setOf(Move.HYPER_BEAM, Move.ZAP_CANNON, Move.SOLAR_BEAM, Move.SOLAR_FLARE, Move.OVERHEAT)
-private val WAVES = setOf(Move.TIDAL_WAVE, Move.TSUNAMI)
+private val BEAMS = setOf(Move.HYPER_BEAM, Move.ZAP_CANNON, Move.SUN_RAY, Move.SOLAR_BEAM, Move.SOLAR_FLARE, Move.OVERHEAT)
+private val WAVES = setOf(Move.SPLASH_WAVE, Move.TIDAL_WAVE, Move.TSUNAMI)
 
 val Move.shape: HitShape
     get() = when {

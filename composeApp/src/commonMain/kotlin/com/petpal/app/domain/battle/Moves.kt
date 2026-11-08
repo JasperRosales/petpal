@@ -242,6 +242,18 @@ enum class Move(
     TSUNAMI("Tsunami", U, Element.WATER, 0, 30, 0.75f, 15_000, 550, 300, Effect.PULL),
     MAUL("Maul", U, Element.NORMAL, 0, 30, 0.22f, 15_000, 450, 300, Effect.STUN),
     GRIZZLY_RAMPAGE("Grizzly Rampage", U, Element.NORMAL, 0, 38, 0.24f, 15_000, 450, 300, Effect.STUN),
+
+    // Baby-form uniques (first tier, upgraded at Kid and again at Adult)
+    SUN_RAY("Sun Ray", U, Element.GRASS, 0, 18, 0.65f, 15_000, 600, 300),
+    SHADOW_SWIPE("Shadow Swipe", U, Element.NORMAL, 0, 17, 0.30f, 15_000, 300, 250, Effect.LUNGE),
+    FLAME_BURST("Flame Burst", U, Element.FIRE, 0, 20, 0.50f, 15_000, 550, 300, Effect.BURN),
+    MOON_HOP("Moon Hop", U, Element.NORMAL, 0, 16, 0.35f, 15_000, 350, 250, Effect.STUN),
+    RALLY_BARK("Rally Bark", U, Element.NORMAL, 0, 0, 0f, 15_000, 400, 200, Effect.BATTLE_CRY),
+    STATIC_EYE("Static Eye", U, Element.ELECTRIC, 0, 18, 0.75f, 15_000, 600, 300, Effect.PARALYZE),
+    SHELL_UP("Shell Up", U, Element.GROUND, 0, 0, 0f, 15_000, 200, 200, Effect.HARDEN),
+    WISP_FLAME("Wisp Flame", U, Element.FIRE, 0, 16, 0.55f, 15_000, 450, 250, Effect.BURN),
+    SPLASH_WAVE("Splash Wave", U, Element.WATER, 0, 16, 0.60f, 15_000, 500, 300, Effect.KNOCKBACK),
+    BEAR_SWIPE("Bear Swipe", U, Element.NORMAL, 0, 22, 0.20f, 15_000, 450, 300, Effect.STUN),
     ;
 
     /** Buffs target the user; everything else (including 0-damage debuffs) targets the opponent. */
@@ -277,7 +289,7 @@ data class MoveUnlock(val move: Move, val level: Int)
 
 /**
  * Each species' passive, learnset and unique. A pet keeps [MAX_MOVES] learned moves;
- * slot 5 is its unique, which unlocks at Kid and upgrades at Adult.
+ * slot 5 is its unique, which unlocks at Baby and upgrades at Kid and again at Adult.
  *
  * Learnable = Normal + own types + a few off-type picks, minus moves the species can't do.
  */
@@ -340,33 +352,55 @@ object SpeciesKit {
         Species.BEAR -> setOf(Move.ZOOMIES, Move.TELEPORT, Move.QUICK_ATTACK, Move.AQUA_JET, Move.DIVE)
     }
 
-    /** Kid unique and its Adult upgrade. */
-    fun uniques(s: Species): Pair<Move, Move> = when (s) {
-        Species.SPROUT -> Move.SOLAR_BEAM to Move.SOLAR_FLARE
-        Species.KITTY -> Move.SHADOW_CLAW to Move.NIGHT_TERROR
-        Species.DRAKE -> Move.INFERNO to Move.DRAGON_FURY
-        Species.BUNNY -> Move.MOON_KICK to Move.LUNAR_STRIKE
-        Species.PUP -> Move.PACK_CALL to Move.ALPHA_HOWL
-        Species.OWL -> Move.STORM_EYE to Move.TEMPEST_EYE
-        Species.TURTLE -> Move.FORTRESS to Move.CITADEL
-        Species.FOX -> Move.FOXFIRE to Move.NINE_TAILS
-        Species.FROG -> Move.TIDAL_WAVE to Move.TSUNAMI
-        Species.BEAR -> Move.MAUL to Move.GRIZZLY_RAMPAGE
+    /** Baby unique, its Kid upgrade, and its Adult upgrade. */
+    fun uniques(s: Species): Triple<Move, Move, Move> = when (s) {
+        Species.SPROUT -> Triple(Move.SUN_RAY, Move.SOLAR_BEAM, Move.SOLAR_FLARE)
+        Species.KITTY -> Triple(Move.SHADOW_SWIPE, Move.SHADOW_CLAW, Move.NIGHT_TERROR)
+        Species.DRAKE -> Triple(Move.FLAME_BURST, Move.INFERNO, Move.DRAGON_FURY)
+        Species.BUNNY -> Triple(Move.MOON_HOP, Move.MOON_KICK, Move.LUNAR_STRIKE)
+        Species.PUP -> Triple(Move.RALLY_BARK, Move.PACK_CALL, Move.ALPHA_HOWL)
+        Species.OWL -> Triple(Move.STATIC_EYE, Move.STORM_EYE, Move.TEMPEST_EYE)
+        Species.TURTLE -> Triple(Move.SHELL_UP, Move.FORTRESS, Move.CITADEL)
+        Species.FOX -> Triple(Move.WISP_FLAME, Move.FOXFIRE, Move.NINE_TAILS)
+        Species.FROG -> Triple(Move.SPLASH_WAVE, Move.TIDAL_WAVE, Move.TSUNAMI)
+        Species.BEAR -> Triple(Move.BEAR_SWIPE, Move.MAUL, Move.GRIZZLY_RAMPAGE)
     }
 
     fun unique(s: Species, stage: Stage): Move? = when (stage) {
-        Stage.EGG, Stage.BABY -> null
-        Stage.KID -> uniques(s).first
-        Stage.ADULT -> uniques(s).second
+        Stage.EGG -> null
+        Stage.BABY -> uniques(s).first
+        Stage.KID -> uniques(s).second
+        Stage.ADULT -> uniques(s).third
+    }
+
+    const val STARTERS = 2
+
+    /** A new pet knows exactly [STARTERS] moves: Tackle and its first own-type attack. */
+    fun starters(s: Species): List<Move> {
+        val pool = Move.entries.filter { canLearn(s, it) && it.level <= 1 }
+        val typed = affinity(s).firstNotNullOfOrNull { e -> pool.firstOrNull { it.element == e && it.damage > 0 } }
+        return (listOfNotNull(Move.TACKLE.takeIf { it in pool }, typed) + pool).distinct().take(STARTERS)
     }
 
     fun canLearn(s: Species, m: Move) =
         m.category != MoveCategory.UNIQUE && m !in banned(s) &&
             (m.element == Element.NORMAL || m.element in affinity(s) || m in extras(s))
 
-    /** Every move the species can ever learn, in unlock order. */
-    fun learnset(s: Species): List<MoveUnlock> =
-        Move.entries.filter { canLearn(s, it) }.sortedBy { it.level }.map { MoveUnlock(it, it.level) }
+    /**
+     * Every move the species can ever learn, in unlock order. Level-1 moves beyond the
+     * starters are spread over the next levels so a new pet starts with only [STARTERS].
+     */
+    fun learnset(s: Species): List<MoveUnlock> {
+        val start = starters(s)
+        var next = 2
+        return Move.entries.filter { canLearn(s, it) }.sortedBy { it.level }.map {
+            when {
+                it in start -> MoveUnlock(it, 1)
+                it.level <= 1 -> MoveUnlock(it, next++)
+                else -> MoveUnlock(it, it.level)
+            }
+        }.sortedBy { it.level }
+    }
 
     /** Battle buttons: up to [MAX_MOVES] valid learned moves, then the unique in slot 5. */
     fun loadout(s: Species, stage: Stage, level: Int, moves: List<Move>): List<Move> =

@@ -11,9 +11,19 @@ class PetEngineTest {
     private val base = Pet(name = "Mochi", lastUpdated = 0L)
 
     @Test fun stepsGiveXpAndEvolve() {
-        val pet = PetEngine.reward(base.copy(xp = 45), HabitType.STEPS)
-        assertEquals(65, pet.xp)
-        assertEquals(Stage.BABY, pet.stage)
+        val pet = PetEngine.reward(base.copy(xp = 25), HabitType.STEPS)
+        assertEquals(45, pet.xp)
+        assertEquals(Stage.BABY, pet.stage) // Lv 3
+    }
+
+    @Test fun evolvesByLevelFifty() {
+        assertEquals(Stage.KID, PetEngine.stageFor(PetEngine.xpForLevel(20)))
+        assertEquals(Stage.KID, PetEngine.stageFor(PetEngine.xpForLevel(50) - 1))
+        assertEquals(Stage.ADULT, PetEngine.stageFor(PetEngine.xpForLevel(50)))
+        assertEquals(100, PetEngine.MAX_LEVEL)
+        assertEquals(100, PetEngine.levelFor(10_000_000))
+        // never devolves
+        assertEquals(Stage.ADULT, PetEngine.addXp(base.copy(xp = 2000, stage = Stage.ADULT), 10).stage)
     }
 
     @Test fun focusGivesNoXp() = assertEquals(0, PetEngine.reward(base, HabitType.FOCUS).xp)
@@ -29,23 +39,22 @@ class PetEngineTest {
 
     @Test fun newPetKnowsStarters() {
         val pet = PetEngine.syncMoves(base)
-        assertEquals(SpeciesKit.learnset(Species.SPROUT).filter { it.level <= 1 }.map { it.move }, pet.moves)
+        assertEquals(SpeciesKit.STARTERS, pet.moves.size)
+        assertEquals(listOf(Move.TACKLE, Move.LEAF_TOSS), pet.moves)
         assertNull(PetEngine.pendingMove(pet))
     }
 
     @Test fun fullMovesetAsksBeforeLearning() {
-        val pet = PetEngine.addXp(PetEngine.syncMoves(base), PetEngine.xpForLevel(3))
+        val pet = PetEngine.addXp(PetEngine.syncMoves(base), PetEngine.xpForLevel(4))
         assertEquals(SpeciesKit.MAX_MOVES, pet.moves.size)
-        assertEquals(Move.GROWL, PetEngine.pendingMove(pet))
-
-        val swapped = PetEngine.learn(pet, Move.GROWL, forget = Move.TACKLE)
-        assertTrue(Move.GROWL in swapped.moves && Move.TACKLE !in swapped.moves)
+        val next = PetEngine.pendingMove(pet)
+        assertNotNull(next)
+        val swapped = PetEngine.learn(pet, next, forget = Move.TACKLE)
+        assertTrue(next in swapped.moves && Move.TACKLE !in swapped.moves)
         assertEquals(SpeciesKit.MAX_MOVES, swapped.moves.size)
-        assertEquals(Move.PUNCH, PetEngine.pendingMove(swapped)) // also unlocked at Lv 3
-
-        val skipped = PetEngine.learn(pet, Move.GROWL, forget = null)
+        val skipped = PetEngine.learn(pet, next, forget = null)
         assertEquals(pet.moves, skipped.moves)
-        assertEquals(Move.PUNCH, PetEngine.pendingMove(skipped))
+        assertNotEquals(next, PetEngine.pendingMove(skipped))
     }
 
     @Test fun oldPetsGetAMoveset() {

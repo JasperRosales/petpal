@@ -645,16 +645,16 @@ private fun statusIcons(f: FighterSnap) = buildList {
 }
 
 fun Move.icon(): ImageVector = when (this) {
-    Move.SOLAR_BEAM, Move.SOLAR_FLARE -> Icons.Rounded.WbSunny
-    Move.SHADOW_CLAW, Move.NIGHT_TERROR -> Icons.Rounded.DarkMode
-    Move.INFERNO, Move.DRAGON_FURY -> Icons.Rounded.Fireplace
-    Move.MOON_KICK, Move.LUNAR_STRIKE -> Icons.Rounded.Brightness3
-    Move.PACK_CALL, Move.ALPHA_HOWL -> Icons.Rounded.Groups
-    Move.STORM_EYE, Move.TEMPEST_EYE -> Icons.Rounded.Visibility
-    Move.FORTRESS, Move.CITADEL -> Icons.Rounded.Security
-    Move.FOXFIRE, Move.NINE_TAILS -> Icons.Rounded.AutoAwesome
-    Move.TIDAL_WAVE, Move.TSUNAMI -> Icons.Rounded.Waves
-    Move.MAUL, Move.GRIZZLY_RAMPAGE -> Icons.Rounded.FrontHand
+    Move.SUN_RAY, Move.SOLAR_BEAM, Move.SOLAR_FLARE -> Icons.Rounded.WbSunny
+    Move.SHADOW_SWIPE, Move.SHADOW_CLAW, Move.NIGHT_TERROR -> Icons.Rounded.DarkMode
+    Move.FLAME_BURST, Move.INFERNO, Move.DRAGON_FURY -> Icons.Rounded.Fireplace
+    Move.MOON_HOP, Move.MOON_KICK, Move.LUNAR_STRIKE -> Icons.Rounded.Brightness3
+    Move.RALLY_BARK, Move.PACK_CALL, Move.ALPHA_HOWL -> Icons.Rounded.Groups
+    Move.STATIC_EYE, Move.STORM_EYE, Move.TEMPEST_EYE -> Icons.Rounded.Visibility
+    Move.SHELL_UP, Move.FORTRESS, Move.CITADEL -> Icons.Rounded.Security
+    Move.WISP_FLAME, Move.FOXFIRE, Move.NINE_TAILS -> Icons.Rounded.AutoAwesome
+    Move.SPLASH_WAVE, Move.TIDAL_WAVE, Move.TSUNAMI -> Icons.Rounded.Waves
+    Move.BEAR_SWIPE, Move.MAUL, Move.GRIZZLY_RAMPAGE -> Icons.Rounded.FrontHand
     else -> when (effect) {
         Effect.GUARD -> Icons.Rounded.Shield
         Effect.RAGE -> Icons.Rounded.Campaign
@@ -694,9 +694,10 @@ fun Move.icon(): ImageVector = when (this) {
 
 /** Effect color used for buttons and arena visuals. */
 fun Move.tint(): Color = when {
-    this == Move.SHADOW_CLAW || this == Move.NIGHT_TERROR || this == Move.MOON_KICK || this == Move.LUNAR_STRIKE ->
+    this == Move.SHADOW_CLAW || this == Move.NIGHT_TERROR || this == Move.MOON_KICK || this == Move.LUNAR_STRIKE ||
+        this == Move.SHADOW_SWIPE || this == Move.MOON_HOP ->
         Color(0xFF7E57C2)
-    this == Move.FOXFIRE || this == Move.NINE_TAILS -> Color(0xFF6C8CFF)
+    this == Move.FOXFIRE || this == Move.NINE_TAILS || this == Move.WISP_FLAME -> Color(0xFF6C8CFF)
     effect == Effect.GUARD -> ClearSky
     effect in setOf(Effect.HEAL, Effect.PACK_CALL, Effect.ALPHA) -> Color(0xFF4CAF6A)
     effect == Effect.RAGE || effect == Effect.BATTLE_CRY -> Color(0xFFD9534F)

@@ -68,7 +68,7 @@ fun LearnMoveDialog(pet: Pet, move: Move, onDecide: (forget: Move?) -> Unit) {
 /** Every move in the game, marking which ones this pet can learn and when. */
 @Composable
 fun MoveListDialog(pet: Pet, onDismiss: () -> Unit) {
-    val (kidUnique, adultUnique) = SpeciesKit.uniques(pet.species)
+    val (babyUnique, kidUnique, adultUnique) = SpeciesKit.uniques(pet.species)
     val types = SpeciesKit.affinity(pet.species)
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(Modifier.fillMaxSize().padding(12.dp), shape = MaterialTheme.shapes.large) {
@@ -106,11 +106,12 @@ fun MoveListDialog(pet: Pet, onDismiss: () -> Unit) {
                     item { Text("Uniques", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp)) }
                     items(Move.entries.filter { it.category == MoveCategory.UNIQUE }, key = { it.name }) { m ->
                         val label = when (m) {
+                            babyUnique -> "Baby"
                             kidUnique -> "Kid"
                             adultUnique -> "Adult"
                             else -> "Can't learn"
                         }
-                        MoveRow(m, label, Modifier.alpha(if (m == kidUnique || m == adultUnique) 1f else 0.4f))
+                        MoveRow(m, label, Modifier.alpha(if (m == babyUnique || m == kidUnique || m == adultUnique) 1f else 0.4f))
                     }
                     item {
                         Text("★ = off-type move this species can still learn.",

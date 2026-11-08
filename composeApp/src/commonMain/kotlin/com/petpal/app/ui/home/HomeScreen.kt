@@ -143,7 +143,7 @@ private fun PassiveCard(species: Species) {
 private fun MovesCard(pet: Pet) {
     val level = PetEngine.levelFor(pet.xp)
     val dim = MaterialTheme.colorScheme.onSurfaceVariant
-    val (kidUnique, adultUnique) = SpeciesKit.uniques(pet.species)
+    val (babyUnique, kidUnique, adultUnique) = SpeciesKit.uniques(pet.species)
     val learnset = SpeciesKit.learnset(pet.species)
     var showAll by remember { mutableStateOf(false) }
     ElevatedCard(Modifier.fillMaxWidth()) {
@@ -154,8 +154,10 @@ private fun MovesCard(pet: Pet) {
             pet.moves.forEach { MoveRow(it, it.category.label) }
             repeat(SpeciesKit.MAX_MOVES - pet.moves.size) { LockedRow("Empty slot", "") }
             when (unique) {
-                null -> LockedRow("Slot 5: ${kidUnique.label}", "at Kid")
-                else -> MoveRow(unique, if (unique == kidUnique) "Unique, upgrades at Adult" else "Unique, max")
+                null -> LockedRow("Slot 5: ${babyUnique.label}", "on hatch")
+                babyUnique -> MoveRow(unique, "Unique, upgrades at Kid")
+                kidUnique -> MoveRow(unique, "Unique, upgrades at Adult")
+                else -> MoveRow(unique, "Unique, max")
             }
 
             val upcoming = learnset.filter { it.level > level }.take(3)
@@ -165,7 +167,8 @@ private fun MovesCard(pet: Pet) {
             }
             Text(
                 "Can learn ${learnset.size} of ${Move.entries.size} moves. Slot 5 is always the unique: " +
-                    "${kidUnique.label} at Kid, ${adultUnique.label} at Adult (${BattleRules.UNIQUE_USES}x per battle). " +
+                    "${babyUnique.label} at Baby, ${kidUnique.label} at Kid (Lv ${PetEngine.KID_LEVEL}), " +
+                    "${adultUnique.label} at Adult (Lv ${PetEngine.ADULT_LEVEL}) (${BattleRules.UNIQUE_USES}x per battle). " +
                     "Special moves need a full energy bar.",
                 style = MaterialTheme.typography.labelSmall,
                 color = dim,

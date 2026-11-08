@@ -13,14 +13,20 @@ object PetEngine {
         else -> Mood.OKAY
     }
 
-    fun stageFor(xp: Int): Stage = when {
-        xp >= 1500 -> Stage.ADULT
-        xp >= 500 -> Stage.KID
-        xp >= 50 -> Stage.BABY
-        else -> Stage.EGG
+    const val HATCH_LEVEL = 3
+    const val KID_LEVEL = 20
+    const val ADULT_LEVEL = 50 // every species is fully evolved by here
+
+    fun stageFor(xp: Int): Stage = levelFor(xp).let {
+        when {
+            it >= ADULT_LEVEL -> Stage.ADULT
+            it >= KID_LEVEL -> Stage.KID
+            it >= HATCH_LEVEL -> Stage.BABY
+            else -> Stage.EGG
+        }
     }
 
-    const val MAX_LEVEL = 60
+    const val MAX_LEVEL = 100
 
     /** Level n needs 10 * (n-1)^2 XP: 10, 40, 90, 160 ... */
     fun levelFor(xp: Int): Int = (1 + sqrt(xp.coerceAtLeast(0) / 10.0).toInt()).coerceAtMost(MAX_LEVEL)
@@ -45,7 +51,10 @@ object PetEngine {
         BattleOutcome.LOSS -> 10
     }
 
-    fun addXp(pet: Pet, xp: Int): Pet = (pet.xp + xp).let { syncMoves(pet.copy(xp = it, stage = stageFor(it))) }
+    /** Pets never devolve, even if an older version evolved them earlier. */
+    fun addXp(pet: Pet, xp: Int): Pet = (pet.xp + xp).let {
+        syncMoves(pet.copy(xp = it, stage = maxOf(pet.stage, stageFor(it))))
+    }
 
     /** Moves unlocked by the pet's level that it hasn't been offered yet, in unlock order. */
     fun pendingMoves(pet: Pet): List<Move> {
