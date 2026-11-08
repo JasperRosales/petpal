@@ -72,6 +72,35 @@ object Status {
     const val LEECH = 2048
     const val COUNTER = 4096
     const val EVADE = 8192
+    const val SHIELD = 16384
+    const val MARKED = 32768
+}
+
+/** Snares laid by TRAP moves: arm after a moment, then root and hurt the first enemy to step on one. */
+object Trap {
+    const val RADIUS = 0.07f
+    const val ARM_MS = 500L
+    const val DURATION_MS = 8000L
+    const val ROOT_MS = 2000L
+}
+
+data class TrapSnap(val x: Float, val y: Float, val ageMs: Long, val element: Element)
+
+/** Tunables for the newer move mechanics. */
+object Mechanics {
+    const val MARK_MS = 5000L
+    const val MARK_BONUS = 1.25f
+    const val DISRUPT_MS = 2000L
+    const val SHIELD_MS = 6000L
+    const val AID_HEAL = 0.12f
+    const val CHAIN_REACH = 0.35f
+
+    /** Fraction of max HP a shield move soaks up. */
+    fun shieldFraction(m: Move) = when (m.category) {
+        MoveCategory.NORMAL -> 0.2f
+        MoveCategory.SPECIAL -> 0.3f
+        MoveCategory.UNIQUE -> 0.35f
+    }
 }
 
 /** Built-in backstep every pet has: a quick dash away from the opponent with brief invulnerability. */
@@ -89,6 +118,9 @@ object Smoke {
     const val RADIUS = 0.16f
     const val DURATION_MS = 4000L
 }
+
+/** Debuffs Slippery shrugs off. */
+private val MOVEMENT_DEBUFFS = setOf(Effect.SLOW, Effect.STUN, Effect.FREEZE, Effect.ROOT, Effect.PARALYZE)
 
 data class SmokeSnap(val x: Float, val y: Float, val ageMs: Long)
 
@@ -121,6 +153,7 @@ data class BattleSnapshot(
     val winner: Int, // fighter index, -1 = draw or ongoing
     val fighters: List<FighterSnap>,
     val smokes: List<SmokeSnap> = emptyList(),
+    val traps: List<TrapSnap> = emptyList(),
 )
 
 /**
@@ -160,6 +193,11 @@ class BattleEngine(
         var stepUntil = 0L // short forward step (Fury Swipes)
         var slashesLeft = 0
         var evadeReadyAt = 0L
+        var markUntil = 0L
+        var shield = 0f // HP a barrier still soaks up
+        var shieldUntil = 0L
+        var lastHitAt = 0L
+        var lastHitElement: Element? = null
         // enough for one elemental move right away
         var energy = if (demo) BattleRules.MAX_ENERGY.toFloat() else 35f + if (info.passive == Passive.CHEEK_POUCH) 30f else 0f
         var uniqueUsed = 0
@@ -177,6 +215,10 @@ class BattleEngine(
         val readyAt = LongArray(Move.entries.size)
         val passive get() = info.passive
         val homeTurf = terrain.isHomeTurf(info)
+
+        init {
+            if (passive == Passive.DAM_BUILDER) { shield = maxHp * 0.15f; shieldUntil = Long.MAX_VALUE }
+        }
     }
 
     /** 2 fighters = 1v1; 4 = duo vs duo (0,1 vs 2,3). */
@@ -190,6 +232,8 @@ class BattleEngine(
     private val teams = IntArray(f.size) { teamOf(it) }
     private class Cloud(val team: Int, val x: Float, val y: Float, val at: Long)
     private val clouds = mutableListOf<Cloud>()
+    private class Snare(val owner: Int, val move: Move, val x: Float, val y: Float, val at: Long)
+    private val snares = mutableListOf<Snare>()
     private var lastTick = 0L
     var ended = false; private set
     /** Winning team (same as the fighter index in 1v1), -1 = draw or ongoing. */
@@ -330,6 +374,7 @@ class BattleEngine(
                 hypot(e.x - c.x, e.y - c.y) <= Smoke.RADIUS + PET_RADIUS
             ) e.slowUntil = maxOf(e.slowUntil, now + 400)
         }
+        tickSnares(now, events)
 
         f.forEachIndexed { i, me ->
             if (!alive(i)) return@forEachIndexed
@@ -345,6 +390,10 @@ class BattleEngine(
             me.energy = minOf(BattleRules.MAX_ENERGY.toFloat(), me.energy + charge * dt)
             if (me.passive == Passive.PHOTOSYNTHESIS && me.hp > 0) me.hp = minOf(me.maxHp.toFloat(), me.hp + 0.6f * dt)
             if (me.passive == Passive.REGROW && me.hp > 0 && me.hp < me.maxHp / 2f) me.hp += 1.2f * dt
+            if (me.passive == Passive.SNOOZE && me.hp > 0 && now - me.lastHitAt >= 4000) {
+                me.hp = minOf(me.maxHp.toFloat(), me.hp + 2f * dt)
+            }
+            if (now >= me.shieldUntil) me.shield = 0f
             move(me, opp, now, dt)
         }
 
@@ -490,7 +539,7 @@ class BattleEngine(
             }
             Effect.CLEANSE -> {
                 me.burnUntil = 0; me.slowUntil = 0; me.rootUntil = 0
-                me.weakenUntil = 0; me.paralyzeUntil = 0; me.leechUntil = 0
+                me.weakenUntil = 0; me.paralyzeUntil = 0; me.leechUntil = 0; me.markUntil = 0
                 heal(0.10f)
             }
             Effect.ENERGIZE -> {
@@ -503,6 +552,30 @@ class BattleEngine(
                 events += "$name hides behind a smokescreen!"
             }
             Effect.CITADEL -> { me.guardUntil = now + 4000; me.hardenUntil = now + 8000; heal(0.25f) }
+            Effect.SHIELD -> {
+                var amount = me.maxHp * Mechanics.shieldFraction(m)
+                if (me.passive == Passive.DAM_BUILDER) amount *= 1.5f
+                me.shield = maxOf(me.shield, amount)
+                me.shieldUntil = now + Mechanics.SHIELD_MS
+                events += "$name puts up a shield!"
+            }
+            Effect.AID -> {
+                val team = teams[f.indexOf(me)]
+                f.indices.filter { teams[it] == team && alive(it) }.forEach { i ->
+                    val ally = f[i]
+                    ally.hp = minOf(ally.maxHp.toFloat(), ally.hp + ally.maxHp * Mechanics.AID_HEAL)
+                }
+                events += if (f.size > 2) "$name patches up the team!" else "$name heals ${(me.maxHp * Mechanics.AID_HEAL).roundToInt()} HP"
+            }
+            Effect.TRAP -> { // at the target's feet, or as far as the move reaches toward it
+                val range = BattleStats.range(me.info, m)
+                val dx = opp.x - me.x
+                val dy = opp.y - me.y
+                val d = hypot(dx, dy)
+                val k = if (d <= range || d < 0.001f) 1f else range / d
+                snares += Snare(f.indexOf(me), m, me.x + dx * k, me.y + dy * k, now)
+                events += "$name sets a ${m.label}!"
+            }
             else -> Unit
         }
     }
@@ -556,6 +629,10 @@ class BattleEngine(
         if (now < me.weakenUntil) dmg *= 0.7f
         if (me.passive == Passive.LOYAL_HEART && me.hp < me.maxHp / 2f) dmg *= 1.25f
         if (m.effect == Effect.EXECUTE && opp.hp < opp.maxHp * 0.3f) dmg *= 2f
+        if (now < opp.markUntil) dmg *= Mechanics.MARK_BONUS
+        if (me.passive == Passive.BLOOD_SCENT && opp.hp < opp.maxHp / 2f) dmg *= 1.3f
+        if (opp.passive == Passive.COLOR_SHIFT && opp.lastHitElement == m.element) dmg *= 0.7f
+        opp.lastHitElement = m.element
         val guarded = now < opp.guardUntil
         if (guarded) dmg *= 0.4f
         if (now < opp.hardenUntil) dmg *= 0.6f
@@ -570,7 +647,8 @@ class BattleEngine(
             events += "$target counters ${m.label} for $dealt!"
             return
         }
-        hurt(opp, dealt.toFloat(), now, events)
+        val toHp = absorb(opp, dealt.toFloat())
+        hurt(opp, toHp, now, events)
         if (me.passive == Passive.VAMPIRE) me.hp = minOf(me.maxHp.toFloat(), me.hp + dealt * 0.1f)
         if (me.passive == Passive.CHATTER && rng.nextFloat() < 0.25f) opp.weakenUntil = maxOf(opp.weakenUntil, now + 3000)
         if (opp.passive == Passive.SPIKY && m.shape == HitShape.MELEE) hurt(me, dealt * 0.2f, now, events, silent = true)
@@ -582,7 +660,8 @@ class BattleEngine(
         me.energy = minOf(BattleRules.MAX_ENERGY.toFloat(), me.energy + dealt * 1.5f)
         opp.energy = minOf(BattleRules.MAX_ENERGY.toFloat(), opp.energy + dealt * 0.8f)
         val times = if (hits > 1) " ($hits hits)" else ""
-        events += "${m.label} hits $target for $dealt$times${if (guarded) " (guarded)" else ""}"
+        val notes = listOfNotNull("guarded".takeIf { guarded }, "shielded".takeIf { toHp < dealt })
+        events += "${m.label} hits $target for $dealt$times" + if (notes.isEmpty()) "" else notes.joinToString(", ", " (", ")")
 
         when (m.effect) {
             Effect.DRAIN -> me.hp = minOf(me.maxHp.toFloat(), me.hp + dealt / 2f)
@@ -597,9 +676,16 @@ class BattleEngine(
                 opp.energy -= stolen
                 me.energy = minOf(BattleRules.MAX_ENERGY.toFloat(), me.energy + stolen)
             }
+            Effect.CHAIN -> chain(me, opp, m, dealt, now, events)
             else -> debuff(opp, m, now, events, quiet = true)
         }
         when (m.effect) {
+            Effect.SWAP -> {
+                val x = me.x; val y = me.y
+                me.x = opp.x; me.y = opp.y; opp.x = x; opp.y = y
+                me.tx = me.x; me.ty = me.y; opp.tx = opp.x; opp.ty = opp.y
+                events += "$name swaps places with $target!"
+            }
             Effect.KNOCKBACK -> knockback(me, opp, 0.15f)
             Effect.PULL -> knockback(me, opp, -minOf(0.15f, (hypot(me.x - opp.x, me.y - opp.y) - 0.1f).coerceAtLeast(0f)))
             else -> knockback(me, opp, 0.05f)
@@ -624,15 +710,67 @@ class BattleEngine(
             Effect.PARALYZE -> if (immune) null else { opp.paralyzeUntil = now + 4000; "$target is paralyzed!" }
             Effect.WEAKEN -> { opp.weakenUntil = now + 5000; "$target is weakened" }
             Effect.LEECH -> { opp.leechUntil = now + 5000; if (by != null) opp.leechBy = f.indexOf(by); "$target is seeded" }
+            Effect.MARK -> { opp.markUntil = now + Mechanics.MARK_MS; "$target is marked!" }
+            Effect.DISRUPT -> {
+                opp.info.loadout.forEach { mv ->
+                    opp.readyAt[mv.ordinal] = maxOf(opp.readyAt[mv.ordinal], now) + Mechanics.DISRUPT_MS
+                }
+                "$target is disrupted!"
+            }
             else -> null
         }
-        if (immune && m.damage == 0 && m.effect != Effect.WEAKEN) events += "$target slips free"
-        else if (text != null && (!quiet || m.effect == Effect.FREEZE)) events += text
+        val loud = m.effect == Effect.FREEZE || m.effect == Effect.MARK || m.effect == Effect.DISRUPT
+        if (immune && m.damage == 0 && m.effect in MOVEMENT_DEBUFFS) events += "$target slips free"
+        else if (text != null && (!quiet || loud)) events += text
+    }
+
+    /** Arcs to the nearest other enemy for half damage; with nobody to jump to, zaps the target again for a third. */
+    private fun chain(me: Fighter, opp: Fighter, m: Move, dealt: Int, now: Long, events: MutableList<String>) {
+        val next = enemiesOf(me).filter { it !== opp && now >= it.vanishUntil && now >= it.evadeUntil }
+            .minByOrNull { hypot(it.x - opp.x, it.y - opp.y) }
+            ?.takeIf { hypot(it.x - opp.x, it.y - opp.y) <= Mechanics.CHAIN_REACH }
+        val (who, amount) = if (next != null) next to dealt / 2f else opp to dealt / 3f
+        if (who.hp <= 0f) return
+        hurt(who, absorb(who, amount), now, events)
+        events += if (next != null) "${m.label} chains to ${who.info.name} for ${amount.roundToInt()}"
+        else "${m.label} arcs back for ${amount.roundToInt()}"
+    }
+
+    /** Lets a shield soak up [amount]; returns what's left for HP. */
+    private fun absorb(who: Fighter, amount: Float): Float {
+        val soaked = minOf(who.shield, amount)
+        who.shield -= soaked
+        return amount - soaked
+    }
+
+    private fun tickSnares(now: Long, events: MutableList<String>) {
+        snares.removeAll { now - it.at >= Trap.DURATION_MS || !alive(it.owner) }
+        val sprung = snares.filter { now - it.at >= Trap.ARM_MS }.mapNotNull { s ->
+            val owner = f[s.owner]
+            val victim = enemiesOf(owner).firstOrNull { e ->
+                now >= e.vanishUntil && now >= e.evadeUntil && hypot(e.x - s.x, e.y - s.y) <= Trap.RADIUS + PET_RADIUS
+            } ?: return@mapNotNull null
+            var dmg = BattleStats.baseDamage(owner.info, s.move)
+            if (terrain.boosts(s.move)) dmg *= Terrain.MOVE_BOOST
+            if (now < victim.markUntil) dmg *= Mechanics.MARK_BONUS
+            if (now < victim.hardenUntil) dmg *= 0.6f
+            if (victim.passive == Passive.HARD_SHELL) dmg *= 0.8f
+            val dealt = dmg.roundToInt().coerceAtLeast(1)
+            hurt(victim, absorb(victim, dealt.toFloat()), now, events)
+            val name = victim.info.name
+            events += if (victim.passive == Passive.SLIPPERY) "$name trips ${s.move.label} for $dealt but slips free"
+            else {
+                victim.rootUntil = maxOf(victim.rootUntil, now + Trap.ROOT_MS)
+                "$name is caught in ${s.move.label} for $dealt!"
+            }
+            s
+        }
+        snares.removeAll(sprung)
     }
 
     private fun hurt(who: Fighter, amount: Float, now: Long, events: MutableList<String>, silent: Boolean = false) {
         who.hp -= amount
-        if (!silent) who.hurtAt = now
+        if (!silent) { who.hurtAt = now; who.lastHitAt = now }
         if (who.hp <= 0f && who.passive == Passive.NINE_LIVES && !who.lifeSaved) {
             who.lifeSaved = true
             who.hp = 1f
@@ -659,6 +797,7 @@ class BattleEngine(
         ended = ended,
         winner = winner,
         smokes = clouds.map { SmokeSnap(it.x, it.y, now - it.at) },
+        traps = snares.map { TrapSnap(it.x, it.y, now - it.at, it.move.element) },
         fighters = f.map { me ->
             var status = 0
             if (now < me.burnUntil) status = status or Status.BURN
@@ -675,6 +814,8 @@ class BattleEngine(
             if (now < me.leechUntil) status = status or Status.LEECH
             if (now < me.counterUntil) status = status or Status.COUNTER
             if (now < me.evadeUntil) status = status or Status.EVADE
+            if (me.shield > 0f && now < me.shieldUntil) status = status or Status.SHIELD
+            if (now < me.markUntil) status = status or Status.MARKED
             FighterSnap(
                 x = me.x, y = me.y,
                 hp = kotlin.math.ceil(me.hp).toInt(), maxHp = me.maxHp,
@@ -697,7 +838,7 @@ class BattleEngine(
 
 /** Simple practice opponent. */
 object BattleBot {
-    private val BUFFS = setOf(Effect.RAGE, Effect.HASTE, Effect.HARDEN, Effect.BATTLE_CRY, Effect.ENERGIZE)
+    private val BUFFS = setOf(Effect.RAGE, Effect.HASTE, Effect.HARDEN, Effect.BATTLE_CRY, Effect.ENERGIZE, Effect.SHIELD)
     private val BIG_HEALS = setOf(Effect.PACK_CALL, Effect.FORTRESS, Effect.ALPHA, Effect.CITADEL)
 
     /** Back off from incoming attacks now and then, more often when hurt. */
@@ -712,9 +853,11 @@ object BattleBot {
         val hp = engine.hpFraction(me)
         ready.firstOrNull { it.effect == Effect.HEAL && hp < 0.45f }?.let { return it }
         ready.firstOrNull { it.effect in BIG_HEALS && hp < 0.4f }?.let { return it }
+        ready.firstOrNull { it.effect == Effect.AID && hp < 0.6f }?.let { return it }
         ready.firstOrNull { it.effect in BUFFS && rng.nextFloat() < 0.25f }?.let { return it }
         val d = engine.distance(me)
         ready.firstOrNull { it.effect == Effect.SMOKE && d < 0.25f && rng.nextFloat() < 0.3f }?.let { return it }
+        ready.firstOrNull { it.effect == Effect.TRAP && d <= BattleStats.range(info, it) && rng.nextFloat() < 0.3f }?.let { return it }
         ready.firstOrNull { it.effect == Effect.COUNTER && d < 0.3f && rng.nextFloat() < 0.2f }?.let { return it }
         ready.firstOrNull { it.effect == Effect.BLINK && hp < 0.3f && d < 0.25f }?.let { return it }
         ready.firstOrNull { !it.isBuff && it.damage == 0 && d <= BattleStats.range(info, it) * 0.9f && rng.nextFloat() < 0.3f }

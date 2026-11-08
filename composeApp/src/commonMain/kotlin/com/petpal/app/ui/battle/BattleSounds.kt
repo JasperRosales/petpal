@@ -9,8 +9,9 @@ import com.petpal.app.domain.platform.SoundPlayer
 /** The sound a move makes when it fires, with a per-move pitch so moves sharing a sound still differ. */
 internal fun Move.sound(): Pair<Sfx, Float> {
     val sfx = when {
-        effect in setOf(Effect.HEAL, Effect.CLEANSE, Effect.PACK_CALL, Effect.ALPHA) -> Sfx.HEAL
-        effect in setOf(Effect.GUARD, Effect.HARDEN, Effect.FORTRESS, Effect.CITADEL, Effect.COUNTER) -> Sfx.SHIELD
+        effect in setOf(Effect.HEAL, Effect.CLEANSE, Effect.PACK_CALL, Effect.ALPHA, Effect.AID) -> Sfx.HEAL
+        effect in setOf(Effect.GUARD, Effect.HARDEN, Effect.FORTRESS, Effect.CITADEL, Effect.COUNTER, Effect.SHIELD) -> Sfx.SHIELD
+        effect == Effect.SWAP -> Sfx.WHOOSH
         effect == Effect.BLINK -> Sfx.WHOOSH
         isBuff -> Sfx.BUFF
         shape == HitShape.BEAM -> Sfx.BEAM

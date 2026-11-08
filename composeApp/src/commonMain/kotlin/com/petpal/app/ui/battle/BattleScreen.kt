@@ -682,6 +682,7 @@ internal fun Arena(f: FightState, modifier: Modifier) {
         val spriteDp = 72.dp
         Canvas(Modifier.matchParentSize()) {
             if (f.terrain == Terrain.ARENA) drawArenaFloor() else drawTerrainFloor(f.terrain)
+            f.snap.traps.forEach { tr -> drawTrap(tr, Offset(tr.x * sx, tr.y * sy), Trap.RADIUS * minOf(sx, sy)) }
             f.snap.fighters.forEachIndexed { i, s ->
                 val c = pos(s)
                 if (s.hp <= 0) return@forEachIndexed
@@ -705,6 +706,18 @@ internal fun Arena(f: FightState, modifier: Modifier) {
                     drawOval(Color.Black.copy(alpha = 0.25f), Offset(c.x - r * 0.6f, c.y + r * 0.4f), Size(r * 1.2f, r * 0.4f))
                 }
                 if (s.has(Status.COUNTER)) drawCircle(Color.White.copy(alpha = 0.8f), r * 1.15f, c, style = Stroke(3.dp.toPx()))
+                if (s.has(Status.SHIELD)) {
+                    drawCircle(Color(0xFF7FD3FF).copy(alpha = 0.18f), r * 1.1f, c)
+                    drawCircle(Color(0xFF7FD3FF).copy(alpha = 0.8f), r * 1.1f, c, style = Stroke(2.5.dp.toPx()))
+                }
+                if (s.has(Status.MARKED)) { // crosshair over the pet
+                    val mr = r * 0.55f
+                    val my = c.y - r * 1.05f
+                    val red = Color(0xFFE53935).copy(alpha = 0.85f)
+                    drawCircle(red, mr * 0.5f, Offset(c.x, my), style = Stroke(2.dp.toPx()))
+                    drawLine(red, Offset(c.x - mr * 0.7f, my), Offset(c.x + mr * 0.7f, my), 2.dp.toPx())
+                    drawLine(red, Offset(c.x, my - mr * 0.7f), Offset(c.x, my + mr * 0.7f), 2.dp.toPx())
+                }
                 if (s.has(Status.ROOT)) drawCircle(Color(0xFF3F9A4A).copy(alpha = 0.5f), r * 0.95f, c, style = Stroke(5.dp.toPx()))
                 if (s.has(Status.PARALYZE)) drawCircle(Sunflower.copy(alpha = 0.35f), r, c, style = Stroke(2.dp.toPx()))
                 if (s.has(Status.GUARD)) drawCircle(ClearSky.copy(alpha = 0.7f), r, c, style = Stroke(4.dp.toPx()))
@@ -800,6 +813,24 @@ private fun statusIcons(f: FighterSnap) = buildList {
     if (f.has(Status.LEECH)) add(Icons.Rounded.Spa to Color(0xFF4CAF6A))
     if (f.has(Status.EVADE)) add(Icons.Rounded.KeyboardDoubleArrowUp to ClearSky)
     if (f.has(Status.COUNTER)) add(Icons.Rounded.Replay to Color.White)
+    if (f.has(Status.SHIELD)) add(Icons.Rounded.Shield to Color(0xFF7FD3FF))
+    if (f.has(Status.MARKED)) add(Icons.Rounded.GpsFixed to Color(0xFFE53935))
+}
+
+/** A snare on the floor: a faint ring while arming, then a spiky ring in the move's color. */
+private fun DrawScope.drawTrap(t: TrapSnap, c: Offset, r: Float) {
+    val armed = t.ageMs >= Trap.ARM_MS
+    val fade = (1f - (t.ageMs - (Trap.DURATION_MS - 600)).coerceAtLeast(0) / 600f).coerceIn(0f, 1f)
+    val col = t.element.tint().copy(alpha = (if (armed) 0.85f else 0.35f) * fade)
+    drawCircle(col.copy(alpha = col.alpha * 0.25f), r, c)
+    drawCircle(col, r, c, style = Stroke(r * 0.18f))
+    if (!armed) return
+    for (k in 0 until 6) {
+        val a = k * (PI.toFloat() / 3f)
+        val inner = Offset(c.x + cos(a) * r * 0.45f, c.y + sin(a) * r * 0.45f)
+        val outer = Offset(c.x + cos(a) * r * 0.95f, c.y + sin(a) * r * 0.95f)
+        drawLine(col, inner, outer, r * 0.14f)
+    }
 }
 
 fun Move.icon(): ImageVector = when (this) {
@@ -821,7 +852,18 @@ fun Move.icon(): ImageVector = when (this) {
     Move.BAMBOO_SMACK, Move.BAMBOO_STORM, Move.PANDA_QUAKE -> Icons.Rounded.Spa
     Move.TAIL_LASH, Move.MAGMA_TAIL, Move.VOLCANO_ROAR -> Icons.Rounded.Volcano
     Move.SNATCH, Move.TRASH_TOSS, Move.MIDNIGHT_HEIST -> Icons.Rounded.Masks
+    Move.EUCALYPTUS_DART, Move.DROWSY_SLAM, Move.DREAM_STORM -> Icons.Rounded.Bedtime
+    Move.FIN_SLICE, Move.JAW_LOCK, Move.FEEDING_FRENZY -> Icons.Rounded.SetMeal
+    Move.TONGUE_SNAP, Move.MIRAGE_SWAP, Move.PRISM_BLAST -> Icons.Rounded.Palette
+    Move.LOG_TOSS, Move.TIMBER_TRAP, Move.GREAT_DAM -> Icons.Rounded.Carpenter
     else -> when (effect) {
+        Effect.SHIELD -> Icons.Rounded.Shield
+        Effect.AID -> Icons.Rounded.VolunteerActivism
+        Effect.TRAP -> Icons.Rounded.Adjust
+        Effect.MARK -> Icons.Rounded.GpsFixed
+        Effect.SWAP -> Icons.Rounded.SyncAlt
+        Effect.DISRUPT -> Icons.Rounded.HourglassBottom
+        Effect.CHAIN -> Icons.Rounded.Link
         Effect.GUARD -> Icons.Rounded.Shield
         Effect.RAGE -> Icons.Rounded.Campaign
         Effect.HASTE -> Icons.Rounded.Speed
@@ -866,7 +908,9 @@ fun Move.tint(): Color = when {
     this == Move.FOXFIRE || this == Move.NINE_TAILS || this == Move.WISP_FLAME -> Color(0xFF6C8CFF)
     this == Move.ECHO_SHRIEK || this == Move.VAMPIRE_FANG || this == Move.BLOOD_MOON -> Color(0xFFC2185B)
     effect == Effect.GUARD -> ClearSky
-    effect in setOf(Effect.HEAL, Effect.PACK_CALL, Effect.ALPHA) -> Color(0xFF4CAF6A)
+    effect in setOf(Effect.HEAL, Effect.PACK_CALL, Effect.ALPHA, Effect.AID) -> Color(0xFF4CAF6A)
+    effect == Effect.SHIELD && element == Element.NORMAL -> Color(0xFF7FD3FF)
+    this == Move.LOCK_ON -> Color(0xFFE53935)
     effect == Effect.RAGE || effect == Effect.BATTLE_CRY -> Color(0xFFD9534F)
     effect == Effect.HASTE -> Color(0xFF26A69A)
     effect in setOf(Effect.HARDEN, Effect.FORTRESS, Effect.CITADEL) -> Color(0xFF8D8D8D)

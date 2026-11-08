@@ -24,8 +24,15 @@ enum class Effect(val label: String, val self: Boolean = false) {
     SIPHON("steal energy"),    // takes energy from the target
     EXECUTE("execute"),        // double damage on targets below 30% HP
     RECHARGE("recharge"),      // user is stunned after using it
+    MARK("mark"),              // target takes 25% more damage from everyone
+    CHAIN("chain"),            // arcs to a second enemy (or zaps the same one again)
+    SWAP("swap places"),       // user and target trade spots
+    DISRUPT("disrupt"),        // adds 2s to all the target's cooldowns
+    TRAP("trap", true),         // lays a snare at the target's feet that roots whoever steps on it
     // Self buffs
-    HEAL("heal", true),         // restore 18% HP
+    SHIELD("shield", true),     // barrier that soaks up damage
+    AID("team heal", true),     // heals the user and its teammates
+    HEAL("heal", true),        // restore 18% HP
     RAGE("rage", true),         // +30% damage for 4s
     GUARD("guard", true),       // take 60% less damage for 1.2s
     HASTE("haste", true),       // +50% speed and 30% shorter cooldowns for 5s
@@ -104,6 +111,11 @@ enum class Move(
     LAST_STAND("Last Stand", S, Element.NORMAL, 50, 0, 0f, 6000, 200, 200, Effect.FORTRESS),
     HYPER_BEAM("Hyper Beam", S, Element.NORMAL, 52, 30, 0.60f, 4500, 700, 300, Effect.RECHARGE),
     MEGA_PUNCH("Mega Punch", S, Element.NORMAL, 55, 20, 0.18f, 4000, 450, 300, Effect.STUN),
+    DISTRACT("Distract", N, Element.NORMAL, 13, 0, 0.45f, 8000, 250, 200, Effect.DISRUPT),
+    LOCK_ON("Lock-On", N, Element.NORMAL, 16, 0, 0.50f, 7000, 250, 200, Effect.MARK),
+    SWITCHEROO("Switcheroo", N, Element.NORMAL, 19, 5, 0.45f, 6000, 200, 200, Effect.SWAP),
+    CHEER("Cheer", N, Element.NORMAL, 21, 0, 0f, 9000, 300, 200, Effect.AID),
+    BARRIER("Barrier", N, Element.NORMAL, 26, 0, 0f, 10_000, 250, 200, Effect.SHIELD),
 
     // Fire
     EMBER("Ember", N, Element.FIRE, 1, 6, 0.40f, 1800, 250, 200, Effect.BURN),
@@ -121,6 +133,7 @@ enum class Move(
     MAGMA_BURST("Magma Burst", S, Element.FIRE, 46, 19, 0.40f, 4200, 500, 300, Effect.KNOCKBACK),
     OVERHEAT("Overheat", S, Element.FIRE, 52, 28, 0.50f, 4500, 600, 350, Effect.RECHARGE),
     BLAST_FLAME("Blast Flame", S, Element.FIRE, 57, 22, 0.55f, 4500, 550, 350, Effect.BURN),
+    SCORCH_MARK("Scorch Mark", N, Element.FIRE, 26, 8, 0.40f, 2200, 250, 200, Effect.MARK),
 
     // Water
     BUBBLE("Bubble", N, Element.WATER, 1, 6, 0.45f, 1600, 250, 200, Effect.SLOW),
@@ -138,6 +151,8 @@ enum class Move(
     HYDRO_PUMP("Hydro Pump", S, Element.WATER, 46, 20, 0.60f, 4500, 550, 350, Effect.SLOW),
     HYDRO_CANNON("Hydro Cannon", S, Element.WATER, 52, 28, 0.55f, 4500, 600, 350, Effect.RECHARGE),
     UNDERTOW("Undertow", S, Element.WATER, 57, 22, 0.60f, 4500, 550, 350, Effect.PULL),
+    BUBBLE_SHIELD("Bubble Shield", N, Element.WATER, 22, 0, 0f, 10_000, 300, 200, Effect.SHIELD),
+    HEALING_RAIN("Healing Rain", N, Element.WATER, 34, 0, 0f, 10_000, 400, 200, Effect.AID),
 
     // Grass
     LEAF_TOSS("Leaf Toss", N, Element.GRASS, 1, 7, 0.42f, 1500, 250, 200),
@@ -155,6 +170,7 @@ enum class Move(
     PETAL_STORM("Petal Storm", S, Element.GRASS, 46, 18, 0.50f, 4200, 450, 300, Effect.SLOW),
     FRENZY_PLANT("Frenzy Plant", S, Element.GRASS, 52, 28, 0.50f, 4500, 600, 350, Effect.RECHARGE),
     LEAF_BLADE("Leaf Blade", S, Element.GRASS, 57, 22, 0.25f, 4000, 350, 300, Effect.LUNGE),
+    BRAMBLE_SNARE("Bramble Snare", N, Element.GRASS, 18, 6, 0.60f, 7000, 300, 200, Effect.TRAP),
 
     // Ice
     POWDER_SNOW("Powder Snow", N, Element.ICE, 1, 6, 0.40f, 1600, 250, 200, Effect.SLOW),
@@ -172,6 +188,7 @@ enum class Move(
     BLIZZARD("Blizzard", S, Element.ICE, 46, 19, 0.60f, 4500, 550, 350, Effect.SLOW),
     GLACIER_CRASH("Glacier Crash", S, Element.ICE, 52, 22, 0.25f, 4500, 500, 350, Effect.STUN),
     ABSOLUTE_ZERO("Absolute Zero", S, Element.ICE, 57, 18, 0.50f, 5000, 700, 300, Effect.FREEZE),
+    FROST_MINE("Frost Mine", N, Element.ICE, 30, 8, 0.60f, 7500, 300, 200, Effect.TRAP),
 
     // Electric
     SPARK("Spark", N, Element.ELECTRIC, 1, 7, 0.20f, 1000, 150, 150),
@@ -189,6 +206,8 @@ enum class Move(
     ZAP_CANNON("Zap Cannon", S, Element.ELECTRIC, 46, 20, 0.55f, 4500, 600, 350, Effect.PARALYZE),
     THUNDERBOLT("Thunderbolt", S, Element.ELECTRIC, 52, 22, 0.60f, 4500, 500, 300, Effect.KNOCKBACK),
     GIGAVOLT("Gigavolt", S, Element.ELECTRIC, 57, 30, 0.65f, 4500, 700, 300, Effect.RECHARGE),
+    STATIC_JAM("Static Jam", N, Element.ELECTRIC, 22, 6, 0.45f, 2400, 250, 200, Effect.DISRUPT),
+    CHAIN_LIGHTNING("Chain Lightning", N, Element.ELECTRIC, 30, 10, 0.50f, 2600, 300, 250, Effect.CHAIN),
 
     // Flying
     PECK("Peck", N, Element.FLYING, 1, 6, 0.22f, 800, 150, 150),
@@ -207,6 +226,7 @@ enum class Move(
     HURRICANE("Hurricane", S, Element.FLYING, 46, 20, 0.60f, 4500, 550, 350, Effect.KNOCKBACK),
     SKY_DROP("Sky Drop", S, Element.FLYING, 52, 22, 0.30f, 4500, 1000, 350, Effect.VANISH),
     SKY_ATTACK("Sky Attack", S, Element.FLYING, 57, 32, 0.40f, 5000, 700, 300, Effect.RECHARGE),
+    CROSSWIND("Crosswind", N, Element.FLYING, 22, 8, 0.40f, 3000, 250, 200, Effect.SWAP),
 
     // Ground
     MUD_SLAP("Mud Slap", N, Element.GROUND, 1, 6, 0.38f, 1600, 250, 200, Effect.SLOW),
@@ -224,6 +244,8 @@ enum class Move(
     EARTHQUAKE("Earthquake", S, Element.GROUND, 46, 20, 0.90f, 4500, 600, 350, Effect.STUN),
     FISSURE("Fissure", S, Element.GROUND, 52, 26, 0.40f, 4500, 600, 350, Effect.EXECUTE),
     STONE_EDGE("Stone Edge", S, Element.GROUND, 57, 22, 0.40f, 4200, 500, 300, Effect.KNOCKBACK),
+    RICOCHET("Ricochet", N, Element.GROUND, 21, 8, 0.45f, 2000, 250, 200, Effect.CHAIN),
+    CALTROPS("Caltrops", N, Element.GROUND, 26, 8, 0.60f, 7500, 300, 200, Effect.TRAP),
 
     // Uniques: Kid form, then the Adult upgrade (slot 5)
     SOLAR_BEAM("Solar Beam", U, Element.GRASS, 0, 26, 0.75f, 15_000, 700, 300),
@@ -294,6 +316,18 @@ enum class Move(
     BURROW_JAB("Burrow Jab", U, Element.GROUND, 0, 17, 0.25f, 15_000, 800, 250, Effect.VANISH),
     DRILL_CLAW("Drill Claw", U, Element.GROUND, 0, 9, 0.22f, 15_000, 300, 250, Effect.MULTI),
     TREMOR_SPARK("Tremor Spark", U, Element.ELECTRIC, 0, 32, 0.80f, 15_000, 650, 300, Effect.STUN),
+    EUCALYPTUS_DART("Eucalyptus Dart", U, Element.GRASS, 0, 16, 0.50f, 15_000, 300, 250, Effect.SLOW),
+    DROWSY_SLAM("Drowsy Slam", U, Element.NORMAL, 0, 24, 0.22f, 15_000, 400, 300, Effect.STUN, alsoLunges = true),
+    DREAM_STORM("Dream Storm", U, Element.ELECTRIC, 0, 32, 0.70f, 15_000, 600, 300, Effect.CHAIN),
+    FIN_SLICE("Fin Slice", U, Element.WATER, 0, 17, 0.30f, 15_000, 250, 250, Effect.LUNGE),
+    JAW_LOCK("Jaw Lock", U, Element.WATER, 0, 25, 0.22f, 15_000, 300, 250, Effect.MARK, alsoLunges = true),
+    FEEDING_FRENZY("Feeding Frenzy", U, Element.WATER, 0, 33, 0.25f, 15_000, 350, 300, Effect.DRAIN, alsoLunges = true),
+    TONGUE_SNAP("Tongue Snap", U, Element.NORMAL, 0, 16, 0.50f, 15_000, 250, 250, Effect.PULL),
+    MIRAGE_SWAP("Mirage Swap", U, Element.GRASS, 0, 24, 0.50f, 15_000, 300, 250, Effect.SWAP),
+    PRISM_BLAST("Prism Blast", U, Element.FIRE, 0, 32, 0.65f, 15_000, 550, 300, Effect.DISRUPT),
+    LOG_TOSS("Log Toss", U, Element.GROUND, 0, 17, 0.45f, 15_000, 300, 250, Effect.KNOCKBACK),
+    TIMBER_TRAP("Timber Trap", U, Element.GROUND, 0, 25, 0.65f, 15_000, 300, 250, Effect.TRAP),
+    GREAT_DAM("Great Dam", U, Element.WATER, 0, 0, 0f, 15_000, 250, 200, Effect.SHIELD),
     ;
 
     /** Buffs target the user; everything else (including 0-damage debuffs) targets the opponent. */
@@ -314,7 +348,7 @@ enum class Move(
 
     fun describe(): String = buildString {
         append(element.label).append(" · ")
-        append(when { isBuff -> "Buff"; damage == 0 -> "Debuff"; else -> "$damage dmg" })
+        append(when { damage > 0 -> "$damage dmg"; isBuff -> "Buff"; else -> "Debuff" })
         if (effect != Effect.NONE && effect != Effect.GUARD) append(", ").append(effectLabel)
         append(", ${cooldownMs / 1000.0}s cd")
         if (energyCost > 0) append(", $energyCost energy")
@@ -348,6 +382,10 @@ enum class Passive(val label: String, val description: String) {
     CHATTER("Chatter", "Hits have a 25% chance to weaken the target for 3s."),
     REGROW("Regrow", "Regenerates 1.2 HP every second while below half HP."),
     BURROWER("Burrower", "Vanishing moves (Dig, Bounce...) recharge 30% faster."),
+    SNOOZE("Snooze", "Regenerates 2 HP every second after 4s without getting hit."),
+    BLOOD_SCENT("Blood Scent", "Deals 30% more damage to targets below half HP."),
+    COLOR_SHIFT("Color Shift", "Takes 30% less damage from the type it was last hit by."),
+    DAM_BUILDER("Dam Builder", "Starts every battle with a shield, and its shields are 50% stronger."),
 }
 
 data class MoveUnlock(val move: Move, val level: Int)
@@ -385,6 +423,10 @@ object SpeciesKit {
         Species.PARROT -> Passive.CHATTER
         Species.AXOLOTL -> Passive.REGROW
         Species.MOLE -> Passive.BURROWER
+        Species.KOALA -> Passive.SNOOZE
+        Species.SHARK -> Passive.BLOOD_SCENT
+        Species.CHAMELEON -> Passive.COLOR_SHIFT
+        Species.BEAVER -> Passive.DAM_BUILDER
     }
 
     /** The species' own types (besides Normal). */
@@ -411,6 +453,10 @@ object SpeciesKit {
         Species.PARROT -> setOf(Element.FLYING, Element.FIRE)
         Species.AXOLOTL -> setOf(Element.WATER, Element.GRASS)
         Species.MOLE -> setOf(Element.GROUND, Element.ELECTRIC)
+        Species.KOALA -> setOf(Element.GRASS, Element.ELECTRIC)
+        Species.SHARK -> setOf(Element.WATER, Element.ICE)
+        Species.CHAMELEON -> setOf(Element.GRASS, Element.FIRE)
+        Species.BEAVER -> setOf(Element.GROUND, Element.WATER)
     }
 
     /** Off-type moves the species can still learn. */
@@ -437,6 +483,10 @@ object SpeciesKit {
         Species.PARROT -> setOf(Move.SHOCK_WAVE, Move.THUNDER_WAVE, Move.ICY_WIND, Move.SEED_BOMB)
         Species.AXOLOTL -> setOf(Move.ICY_WIND, Move.ICE_SHARD, Move.MIST, Move.MUD_SLAP)
         Species.MOLE -> setOf(Move.FIRE_FANG, Move.SMOKESCREEN, Move.SEED_BOMB, Move.ICE_FANG)
+        Species.KOALA -> setOf(Move.MUD_SLAP, Move.STONE_SKIN, Move.RAIN_DANCE, Move.AQUA_RING)
+        Species.SHARK -> setOf(Move.THUNDER_FANG, Move.FIRE_FANG, Move.BULLDOZE, Move.DIG)
+        Species.CHAMELEON -> setOf(Move.THUNDER_WAVE, Move.SHOCK_WAVE, Move.AERIAL_ACE, Move.BUBBLE)
+        Species.BEAVER -> setOf(Move.RAZOR_LEAF, Move.SEED_BOMB, Move.BRAMBLE_SNARE, Move.ICY_WIND)
     }
 
     /** Normal or own-type moves this species can't do (no fists, no wings, too slow...). */
@@ -465,6 +515,11 @@ object SpeciesKit {
         Species.PARROT -> setOf(Move.PUNCH, Move.MEGA_PUNCH, Move.QUICK_JAB, Move.HOWL, Move.DOUBLE_KICK, Move.BODY_SLAM)
         Species.AXOLOTL -> setOf(Move.HOWL, Move.CLAW, Move.FURY_SWIPES, Move.PUNCH, Move.MEGA_PUNCH, Move.ZOOMIES)
         Species.MOLE -> setOf(Move.HOWL, Move.ZOOMIES, Move.TELEPORT, Move.AQUA_JET)
+        Species.KOALA -> setOf(Move.ZOOMIES, Move.QUICK_ATTACK, Move.QUICK_JAB, Move.HOWL, Move.TELEPORT, Move.VOLT_TACKLE)
+        Species.SHARK -> setOf(Move.PUNCH, Move.MEGA_PUNCH, Move.QUICK_JAB, Move.CLAW, Move.FURY_SWIPES, Move.HOWL,
+            Move.DOUBLE_KICK, Move.ZOOMIES, Move.POUNCE)
+        Species.CHAMELEON -> setOf(Move.HOWL, Move.BODY_SLAM, Move.GIGA_IMPACT, Move.MEGA_PUNCH, Move.FLARE_BLITZ)
+        Species.BEAVER -> setOf(Move.HOWL, Move.ZOOMIES, Move.TELEPORT, Move.POUNCE, Move.DIVE)
     }
 
     /** Baby unique, its Kid upgrade, and its Adult upgrade. */
@@ -491,6 +546,10 @@ object SpeciesKit {
         Species.PARROT -> Triple(Move.SQUAWK, Move.FEATHER_BLAZE, Move.PHOENIX_DIVE)
         Species.AXOLOTL -> Triple(Move.BUBBLE_GILL, Move.TIDE_POOL, Move.LOTUS_TORRENT)
         Species.MOLE -> Triple(Move.BURROW_JAB, Move.DRILL_CLAW, Move.TREMOR_SPARK)
+        Species.KOALA -> Triple(Move.EUCALYPTUS_DART, Move.DROWSY_SLAM, Move.DREAM_STORM)
+        Species.SHARK -> Triple(Move.FIN_SLICE, Move.JAW_LOCK, Move.FEEDING_FRENZY)
+        Species.CHAMELEON -> Triple(Move.TONGUE_SNAP, Move.MIRAGE_SWAP, Move.PRISM_BLAST)
+        Species.BEAVER -> Triple(Move.LOG_TOSS, Move.TIMBER_TRAP, Move.GREAT_DAM)
     }
 
     fun unique(s: Species, stage: Stage): Move? = when (stage) {

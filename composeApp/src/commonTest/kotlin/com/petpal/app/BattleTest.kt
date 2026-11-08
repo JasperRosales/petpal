@@ -228,6 +228,57 @@ class HitboxTest {
         assertTrue(e.snapshot(t + Smoke.DURATION_MS + 500).smokes.isEmpty())
     }
 
+    @Test fun shieldSoaksDamage() {
+        val s = FighterInfo("S", Species.PUP, Stage.KID, 40, listOf(Move.BARRIER))
+        val e = BattleEngine(listOf(s, b), Random(1))
+        assertNotNull(e.command(0, Move.BARRIER, 0))
+        e.tick(Move.BARRIER.windupMs)
+        assertTrue(e.snapshot(Move.BARRIER.windupMs).fighters[0].has(Status.SHIELD))
+        e.tick(Move.BARRIER.windupMs + Mechanics.SHIELD_MS + 100)
+        assertFalse(e.snapshot(Move.BARRIER.windupMs + Mechanics.SHIELD_MS + 100).fighters[0].has(Status.SHIELD))
+        val beaver = BattleEngine(listOf(FighterInfo("B", Species.BEAVER, Stage.KID, 1), b), Random(1))
+        assertTrue(beaver.snapshot(0).fighters[0].has(Status.SHIELD)) // Dam Builder starts shielded
+    }
+
+    @Test fun trapRootsWhoeverStepsOnIt() {
+        val t = FighterInfo("T", Species.HEDGEHOG, Stage.KID, 40, listOf(Move.CALTROPS))
+        val e = BattleEngine(listOf(t, b), Random(1), demo = true)
+        e.place(0, 0.3f, 0.6f); e.place(1, 0.6f, 0.6f)
+        assertNotNull(e.command(0, Move.CALTROPS, 0))
+        val now = Move.CALTROPS.windupMs
+        e.tick(now)
+        assertEquals(1, e.snapshot(now).traps.size)
+        val back = Protocol.parse(Protocol.state(e.snapshot(now))) as Protocol.State
+        assertEquals(1, back.snap.traps.size)
+        val ev = e.tick(now + Trap.ARM_MS + 50)
+        assertTrue(ev.any { "caught" in it }, ev.toString())
+        val snap = e.snapshot(now + Trap.ARM_MS + 60)
+        assertTrue(snap.fighters[1].has(Status.ROOT))
+        assertTrue(snap.traps.isEmpty())
+    }
+
+    @Test fun markDisruptAndSwap() {
+        val m = FighterInfo("M", Species.PUP, Stage.KID, 40, listOf(Move.LOCK_ON, Move.DISTRACT, Move.SWITCHEROO))
+        val e = BattleEngine(listOf(m, b), Random(1), demo = true)
+        e.place(0, 0.3f, 0.6f); e.place(1, 0.6f, 0.6f)
+        e.command(0, Move.LOCK_ON, 0); e.tick(Move.LOCK_ON.windupMs)
+        assertTrue(e.snapshot(Move.LOCK_ON.windupMs).fighters[1].has(Status.MARKED))
+        var now = 2000L
+        e.command(0, Move.DISTRACT, now); now += Move.DISTRACT.windupMs; e.tick(now)
+        assertTrue(e.snapshot(now).fighters[1].cooldowns.all { it >= Mechanics.DISRUPT_MS - 10 })
+        now += 2000
+        e.command(0, Move.SWITCHEROO, now); now += Move.SWITCHEROO.windupMs
+        repeat(20) { e.tick(now); now += 50 } // projectile flight
+        assertTrue(e.snapshot(now).fighters[0].x > 0.5f)
+    }
+
+    @Test fun newSpeciesHaveFullKits() {
+        listOf(Species.KOALA, Species.SHARK, Species.CHAMELEON, Species.BEAVER).forEach { s ->
+            assertEquals(SpeciesKit.STARTERS, SpeciesKit.starters(s).size)
+            assertTrue(SpeciesKit.learnset(s).size > 40)
+        }
+    }
+
     @Test fun elementalMovesCostEnergy() {
         assertEquals(0, Move.PUNCH.energyCost)
         assertTrue(Move.EMBER.energyCost > 0)

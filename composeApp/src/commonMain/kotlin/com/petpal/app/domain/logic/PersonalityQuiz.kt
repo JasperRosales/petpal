@@ -132,6 +132,10 @@ object PersonalityQuiz {
         PARROT to intArrayOf(2, 3, 2, 0, 1, 1),
         AXOLOTL to intArrayOf(0, 2, 2, 2, 1, 3),
         MOLE to intArrayOf(2, 0, 2, 2, 1, 1),
+        KOALA to intArrayOf(0, 1, 0, 3, 0, 2),
+        SHARK to intArrayOf(3, 0, 0, 1, 3, 0),
+        CHAMELEON to intArrayOf(1, 1, 3, 2, 0, 1),
+        BEAVER to intArrayOf(2, 2, 1, 1, 1, 3),
     )
 
     /** Raw trait points for the chosen answer index per question. */

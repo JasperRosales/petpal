@@ -31,6 +31,10 @@ enum class Species(val label: String, val trait: String) {
     PARROT("Parrot", "Chatty and bright. You light up a room and never run out of things to say."),
     AXOLOTL("Axolotl", "Gentle and resilient. No matter what happens, you bounce back."),
     MOLE("Mole", "Hardworking and curious. You dig deep until you find the answer."),
+    KOALA("Koala", "Easygoing and cozy. You recharge fully, then give it your all."),
+    SHARK("Shark", "Focused and fearless. Once you set a goal, you never let it go."),
+    CHAMELEON("Chameleon", "Adaptable and observant. You fit in anywhere and surprise everyone."),
+    BEAVER("Beaver", "Industrious and protective. You build things that keep others safe."),
 }
 enum class BattleOutcome { WIN, LOSS, DRAW }
 
