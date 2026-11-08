@@ -37,8 +37,8 @@ object PetEngine {
     fun nextLevelXp(xp: Int): Int? = levelFor(xp).let { if (it >= MAX_LEVEL) null else xpForLevel(it + 1) }
 
     /**
-     * XP only comes from things the app can verify: hardware-counted steps and battles
-     * (capped per day). Focus sessions are logged but give no XP.
+     * XP only comes from things the app can verify: hardware-counted steps and battles.
+     * CPU battles give reduced XP. Focus sessions are logged but give no XP.
      */
     fun reward(pet: Pet, type: HabitType): Pet = when (type) {
         HabitType.STEPS -> addXp(pet, STEP_XP)
@@ -96,5 +96,4 @@ object PetEngine {
     }
 
     const val STEP_XP = 20 // per 1,000 steps
-    const val MAX_REWARDED_BATTLES_PER_DAY = 3
 }

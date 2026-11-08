@@ -2,7 +2,6 @@ package com.petpal.app.data.repository
 
 import com.petpal.app.data.local.*
 import com.petpal.app.domain.battle.Move
-import com.petpal.app.domain.logic.DayMath
 import com.petpal.app.domain.logic.PetEngine
 import com.petpal.app.domain.model.*
 import com.petpal.app.domain.platform.TimeProvider
@@ -51,15 +50,12 @@ class PetRepository(
         petDao.upsert(current.copy(name = name.trim().ifEmpty { DEFAULT_NAME }))
     }
 
-    /** Saves a finished battle. CPU/practice battles give reduced XP. Returns XP gained (0 once today's cap is used up). */
+    /** Saves a finished battle. CPU/practice battles give reduced XP. */
     suspend fun recordBattle(outcome: BattleOutcome, opponent: String, practice: Boolean = false): Int {
         refresh() ?: return 0
         return mutex.withLock {
             val now = time.nowMillis()
-            val tz = zone()
-            val dayStart = DayMath.startOfDay(DayMath.dateOf(now, tz), tz)
-            val capped = battleLogDao.rewardedSince(dayStart) >= PetEngine.MAX_REWARDED_BATTLES_PER_DAY
-            val xp = if (capped) 0 else if (practice) PetEngine.cpuBattleXp(outcome) else PetEngine.battleXp(outcome)
+            val xp = if (practice) PetEngine.cpuBattleXp(outcome) else PetEngine.battleXp(outcome)
             val pet = PetEngine.addXp(petDao.getPet()!!.toDomain(), xp)
             petDao.upsert(pet.toEntity())
             battleLogDao.insert(BattleLogEntity(outcome = outcome.name, xp = xp, timestamp = now, opponent = opponent))

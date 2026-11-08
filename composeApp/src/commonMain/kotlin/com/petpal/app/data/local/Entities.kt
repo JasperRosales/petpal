@@ -27,7 +27,7 @@ data class HabitLogEntity(
     val timestamp: Long,
 )
 
-/** One row per finished online battle; used for the daily battle-XP cap. */
+/** One row per finished battle. */
 @Entity(tableName = "battle_log")
 data class BattleLogEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,

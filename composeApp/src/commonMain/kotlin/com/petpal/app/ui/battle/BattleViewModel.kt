@@ -216,7 +216,7 @@ class BattleViewModel(
             BattleOutcome.DRAW -> "Draw"
         }
         val xp = petRepository.recordBattle(outcome, _state.value.fight?.fighters?.getOrNull(1 - me)?.name ?: "", practice)
-        val detail = if (xp > 0) "+$xp XP${if (practice) " (CPU)" else ""}" else "Daily battle XP limit reached"
+        val detail = "+$xp XP${if (practice) " (CPU)" else ""}"
         _state.update { s -> s.copy(fight = s.fight?.copy(snap = snap, result = "$title  $detail")) }
     }
 }

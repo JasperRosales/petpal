@@ -76,7 +76,7 @@ fun HabitsScreen(vm: HabitsViewModel = koinViewModel()) {
             ListItem(
                 leadingContent = { Icon(PetPalIcons.Battle, null, tint = color) },
                 headlineContent = { Text("$label vs ${b.opponent}") },
-                supportingContent = { Text(if (b.xp > 0) "+${b.xp} XP" else "No XP (daily limit)") },
+                supportingContent = { Text(if (b.xp > 0) "+${b.xp} XP" else "No XP") },
                 trailingContent = { Text("${t.month.name.take(3).lowercase().replaceFirstChar { it.uppercase() }} ${t.dayOfMonth}, ${t.hour.pad()}:${t.minute.pad()}") },
             )
         }
