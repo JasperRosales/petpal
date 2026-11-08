@@ -64,6 +64,14 @@ object Status {
     const val PARALYZE = 1024
     const val LEECH = 2048
     const val COUNTER = 4096
+    const val EVADE = 8192
+}
+
+/** Built-in backstep every pet has: a quick dash away from the opponent with brief invulnerability. */
+object Evade {
+    const val COOLDOWN_MS = 3000L
+    const val DURATION_MS = 350L // dash time, also the i-frame window
+    const val DISTANCE = 0.25f
 }
 
 data class FighterSnap(
@@ -79,6 +87,7 @@ data class FighterSnap(
     val energy: Int,
     val uniqueLeft: Int,
     val cooldowns: List<Long>, // remaining ms, same order as FighterInfo.loadout
+    val evadeCdMs: Long = 0,
     val aimX: Float = x, // where the current move is aimed (target position when it was started)
     val aimY: Float = y,
     val originX: Float = x, // where the move was fired from
@@ -122,6 +131,8 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
         var paralyzeUntil = 0L
         var leechUntil = 0L
         var counterUntil = 0L
+        var evadeUntil = 0L
+        var evadeReadyAt = 0L
         var energy = 0f
         var uniqueUsed = 0
         var hurtAt = -10_000L
@@ -150,6 +161,55 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
             now >= me.readyAt[m.ordinal] && me.projectile == null &&
             (m.category != MoveCategory.SPECIAL || me.energy >= BattleRules.MAX_ENERGY) &&
             (m.category != MoveCategory.UNIQUE || me.uniqueUsed < BattleRules.UNIQUE_USES)
+    }
+
+    fun canEvade(i: Int, now: Long): Boolean {
+        val me = f[i]
+        return !ended && now >= me.evadeReadyAt && now >= me.stunUntil && now >= me.rootUntil && now >= me.vanishUntil
+    }
+
+    /**
+     * Backs off away from the opponent, cancelling a move that's still winding up.
+     * Hits and projectiles pass through while dashing. Returns an event line, or null if not allowed.
+     */
+    fun evade(i: Int, now: Long): String? {
+        if (!canEvade(i, now)) return null
+        val me = f[i]
+        val opp = f[1 - i]
+        val m = me.action
+        if (me.pendingHit && m != null && now < me.actionAt + m.windupMs) { // cancel the wind-up
+            me.pendingHit = false
+            me.actionAt = now - 10_000
+        }
+        var dx = me.x - opp.x
+        var dy = me.y - opp.y
+        val d = hypot(dx, dy)
+        if (d < 0.001f) { dx = -me.facing.toFloat(); dy = 0f } else { dx /= d; dy /= d }
+        var tx = me.x + dx * Evade.DISTANCE
+        var ty = me.y + dy * Evade.DISTANCE
+        if (tx !in 0.08f..ARENA_W - 0.08f) { // backed into a side wall: slide along it instead
+            ty += if (me.y < ARENA_H / 2) Evade.DISTANCE else -Evade.DISTANCE
+        }
+        if (ty !in 0.08f..ARENA_H - 0.08f) {
+            tx += if (me.x < ARENA_W / 2) Evade.DISTANCE else -Evade.DISTANCE
+        }
+        me.tx = tx.coerceIn(0.08f, ARENA_W - 0.08f)
+        me.ty = ty.coerceIn(0.08f, ARENA_H - 0.08f)
+        me.nextWanderAt = now + Evade.DURATION_MS + 400
+        me.evadeUntil = now + Evade.DURATION_MS
+        me.busyUntil = maxOf(minOf(me.busyUntil, now), now + Evade.DURATION_MS)
+        me.evadeReadyAt = now + Evade.COOLDOWN_MS
+        return "${me.info.name} backs off!"
+    }
+
+    /** True when the opponent's attack is about to land near [i] (used by the bot). */
+    fun threatened(i: Int, now: Long): Boolean {
+        val me = f[i]
+        val opp = f[1 - i]
+        val m = opp.action ?: return false
+        if (opp.projectile != null) return hypot(me.x - opp.x, me.y - opp.y) < BattleStats.range(opp.info, m)
+        return opp.pendingHit && !m.isBuff && now >= opp.actionAt + m.windupMs / 3 &&
+            distance() <= BattleStats.range(opp.info, m) * 1.1f
     }
 
     /** Returns an event line, or null if the move isn't allowed right now. */
@@ -234,8 +294,11 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
     private fun move(me: Fighter, opp: Fighter, now: Long, dt: Float) {
         me.facing = if (opp.x >= me.x) 1 else -1
         if (now < me.stunUntil || now < me.vanishUntil || now < me.rootUntil) return
+        val evading = now < me.evadeUntil
         val lunging = me.action?.effect == Effect.LUNGE && now - me.actionAt < (me.action?.windupMs ?: 0)
-        if (lunging) {
+        if (evading) {
+            Unit // heading for the spot picked in evade()
+        } else if (lunging) {
             me.tx = opp.x; me.ty = opp.y
         } else if (now >= me.nextWanderAt || hypot(me.tx - me.x, me.ty - me.y) < 0.02f) {
             if (rng.nextFloat() < 0.5f) { // drift toward the opponent so fights happen in the big arena
@@ -248,13 +311,16 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
             me.nextWanderAt = now + 700 + rng.nextLong(1500)
         }
         var speed = when {
+            evading -> Evade.DISTANCE * 1000f / Evade.DURATION_MS
             lunging -> 0.9f
             now < me.busyUntil -> 0.06f
             else -> BattleStats.speed(me.info)
         }
-        if (now < me.hasteUntil) speed *= 1.5f
-        if (now < me.slowUntil) speed *= 0.5f
-        if (now < me.paralyzeUntil) speed *= 0.7f
+        if (!evading) {
+            if (now < me.hasteUntil) speed *= 1.5f
+            if (now < me.slowUntil) speed *= 0.5f
+            if (now < me.paralyzeUntil) speed *= 0.7f
+        }
         val dx = me.tx - me.x
         val dy = me.ty - me.y
         val d = hypot(dx, dy)
@@ -318,7 +384,7 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
         val d = minOf(travelled, range)
         val px = me.originX + dx * d
         val py = me.originY + dy * d
-        val touching = now >= opp.vanishUntil && hypot(opp.x - px, opp.y - py) <= m.hitSize(range) + PET_RADIUS
+        val touching = now >= opp.vanishUntil && now >= opp.evadeUntil && hypot(opp.x - px, opp.y - py) <= m.hitSize(range) + PET_RADIUS
         if (touching || travelled >= range) {
             me.projectile = null
             strike(me, opp, m, now, events, connected = touching)
@@ -330,6 +396,10 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
         val target = opp.info.name
         if (now < opp.vanishUntil) {
             events += "$target is out of reach!"
+            return
+        }
+        if (now < opp.evadeUntil) { // dashed out of the way, whether or not it would have connected
+            events += "$target evades ${m.label}!"
             return
         }
         if (!connected) {
@@ -453,6 +523,7 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
             if (now < me.paralyzeUntil) status = status or Status.PARALYZE
             if (now < me.leechUntil) status = status or Status.LEECH
             if (now < me.counterUntil) status = status or Status.COUNTER
+            if (now < me.evadeUntil) status = status or Status.EVADE
             FighterSnap(
                 x = me.x, y = me.y,
                 hp = kotlin.math.ceil(me.hp).toInt(), maxHp = me.maxHp,
@@ -464,6 +535,7 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
                 energy = me.energy.toInt(),
                 uniqueLeft = BattleRules.UNIQUE_USES - me.uniqueUsed,
                 cooldowns = me.info.loadout.map { (me.readyAt[it.ordinal] - now).coerceAtLeast(0) },
+                evadeCdMs = (me.evadeReadyAt - now).coerceAtLeast(0),
                 aimX = me.aimX, aimY = me.aimY,
                 originX = me.originX, originY = me.originY,
                 projectileAgeMs = if (me.projectile != null) now - me.launchAt else -1,
@@ -476,6 +548,11 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
 object BattleBot {
     private val BUFFS = setOf(Effect.RAGE, Effect.HASTE, Effect.HARDEN, Effect.BATTLE_CRY, Effect.ENERGIZE)
     private val BIG_HEALS = setOf(Effect.PACK_CALL, Effect.FORTRESS, Effect.ALPHA, Effect.CITADEL)
+
+    /** Back off from incoming attacks now and then, more often when hurt. */
+    fun shouldEvade(engine: BattleEngine, me: Int, now: Long, rng: Random): Boolean =
+        engine.canEvade(me, now) && engine.threatened(me, now) &&
+            rng.nextFloat() < if (engine.hpFraction(me) < 0.4f) 0.12f else 0.06f
 
     fun pick(engine: BattleEngine, me: Int, now: Long, rng: Random): Move? {
         if (rng.nextFloat() > 0.06f) return null // think roughly 1x/second at 20 ticks/s

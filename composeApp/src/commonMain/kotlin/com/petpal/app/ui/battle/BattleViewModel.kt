@@ -41,7 +41,8 @@ class BattleViewModel(
 
     private var job: Job? = null
     private var conn: BattleConnection? = null
-    private var sendMove: (Move) -> Unit = {}
+    /** null = evade */
+    private var sendMove: (Move?) -> Unit = {}
 
     fun isAvailable(kind: LinkKind) = links[kind].isAvailable
 
@@ -94,6 +95,7 @@ class BattleViewModel(
     }
 
     fun use(move: Move) = sendMove(move)
+    fun evade() = sendMove(null)
 
     fun leave() {
         stop()
@@ -121,13 +123,17 @@ class BattleViewModel(
     private suspend fun runHost(infos: List<FighterInfo>, remote: BattleConnection?) = coroutineScope {
         val engine = BattleEngine(infos)
         val rng = Random.Default
-        val commands = Channel<Pair<Int, Move>>(Channel.UNLIMITED)
+        val commands = Channel<Pair<Int, Move?>>(Channel.UNLIMITED)
         sendMove = { commands.trySend(0 to it) }
         var opponentLeft = false
         val reader = remote?.let { c ->
             launch {
                 c.incoming.collect { line ->
-                    (Protocol.parse(line) as? Protocol.Command)?.let { commands.trySend(1 to it.move) }
+                    when (val msg = Protocol.parse(line)) {
+                        is Protocol.Command -> commands.trySend(1 to msg.move)
+                        Protocol.EvadeCmd -> commands.trySend(1 to null)
+                        else -> Unit
+                    }
                 }
                 opponentLeft = true
             }
@@ -142,9 +148,10 @@ class BattleViewModel(
             val events = mutableListOf<String>()
             while (true) {
                 val (i, m) = commands.tryReceive().getOrNull() ?: break
-                engine.command(i, m, now)?.let(events::add)
+                (if (m == null) engine.evade(i, now) else engine.command(i, m, now))?.let(events::add)
             }
-            if (remote == null) BattleBot.pick(engine, 1, now, rng)?.let { engine.command(1, it, now)?.let(events::add) }
+            if (remote == null && BattleBot.shouldEvade(engine, 1, now, rng)) engine.evade(1, now)?.let(events::add)
+            else if (remote == null) BattleBot.pick(engine, 1, now, rng)?.let { engine.command(1, it, now)?.let(events::add) }
             events += engine.tick(now)
             val snap = engine.snapshot(now)
             if (remote != null) runCatching {
@@ -163,7 +170,7 @@ class BattleViewModel(
     }
 
     private suspend fun runGuest(infos: List<FighterInfo>, c: BattleConnection) {
-        sendMove = { m -> viewModelScope.launch { runCatching { c.send(Protocol.command(m)) } } }
+        sendMove = { m -> viewModelScope.launch { runCatching { c.send(if (m == null) Protocol.EVADE else Protocol.command(m)) } } }
         var last: BattleSnapshot? = null
         c.incoming.collect { line ->
             when (val msg = Protocol.parse(line)) {

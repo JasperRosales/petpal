@@ -123,6 +123,7 @@ class BattleTest {
         val parsed = (Protocol.parse(Protocol.state(snap)) as Protocol.State).snap
         assertEquals(snap.fighters.map { it.hp to it.action }, parsed.fighters.map { it.hp to it.action })
         assertEquals(snap.fighters[1].cooldowns, parsed.fighters[1].cooldowns)
+        assertEquals(snap.fighters.map { it.evadeCdMs }, parsed.fighters.map { it.evadeCdMs })
         assertEquals(snap.fighters.map { it.energy to it.uniqueLeft }, parsed.fighters.map { it.energy to it.uniqueLeft })
         assertEquals(Protocol.Hello(Protocol.VERSION, a), Protocol.parse(Protocol.hello(a)))
         assertEquals(Protocol.Command(Move.GUARD), Protocol.parse(Protocol.command(Move.GUARD)))
@@ -143,5 +144,33 @@ class HitboxTest {
 
     @Test fun coneCoversSides() {
         assertTrue(Move.TIDAL_WAVE.hits(0.2f, 0.5f, 0.6f, 0.5f, 1, 0.5f, 0.75f, Move.TIDAL_WAVE.range))
+    }
+
+    private val a = FighterInfo("A", Species.DRAKE, Stage.KID, 40, listOf(Move.PUNCH, Move.EMBER, Move.FIRE_BREATH, Move.GUARD))
+    private val b = FighterInfo("B", Species.KITTY, Stage.BABY, 40, listOf(Move.PUNCH, Move.BITE, Move.GUARD))
+
+    @Test fun evadeDodgesAndHasCooldown() {
+        val e = BattleEngine(listOf(a, b), Random(1))
+        var t = 0L
+        while (e.distance() > 0.1f && t < BATTLE_MS) { e.tick(t); t += 50 } // wait until they're close
+        assertNotNull(e.command(1, Move.PUNCH, t))
+        assertNotNull(e.evade(0, t))
+        assertNull(e.evade(0, t + 50)) // on cooldown
+        val log = e.tick(t + 100) + e.tick(t + 200)
+        assertTrue(log.any { it == "A evades Punch!" }, log.toString())
+        assertTrue(e.snapshot(t + 200).fighters[0].has(Status.EVADE))
+        assertTrue(e.snapshot(t + 200).fighters[0].evadeCdMs > 0)
+        assertNotNull(e.evade(0, t + Evade.COOLDOWN_MS))
+    }
+
+    @Test fun evadeCancelsWindup() {
+        val e = BattleEngine(listOf(a, b), Random(1))
+        assertNotNull(e.command(0, Move.PUNCH, 0))
+        assertNotNull(e.evade(0, 50))
+        assertTrue(e.tick(300).none { "Punch" in it })
+    }
+
+    @Test fun evadeCommandRoundTrips() {
+        assertEquals(Protocol.EvadeCmd, Protocol.parse(Protocol.EVADE))
     }
 }

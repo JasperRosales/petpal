@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.foundation.clickable
@@ -225,10 +226,11 @@ private fun Fight(f: FightState, vm: BattleViewModel) {
                 NeuButton(onClick = vm::leave, text = "Back to lobby", filled = true, modifier = Modifier.fillMaxWidth())
             } else {
                 EnergyRow(me)
-                info.loadout.withIndex().chunked(3).forEach { row ->
+                (info.loadout.withIndex() + IndexedValue(-1, null)).chunked(3).forEach { row ->
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         row.forEach { (i, m) ->
-                            MoveButton(m, me.cooldowns.getOrElse(i) { 0 }, info, me, Modifier.weight(1f)) { vm.use(m) }
+                            if (m == null) EvadeButton(me, Modifier.weight(1f), vm::evade)
+                            else MoveButton(m, me.cooldowns.getOrElse(i) { 0 }, info, me, Modifier.weight(1f)) { vm.use(m) }
                         }
                         repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
                     }
@@ -262,6 +264,33 @@ private fun EnergyRow(me: FighterSnap) {
                 Modifier.padding(start = 4.dp).size(10.dp).clip(CircleShape)
                     .background(if (k < me.uniqueLeft) MoveCategory.UNIQUE.color() else MaterialTheme.colorScheme.surfaceVariant),
             )
+        }
+    }
+}
+
+@Composable
+private fun EvadeButton(me: FighterSnap, modifier: Modifier, onClick: () -> Unit) {
+    val cd = me.evadeCdMs
+    val enabled = cd == 0L && !me.has(Status.STUN) && !me.has(Status.ROOT) && !me.has(Status.VANISH)
+    Box(
+        modifier.height(64.dp).clip(MaterialTheme.shapes.medium)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .border(2.dp, ClearSky.copy(alpha = if (enabled) 1f else 0.3f), MaterialTheme.shapes.medium)
+            .clickable(enabled = enabled, onClick = onClick),
+    ) {
+        if (cd > 0) {
+            Box(Modifier.fillMaxHeight().fillMaxWidth((cd.toFloat() / Evade.COOLDOWN_MS).coerceIn(0f, 1f))
+                .background(Color.Black.copy(alpha = 0.18f)))
+        }
+        Column(
+            Modifier.fillMaxSize().padding(4.dp).alpha(if (enabled) 1f else 0.45f),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Icon(Icons.Rounded.KeyboardDoubleArrowUp, null, Modifier.size(20.dp).rotate(-90f), tint = ClearSky)
+            Text("Evade", style = MaterialTheme.typography.labelSmall, maxLines = 1)
+            Text(if (cd > 0) "${(cd / 100) / 10.0}s" else "back off", style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
         }
     }
 }
@@ -608,6 +637,7 @@ private fun Arena(f: FightState, modifier: Modifier) {
                         scaleX = s.facing.toFloat()
                         alpha = when {
                             s.has(Status.VANISH) -> 0f // flying high or underground
+                            s.has(Status.EVADE) -> 0.5f // dashing, can't be hit
                             hurt && (s.hurtAgeMs / 75) % 2 == 0L -> 0.35f
                             else -> 1f
                         }
@@ -641,6 +671,7 @@ private fun statusIcons(f: FighterSnap) = buildList {
     if (f.has(Status.WEAKEN)) add(Icons.Rounded.ArrowDownward to Color(0xFFBDBDBD))
     if (f.has(Status.PARALYZE)) add(Icons.Rounded.FlashOn to Sunflower)
     if (f.has(Status.LEECH)) add(Icons.Rounded.Spa to Color(0xFF4CAF6A))
+    if (f.has(Status.EVADE)) add(Icons.Rounded.KeyboardDoubleArrowUp to ClearSky)
     if (f.has(Status.COUNTER)) add(Icons.Rounded.Replay to Color.White)
 }
 

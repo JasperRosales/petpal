@@ -6,17 +6,19 @@ import kotlin.math.roundToInt
 
 /** Line-based wire format shared by the Bluetooth and Wi-Fi links. */
 object Protocol {
-    const val VERSION = 7
+    const val VERSION = 8
 
     sealed interface Msg
     data class Hello(val version: Int, val info: FighterInfo) : Msg
     data class Command(val move: Move) : Msg
+    data object EvadeCmd : Msg
     data class State(val snap: BattleSnapshot) : Msg
     data class Event(val text: String) : Msg
 
     fun hello(info: FighterInfo) = "H|$VERSION|${clean(info.name)}|${info.species.name}|${info.stage.name}|${info.level}|" +
         info.moves.joinToString(",") { it.name }
     fun command(m: Move) = "C|${m.ordinal}"
+    const val EVADE = "E"
     fun event(text: String) = "V|${clean(text)}"
 
     fun state(s: BattleSnapshot) = buildString {
@@ -30,7 +32,7 @@ object Protocol {
                     f.hurtAgeMs.coerceAtMost(99_999), f.facing, f.energy, f.uniqueLeft,
                     (f.aimX * 1000).roundToInt(), (f.aimY * 1000).roundToInt(),
                     (f.originX * 1000).roundToInt(), (f.originY * 1000).roundToInt(),
-                    f.projectileAgeMs.coerceIn(-1, 99_999),
+                    f.projectileAgeMs.coerceIn(-1, 99_999), f.evadeCdMs.coerceIn(0, 99_999),
                 ).joinToString(",")
             )
             f.cooldowns.forEach { append(',').append(it) }
@@ -49,6 +51,7 @@ object Protocol {
                 ),
             )
             "C" -> Command(Move.entries[p[1].toInt()])
+            "E" -> EvadeCmd
             "V" -> Event(p[1])
             "S" -> {
                 val h = p[1].split(',')
@@ -66,8 +69,8 @@ object Protocol {
                                 energy = v[9].toInt(), uniqueLeft = v[10].toInt(),
                                 aimX = v[11] / 1000f, aimY = v[12] / 1000f,
                                 originX = v[13] / 1000f, originY = v[14] / 1000f,
-                                projectileAgeMs = v[15],
-                                cooldowns = v.drop(16),
+                                projectileAgeMs = v[15], evadeCdMs = v[16],
+                                cooldowns = v.drop(17),
                             )
                         },
                     )
