@@ -25,7 +25,7 @@ class PetRepository(
     /** False until the personality quiz has given this device its one partner pet. */
     val hasPet: Flow<Boolean> = petDao.observePet().map { it != null }.distinctUntilChanged()
 
-    /** Online battles, newest first. Practice battles are never recorded. */
+    /** Recent battles, newest first. */
     val battles: Flow<List<BattleRecord>> = battleLogDao.observeRecent().map { list -> list.map { it.toDomain() } }
 
     /** Current pet, or null before it's adopted. */
@@ -51,15 +51,15 @@ class PetRepository(
         petDao.upsert(current.copy(name = name.trim().ifEmpty { DEFAULT_NAME }))
     }
 
-    /** Saves a finished online battle. Returns XP gained (0 once today's cap is used up). */
-    suspend fun recordBattle(outcome: BattleOutcome, opponent: String): Int {
+    /** Saves a finished battle. CPU/practice battles give reduced XP. Returns XP gained (0 once today's cap is used up). */
+    suspend fun recordBattle(outcome: BattleOutcome, opponent: String, practice: Boolean = false): Int {
         refresh() ?: return 0
         return mutex.withLock {
             val now = time.nowMillis()
             val tz = zone()
             val dayStart = DayMath.startOfDay(DayMath.dateOf(now, tz), tz)
             val capped = battleLogDao.rewardedSince(dayStart) >= PetEngine.MAX_REWARDED_BATTLES_PER_DAY
-            val xp = if (capped) 0 else PetEngine.battleXp(outcome)
+            val xp = if (capped) 0 else if (practice) PetEngine.cpuBattleXp(outcome) else PetEngine.battleXp(outcome)
             val pet = PetEngine.addXp(petDao.getPet()!!.toDomain(), xp)
             petDao.upsert(pet.toEntity())
             battleLogDao.insert(BattleLogEntity(outcome = outcome.name, xp = xp, timestamp = now, opponent = opponent))

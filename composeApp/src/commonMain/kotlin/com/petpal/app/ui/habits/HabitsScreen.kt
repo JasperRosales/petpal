@@ -61,7 +61,7 @@ fun HabitsScreen(vm: HabitsViewModel = koinViewModel()) {
         }
         if (s.battles.isEmpty()) item {
             Text(
-                "No battles with friends yet. Practice battles aren't logged.",
+                "No battles yet. CPU battles give reduced XP.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

@@ -51,6 +51,13 @@ object PetEngine {
         BattleOutcome.LOSS -> 10
     }
 
+    /** CPU/practice battles give reduced XP. */
+    fun cpuBattleXp(outcome: BattleOutcome): Int = when (outcome) {
+        BattleOutcome.WIN -> 8
+        BattleOutcome.DRAW -> 4
+        BattleOutcome.LOSS -> 2
+    }
+
     /** Pets never devolve, even if an older version evolved them earlier. */
     fun addXp(pet: Pet, xp: Int): Pet = (pet.xp + xp).let {
         syncMoves(pet.copy(xp = it, stage = maxOf(pet.stage, stageFor(it))))
