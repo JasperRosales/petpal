@@ -28,7 +28,7 @@ object PetEngine {
 
     fun stageFor(xp: Int): Stage = when {
         xp >= 1500 -> Stage.ADULT
-        xp >= 500 -> Stage.TEEN
+        xp >= 500 -> Stage.KID
         xp >= 50 -> Stage.BABY
         else -> Stage.EGG
     }
@@ -41,16 +41,28 @@ object PetEngine {
         else -> null
     }
 
-    fun reward(pet: Pet, type: HabitType): Pet {
-        val updated = when (type) {
-            HabitType.WATER -> pet.copy(hunger = (pet.hunger + 10).clampStat(), xp = pet.xp + 10)
-            HabitType.STEPS -> pet.copy(energy = (pet.energy + 15).clampStat(), xp = pet.xp + 20)
-            HabitType.FOCUS -> pet.copy(happiness = (pet.happiness + 15).clampStat(), xp = pet.xp + 25)
-            HabitType.SLEEP -> pet.copy(energy = 100.0, xp = pet.xp + 20)
-            HabitType.CUSTOM -> pet.copy(happiness = (pet.happiness + 10).clampStat(), xp = pet.xp + 10)
-        }
-        return updated.copy(stage = stageFor(updated.xp))
+    /**
+     * XP only comes from things the app can verify: hardware-counted steps and battles
+     * (capped per day). Self-reported habits only refill stats, so they can't be farmed for XP.
+     */
+    fun reward(pet: Pet, type: HabitType): Pet = when (type) {
+        HabitType.WATER -> pet.copy(hunger = (pet.hunger + 10).clampStat())
+        HabitType.STEPS -> addXp(pet.copy(energy = (pet.energy + 15).clampStat()), STEP_XP)
+        HabitType.FOCUS -> pet.copy(happiness = (pet.happiness + 15).clampStat())
+        HabitType.SLEEP -> pet.copy(energy = 100.0)
+        HabitType.CUSTOM -> pet.copy(happiness = (pet.happiness + 10).clampStat())
     }
+
+    fun battleXp(outcome: BattleOutcome): Int = when (outcome) {
+        BattleOutcome.WIN -> 30
+        BattleOutcome.DRAW -> 15
+        BattleOutcome.LOSS -> 10
+    }
+
+    fun addXp(pet: Pet, xp: Int): Pet = (pet.xp + xp).let { pet.copy(xp = it, stage = stageFor(it)) }
+
+    const val STEP_XP = 20 // per 1,000 steps
+    const val MAX_REWARDED_BATTLES_PER_DAY = 3
 
     private fun Double.clampStat() = coerceIn(0.0, 100.0)
 }

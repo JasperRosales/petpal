@@ -9,6 +9,7 @@ data class PetEntity(
     val name: String,
     val stage: String,
     val path: String,
+    @ColumnInfo(defaultValue = "SPROUT") val species: String = "SPROUT",
     val hunger: Double,
     val happiness: Double,
     val energy: Double,
@@ -21,6 +22,15 @@ data class HabitLogEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val type: String,
     val value: Int,
+    val timestamp: Long,
+)
+
+/** One row per finished online battle; used for the daily battle-XP cap. */
+@Entity(tableName = "battle_log")
+data class BattleLogEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val outcome: String,
+    val xp: Int,
     val timestamp: Long,
 )
 
@@ -68,4 +78,13 @@ interface StepDayDao {
 
     @Upsert
     suspend fun upsert(day: StepDayEntity)
+}
+
+@Dao
+interface BattleLogDao {
+    @Insert
+    suspend fun insert(log: BattleLogEntity)
+
+    @Query("SELECT COUNT(*) FROM battle_log WHERE timestamp >= :from AND xp > 0")
+    suspend fun rewardedSince(from: Long): Int
 }

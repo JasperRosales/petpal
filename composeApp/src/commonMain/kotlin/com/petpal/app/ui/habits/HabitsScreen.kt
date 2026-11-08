@@ -87,7 +87,7 @@ private fun HabitCard(type: HabitType, count: Int, onLog: (() -> Unit)?) {
                 Text(type.label(), style = MaterialTheme.typography.titleMedium)
                 Text(type.hint(), style = MaterialTheme.typography.bodySmall)
             }
-            Text("×$count", style = MaterialTheme.typography.titleMedium)
+            Text("x$count", style = MaterialTheme.typography.titleMedium)
             if (onLog != null) {
                 Spacer(Modifier.width(8.dp))
                 NeuButton(
@@ -107,17 +107,17 @@ private fun HabitCard(type: HabitType, count: Int, onLog: (() -> Unit)?) {
 private fun HabitType.isManual() = this == HabitType.WATER || this == HabitType.SLEEP || this == HabitType.CUSTOM
 
 private fun HabitType.hint() = when (this) {
-    HabitType.STEPS -> "Auto: every 1,000 steps"
-    HabitType.WATER -> "A glass of water feeds your pet"
-    HabitType.FOCUS -> "Finish a session in Focus"
-    HabitType.SLEEP -> "Log a good night's sleep"
-    HabitType.CUSTOM -> "Any small win counts"
+    HabitType.STEPS -> "Auto: +20 XP per 1,000 steps (max 20k/day)"
+    HabitType.WATER -> "Feeds your pet (stats only, no XP)"
+    HabitType.FOCUS -> "Finish a Focus session for happiness"
+    HabitType.SLEEP -> "Refills energy (no XP)"
+    HabitType.CUSTOM -> "Cheers your pet up (no XP)"
 }
 
 private fun HabitLog.detail() = when (type) {
     HabitType.STEPS -> "$value steps"
     HabitType.FOCUS -> "$value min"
-    else -> "+XP"
+    else -> "+stats"
 }
 
 private fun Int.pad() = toString().padStart(2, '0')

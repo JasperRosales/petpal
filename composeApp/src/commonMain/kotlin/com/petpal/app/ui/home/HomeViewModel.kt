@@ -63,10 +63,10 @@ class HomeViewModel(
 
     fun log(type: HabitType) = viewModelScope.launch {
         val before = state.value.pet?.stage
-        val pet = petRepository.logHabit(type)
+        val pet = petRepository.logHabit(type) ?: return@launch
         _rewards.tryEmit(
             if (before != null && pet.stage != before) "${pet.name} grew into a ${pet.stage.label()}!"
-            else "+XP for ${type.label().lowercase()}",
+            else "${pet.name} enjoyed that! (${type.label().lowercase()})",
         )
     }
 

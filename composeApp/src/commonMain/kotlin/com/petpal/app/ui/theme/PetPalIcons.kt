@@ -12,6 +12,7 @@ object PetPalIcons {
     val Focus = Icons.Rounded.Timer
     val Wardrobe = Icons.Rounded.Checkroom
     val Stats = Icons.Rounded.BarChart
+    val Battle = Icons.Rounded.SportsMma
     val Settings = Icons.Rounded.Settings
 
     // Habits

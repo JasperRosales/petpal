@@ -26,9 +26,15 @@ class PetEngineTest {
     }
 
     @Test fun rewardCapsAt100AndEvolves() {
-        val pet = PetEngine.reward(base.copy(hunger = 95.0, xp = 45), HabitType.WATER)
-        assertEquals(100.0, pet.hunger)
+        val pet = PetEngine.reward(base.copy(energy = 95.0, xp = 45), HabitType.STEPS)
+        assertEquals(100.0, pet.energy)
         assertEquals(Stage.BABY, pet.stage)
+    }
+
+    @Test fun selfReportedHabitsGiveNoXp() {
+        listOf(HabitType.WATER, HabitType.SLEEP, HabitType.CUSTOM, HabitType.FOCUS).forEach {
+            assertEquals(0, PetEngine.reward(base, it).xp)
+        }
     }
 
     @Test fun moods() {
@@ -49,6 +55,19 @@ class StepMathTest {
         val d = StepMath.onReading(StepDay("2026-11-08", 9000), "2026-11-08", 10_500)
         assertEquals(1500, d.steps)
         assertEquals(1, StepMath.pendingRewards(d))
+    }
+
+    @Test fun capsDailyRewards() {
+        val d = StepMath.onReading(StepDay("2026-11-08", 0), "2026-11-08", 50_000)
+        assertEquals(StepMath.MAX_REWARDS_PER_DAY, StepMath.pendingRewards(d))
+        assertEquals(0, StepMath.pendingRewards(d.copy(rewardedThousands = StepMath.MAX_REWARDS_PER_DAY)))
+    }
+
+    @Test fun clockRollbackKeepsCurrentDay() {
+        val today = StepDay("2026-11-08", baseline = 0, steps = 20_000, rewardedThousands = 20)
+        val d = StepMath.onReading(today, "2026-11-07", 21_000)
+        assertEquals("2026-11-08", d.date)
+        assertEquals(0, StepMath.pendingRewards(d))
     }
 
     @Test fun survivesReboot() {

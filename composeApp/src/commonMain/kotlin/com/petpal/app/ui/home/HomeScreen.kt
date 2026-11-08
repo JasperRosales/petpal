@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.petpal.app.domain.battle.SpeciesKit
 import com.petpal.app.domain.logic.PetEngine
 import com.petpal.app.domain.model.*
 import com.petpal.app.ui.components.*
@@ -53,9 +54,10 @@ fun HomeScreen(
             GrassyFieldScene(
                 isNight = state.isNight,
                 modifier = Modifier.fillMaxWidth().height(260.dp).clip(MaterialTheme.shapes.large),
-            ) { PetSprite(pet.stage, state.mood, pet.path) }
+            ) { PetSprite(pet.stage, state.mood, pet.species) }
 
             PetHeader(pet, state.mood, state.streak)
+            PassiveCard(pet.species)
 
             ElevatedCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -68,7 +70,7 @@ fun HomeScreen(
 
             if (state.stepsAvailable) {
                 Text(
-                    "${state.todaySteps} steps today · +XP every 1,000",
+                    "${state.todaySteps} steps today, +${PetEngine.STEP_XP} XP every 1,000 (max 20k/day)",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -94,7 +96,8 @@ fun HomeScreen(
     }
 
     if (renaming) {
-        RenameDialog(state.pet?.name.orEmpty(), onDismiss = { renaming = false }) {
+        val p = state.pet
+        if (p != null) RenameDialog(p.name, onDismiss = { renaming = false }) {
             vm.rename(it); renaming = false
         }
     }
@@ -113,7 +116,7 @@ private fun PetHeader(pet: Pet, mood: Mood, streak: Int) {
         Column(Modifier.weight(1f)) {
             Text(pet.name, style = MaterialTheme.typography.titleLarge)
             Text(
-                "${pet.stage.label()} · ${mood.name.lowercase()}",
+                "${pet.species.label}, ${pet.stage.label()}, ${mood.name.lowercase()}",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -144,4 +147,20 @@ private fun RenameDialog(current: String, onDismiss: () -> Unit, onSave: (String
         confirmButton = { TextButton(onClick = { onSave(text) }) { Text("Save") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
+}
+
+@Composable
+private fun PassiveCard(species: Species) {
+    val passive = SpeciesKit.passive(species)
+    ElevatedCard(Modifier.fillMaxWidth()) {
+        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(PetPalIcons.Xp, null, tint = MaterialTheme.colorScheme.tertiary)
+            Spacer(Modifier.width(12.dp))
+            Column {
+                Text("Passive: ${passive.label}", style = MaterialTheme.typography.titleSmall)
+                Text(passive.description, style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
 }

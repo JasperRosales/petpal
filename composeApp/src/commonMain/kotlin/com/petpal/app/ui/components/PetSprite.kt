@@ -5,27 +5,35 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.petpal.app.domain.model.*
 import com.petpal.app.ui.theme.*
+import kotlin.math.roundToInt
 
 /**
- * Pixel-art pet drawn from a 16x16 grid, so no PNG assets are needed yet.
- * Swap for Image(painterResource(...), filterQuality = FilterQuality.None) once sprites exist.
+ * Pixel-art pet built procedurally on a 20x20 grid: a body ellipse that grows with the
+ * stage, plus species features (ears, wings, shell...). No image assets needed.
  */
 @Composable
-fun PetSprite(stage: Stage, mood: Mood, path: EvolutionPath, modifier: Modifier = Modifier) {
-    val size = when (stage) {
+fun PetSprite(
+    stage: Stage,
+    mood: Mood,
+    species: Species,
+    modifier: Modifier = Modifier,
+    size: Dp = when (stage) {
         Stage.EGG -> 120.dp
-        Stage.BABY -> 128.dp
-        Stage.TEEN -> 160.dp
-        Stage.ADULT -> 192.dp
-    }
+        Stage.BABY -> 136.dp
+        Stage.KID -> 168.dp
+        Stage.ADULT -> 200.dp
+    },
+) {
     val transition = rememberInfiniteTransition(label = "pet")
     val bounce by transition.animateFloat(
         initialValue = 0f,
@@ -33,97 +41,243 @@ fun PetSprite(stage: Stage, mood: Mood, path: EvolutionPath, modifier: Modifier 
         animationSpec = infiniteRepeatable(tween(if (mood == Mood.HAPPY) 450 else 900), RepeatMode.Reverse),
         label = "bounce",
     )
-    val body = when (path) {
-        EvolutionPath.NONE -> SpriteBody
-        EvolutionPath.ATHLETIC -> SpriteAthletic
-        EvolutionPath.SCHOLAR -> SpriteScholar
-        EvolutionPath.CHILL -> SpriteChill
-    }
-    val grid = if (stage == Stage.EGG) EGG else creature(mood, stage)
+    val grid = remember(stage, mood, species) { PetArt.draw(species, stage, mood) }
+    val palette = remember(species) { species.palette() }
 
     Canvas(
         modifier.size(size).graphicsLayer {
             if (stage == Stage.EGG) rotationZ = (bounce - 0.5f) * 8f
-            else translationY = -bounce * 6.dp.toPx()
+            else translationY = -bounce * 4.dp.toPx()
         },
     ) {
-        val px = this.size.width / 16f
+        val px = this.size.width / PetArt.N
         grid.forEachIndexed { y, row ->
             row.forEachIndexed { x, c ->
-                val color = when (c) {
-                    'o', 'e', 'm' -> SpriteInk
-                    'b' -> body
-                    'l' -> SpriteCream
-                    'g' -> SpriteLeaf
-                    'c' -> SpriteCheek
-                    else -> Color.Transparent
-                }
-                if (color != Color.Transparent) {
-                    // +0.5px overlap hides hairline seams between cells
-                    drawRect(color, Offset(x * px, y * px), Size(px + 0.5f, px + 0.5f))
-                }
+                val color = palette[c] ?: return@forEachIndexed
+                // +0.5px overlap hides hairline seams between cells
+                drawRect(color, Offset(x * px, y * px), Size(px + 0.5f, px + 0.5f))
             }
         }
     }
 }
 
-private val EGG = listOf(
-    "................",
-    "......oooo......",
-    ".....obbbbo.....",
-    "....obbllbbo....",
-    "...obbbbbbbbo...",
-    "...obllbbbbbo...",
-    "..obbbbbbllbbo..",
-    "..obbbbbbllbbo..",
-    "..obbllbbbbbbo..",
-    "..obbllbbbbbbo..",
-    "..obbbbbbbbbbo..",
-    "...obbbbbbllo...",
-    "...obbbbbbbbo...",
-    "....obbbbbbo....",
-    ".....oooooo.....",
-    "................",
-)
+private fun Species.palette(): Map<Char, Color> {
+    val (body, dark, belly) = colors()
+    return mapOf(
+        'o' to SpriteInk, 'e' to SpriteInk, 'm' to SpriteInk,
+        'b' to body, 'd' to dark, 'l' to belly,
+        'c' to SpriteCheek, 'p' to SpritePink, 'y' to SpriteYellow,
+        'h' to SpriteCream, 'g' to SpriteLeaf, 'r' to SpriteRed,
+    )
+}
 
-private val CREATURE = listOf(
-    "................",
-    "................",
-    ".......o........",
-    ".....oooooo.....",
-    "....obbbbbbo....",
-    "...obbbbbbbbo...",
-    "..obbbbbbbbbbo..",
-    "..obbbbbbbbbbo..",
-    "..obbbbbbbbbbo..",
-    "..obcbbbbbbcbo..",
-    "..obbbbbbbbbbo..",
-    "..obbllllllbbo..",
-    "...obllllllbo...",
-    "....oooooooo....",
-    "....ob....bo....",
-    "....oo....oo....",
-)
+fun Species.colors(): Triple<Color, Color, Color> = when (this) {
+    Species.SPROUT -> Triple(Color(0xFFB9E07A), Color(0xFF6FAE4E), SpriteCream)
+    Species.KITTY -> Triple(Color(0xFFF0A868), Color(0xFFC97B3E), SpriteCream)
+    Species.DRAKE -> Triple(Color(0xFF7CC98A), Color(0xFF3E8A55), Color(0xFFF3E3A6))
+    Species.BUNNY -> Triple(Color(0xFFE9E1F2), Color(0xFFBDAED6), Color(0xFFFFFBF5))
+    Species.PUP -> Triple(Color(0xFFE3C08D), Color(0xFF9C6B3F), SpriteCream)
+    Species.OWL -> Triple(Color(0xFFA9825A), Color(0xFF6E5034), Color(0xFFF1E2C2))
+    Species.TURTLE -> Triple(Color(0xFF8FCFB0), Color(0xFF7B5A3A), Color(0xFFE9F2C8))
+    Species.FOX -> Triple(Color(0xFFE9824A), Color(0xFFB5552A), Color(0xFFFFF4E6))
+    Species.FROG -> Triple(Color(0xFF8BD06A), Color(0xFF4E9A3E), Color(0xFFF0F2B0))
+    Species.BEAR -> Triple(Color(0xFFB07A4F), Color(0xFF6E4A2E), Color(0xFFE8CFA8))
+}
 
-private fun creature(mood: Mood, stage: Stage): List<String> {
-    val g = CREATURE.map { it.toCharArray() }
-    fun set(x: Int, y: Int, c: Char) { g[y][x] = c }
+internal object PetArt {
+    const val N = 20
 
-    // Leaf sprout grows with the stage
-    set(7, 1, 'g')
-    if (stage != Stage.BABY) { set(8, 1, 'g'); set(8, 0, 'g') }
-    if (stage == Stage.ADULT) { set(6, 1, 'g'); set(9, 0, 'g') }
+    private class Grid {
+        val c = Array(N) { CharArray(N) { '.' } }
+        operator fun get(x: Int, y: Int) = if (x in 0 until N && y in 0 until N) c[y][x] else '.'
+        fun set(x: Int, y: Int, ch: Char) { if (x in 0 until N && y in 0 until N) c[y][x] = ch }
+        fun mirror(x: Int, y: Int, ch: Char) { set(x, y, ch); set(N - 1 - x, y, ch) }
 
-    when (mood) {
-        Mood.SLEEPY -> listOf(4, 5, 10, 11).forEach { set(it, 8, 'e') }
-        else -> listOf(5 to 7, 5 to 8, 10 to 7, 10 to 8).forEach { (x, y) -> set(x, y, 'e') }
+        fun ellipse(cx: Float, cy: Float, rx: Float, ry: Float, ch: Char, onlyOver: Char? = null) {
+            for (y in 0 until N) for (x in 0 until N) {
+                val dx = (x + 0.5f - cx) / rx
+                val dy = (y + 0.5f - cy) / ry
+                if (dx * dx + dy * dy <= 1f && (onlyOver == null || this[x, y] == onlyOver)) set(x, y, ch)
+            }
+        }
+
+        fun rect(x0: Int, y0: Int, x1: Int, y1: Int, ch: Char) {
+            for (y in y0..y1) for (x in x0..x1) set(x, y, ch)
+        }
+
+        /** Pointed ear/horn from [baseY] upward, centered on column [cx] (and mirrored). */
+        fun spike(cx: Int, baseY: Int, h: Int, w: Int, fill: Char, inner: Char? = null) {
+            for (i in 0 until h) {
+                val half = ((w / 2f) * (1f - i.toFloat() / h)).roundToInt()
+                for (dx in -half..half) {
+                    val ch = if (inner != null && kotlin.math.abs(dx) < half && i < h - 1) inner else fill
+                    mirror(cx + dx, baseY - i, ch)
+                }
+            }
+        }
+
+        /** Turns every filled cell that touches empty space into outline. */
+        fun outline() {
+            val edge = mutableListOf<Pair<Int, Int>>()
+            for (y in 0 until N) for (x in 0 until N) {
+                if (this[x, y] == '.') continue
+                if (this[x - 1, y] == '.' || this[x + 1, y] == '.' || this[x, y - 1] == '.' || this[x, y + 1] == '.' ||
+                    x == 0 || y == 0 || x == N - 1 || y == N - 1
+                ) edge += x to y
+            }
+            edge.forEach { (x, y) -> set(x, y, 'o') }
+        }
+
+        fun rows() = c.map { it.concatToString() }
     }
-    when (mood) {
-        Mood.HAPPY -> { set(6, 9, 'm'); set(9, 9, 'm'); set(7, 10, 'm'); set(8, 10, 'm') }
-        Mood.OKAY -> { set(7, 10, 'm'); set(8, 10, 'm') }
-        Mood.SAD -> { set(7, 9, 'm'); set(8, 9, 'm'); set(6, 10, 'm'); set(9, 10, 'm') }
-        Mood.SLEEPY -> set(8, 10, 'm')
+
+    private data class Body(val cy: Float, val rx: Float, val ry: Float) {
+        val cx = N / 2f
+        val top get() = (cy - ry).roundToInt()
+        val bottom get() = (cy + ry).roundToInt()
+        val left get() = (cx - rx).roundToInt()
     }
-    if (mood == Mood.SAD) { set(4, 9, 'b'); set(11, 9, 'b') } // no blush when sad
-    return g.map { it.concatToString() }
+
+    private fun bodyFor(stage: Stage) = when (stage) {
+        Stage.BABY -> Body(cy = 12.5f, rx = 5f, ry = 4.6f)
+        Stage.KID -> Body(cy = 11.5f, rx = 6f, ry = 5.4f)
+        else -> Body(cy = 11f, rx = 7f, ry = 6.2f)
+    }
+
+    fun draw(species: Species, stage: Stage, mood: Mood): List<String> {
+        if (stage == Stage.EGG) return egg(species)
+        val g = Grid()
+        val b0 = bodyFor(stage)
+        // Turtles: smaller body tucked under a shell dome
+        val b = if (species == Species.TURTLE) b0.copy(cy = b0.cy + 1f, rx = b0.rx - 0.5f, ry = b0.ry - 1f) else b0
+        val big = stage == Stage.ADULT
+        val grown = stage != Stage.BABY
+
+        // 1. Behind the body
+        when (species) {
+            Species.DRAKE -> {
+                val wy = b.cy.toInt() - 2
+                val span = if (big) 3 else if (grown) 2 else 1
+                for (i in 0..span) for (y in wy - i..wy + 2) for (x in b.left - 1 - i..b.left) g.mirror(x, y, 'd')
+            }
+            Species.TURTLE -> g.ellipse(b0.cx, b0.cy - 1.2f, b0.rx + 0.8f, b0.ry, 'd')
+            Species.KITTY -> g.rect(b.left + 2 * b.rx.toInt() - 1, b.cy.toInt() - (if (grown) 4 else 2), b.left + 2 * b.rx.toInt(), b.cy.toInt() + 2, 'b')
+            Species.FOX -> {
+                val r = if (big) 3.2f else if (grown) 2.6f else 2f
+                g.ellipse(b.cx + b.rx, b.cy + 1f, r, r * 1.3f, 'b')
+                g.ellipse(b.cx + b.rx + r * 0.4f, b.cy - r * 0.6f, r * 0.6f, r * 0.6f, 'l')
+            }
+            else -> Unit
+        }
+
+        // 2. Ears and things on top (drawn before the body so the body covers their base)
+        when (species) {
+            Species.KITTY -> g.spike(b.left + 2, b.top + 1, if (big) 5 else if (grown) 4 else 3, 4, 'b', 'p')
+            Species.FOX -> g.spike(b.left + 2, b.top + 1, if (big) 6 else if (grown) 5 else 4, 4, 'b', 'e')
+            Species.BUNNY -> {
+                val h = when (stage) { Stage.BABY -> 3; Stage.KID -> 5; else -> 6 }
+                val x = b.cx.toInt() - 3
+                g.rect(x - 1, b.top - h + 1, x + 1, b.top + 1, 'b')
+                g.rect(N - 1 - x - 1, b.top - h + 1, N - 1 - x + 1, b.top + 1, 'b')
+                g.rect(x, b.top - h + 2, x, b.top, 'p'); g.set(N - 1 - x, b.top, 'p')
+                for (y in b.top - h + 2..b.top) g.set(N - 1 - x, y, 'p')
+            }
+            Species.BEAR -> {
+                val r = if (big) 2.4f else if (grown) 2.1f else 1.8f
+                g.ellipse(b.cx - b.rx * 0.62f, b.top + 0.6f, r, r, 'b'); g.ellipse(b.cx + b.rx * 0.62f, b.top + 0.6f, r, r, 'b')
+            }
+            Species.OWL -> g.spike(b.left + 2, b.top + 1, if (big) 4 else 3, 2, 'd')
+            Species.DRAKE -> g.spike(b.left + 3, b.top + 1, if (big) 4 else 3, 2, 'h')
+            Species.FROG -> {
+                val r = if (big) 2.2f else 1.8f
+                g.ellipse(b.cx - b.rx * 0.5f, b.top + 0.8f, r, r, 'b'); g.ellipse(b.cx + b.rx * 0.5f, b.top + 0.8f, r, r, 'b')
+            }
+            Species.PUP -> Unit
+            Species.SPROUT, Species.TURTLE -> Unit
+        }
+
+        // 3. Body, belly, feet
+        g.ellipse(b.cx, b.cy, b.rx, b.ry, 'b')
+        if (species == Species.TURTLE && grown) {
+            val sy = b0.cy - b0.ry - 0.2f
+            listOf(-3f, 0f, 3f).forEach { dx -> g.ellipse(b.cx + dx, sy + if (dx == 0f) 0f else 1.2f, 1f, 0.9f, 'y', onlyOver = 'd') }
+        }
+        if (grown) {
+            val fx = (b.cx - b.rx * 0.5f).toInt()
+            g.rect(fx - 1, b.bottom - 1, fx + 1, b.bottom, 'b')
+            g.rect(N - 1 - fx - 1, b.bottom - 1, N - 1 - fx + 1, b.bottom, 'b')
+        }
+        g.ellipse(b.cx, b.cy + b.ry * 0.45f, b.rx * 0.55f, b.ry * 0.45f, 'l', onlyOver = 'b')
+        when (species) {
+            Species.OWL -> listOf(-1, 1).forEach { s -> g.ellipse(b.cx + s * b.rx * 0.4f, b.cy - b.ry * 0.1f, 1.9f, 1.9f, 'l', 'b') }
+            Species.BEAR, Species.PUP -> g.ellipse(b.cx, b.cy + b.ry * 0.2f, 2.2f, 1.5f, 'l', 'b')
+            Species.FOX -> g.ellipse(b.cx, b.cy + b.ry * 0.25f, 2.6f, 1.6f, 'l', 'b')
+            else -> Unit
+        }
+        if (species == Species.PUP) {
+            // floppy ears hang over the sides of the head
+            val h = if (big) 5 else if (grown) 4 else 3
+            g.rect(b.left - 1, b.top + 1, b.left + 1, b.top + h, 'd')
+            g.rect(N - 1 - b.left - 1, b.top + 1, N - 1 - b.left + 1, b.top + h, 'd')
+        }
+        g.outline()
+
+        // 4. Face
+        val ey = (b.cy - b.ry * 0.15f).roundToInt().let { if (species == Species.FROG) b.top + 1 else it }
+        val ex = (b.cx - b.rx * if (species == Species.FROG) 0.5f else 0.4f).toInt()
+        if (mood == Mood.SLEEPY) {
+            g.mirror(ex - 1, ey, 'e'); g.mirror(ex, ey, 'e')
+        } else {
+            g.mirror(ex, ey, 'e'); g.mirror(ex, ey - 1, 'e')
+            if (species == Species.OWL || big) { g.mirror(ex - 1, ey, 'e'); g.mirror(ex - 1, ey - 1, 'e') }
+        }
+        val my = (b.cy + b.ry * 0.25f).roundToInt()
+        val c = N / 2
+        if (species == Species.OWL) {
+            g.set(c - 1, my - 1, 'y'); g.set(c, my - 1, 'y'); g.set(c - 1, my, 'y'); g.set(c, my, 'y')
+        } else {
+            if (species in setOf(Species.PUP, Species.BEAR, Species.FOX, Species.KITTY)) {
+                g.set(c - 1, my - 1, 'e'); g.set(c, my - 1, 'e') // nose
+            }
+            when (mood) {
+                Mood.HAPPY -> { g.set(c - 2, my, 'm'); g.set(c + 1, my, 'm'); g.set(c - 1, my + 1, 'm'); g.set(c, my + 1, 'm') }
+                Mood.OKAY -> { g.set(c - 1, my + 1, 'm'); g.set(c, my + 1, 'm') }
+                Mood.SAD -> { g.set(c - 1, my, 'm'); g.set(c, my, 'm'); g.set(c - 2, my + 1, 'm'); g.set(c + 1, my + 1, 'm') }
+                Mood.SLEEPY -> g.set(c, my + 1, 'm')
+            }
+        }
+        if (mood != Mood.SAD && species != Species.OWL) g.mirror(ex - 1, ey + 2, 'c')
+
+        // 5. Front details
+        when (species) {
+            Species.SPROUT -> {
+                val t = b.top - 1
+                g.set(c, t, 'g'); g.set(c - 1, t, 'g')
+                if (grown) { g.set(c - 2, t - 1, 'g'); g.set(c + 1, t - 1, 'g'); g.set(c - 3, t - 1, 'g'); g.set(c + 2, t - 1, 'g') }
+                if (big) {
+                    g.set(c - 1, t - 2, 'p'); g.set(c, t - 2, 'p'); g.set(c - 1, t - 3, 'y'); g.set(c, t - 3, 'y')
+                }
+            }
+            Species.KITTY -> if (big) { g.set(c - 1, b.top + 1, 'd'); g.set(c, b.top + 1, 'd'); g.set(c, b.top + 2, 'd') }
+            Species.DRAKE -> if (big) listOf(0, 2, 4).forEach { g.set(c - 3 + it, b.top - 1, 'd') }
+            Species.FROG -> if (grown) { g.set(c - 4, b.cy.toInt() + 2, 'd'); g.set(c + 3, b.cy.toInt() + 1, 'd') }
+            Species.BEAR -> if (big) g.mirror(ex - 2, ey + 3, 'd')
+            Species.PUP -> if (big) g.rect(c - 3, b.bottom - 3, c + 2, b.bottom - 3, 'r') // collar
+            else -> Unit
+        }
+        return g.rows()
+    }
+
+    private fun egg(species: Species): List<String> {
+        val g = Grid()
+        g.ellipse(N / 2f, 11f, 5.5f, 7f, 'h')
+        // Species-colored spots, placed differently for each species
+        val seed = species.ordinal
+        val spots = listOf(7 to 7, 11 to 9, 8 to 12, 12 to 14, 6 to 15, 10 to 5, 13 to 11, 7 to 10)
+        spots.filterIndexed { i, _ -> (i + seed) % 3 != 0 }.forEach { (x, y) ->
+            g.ellipse(x + 0.5f, y + 0.5f, 1.2f, 1f, 'b', onlyOver = 'h')
+        }
+        g.outline()
+        return g.rows()
+    }
 }

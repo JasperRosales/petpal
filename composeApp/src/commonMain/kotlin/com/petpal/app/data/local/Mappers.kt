@@ -6,8 +6,9 @@ import com.petpal.app.domain.model.*
 fun PetEntity.toDomain() = Pet(
     id = id,
     name = name,
-    stage = enumValueOrDefault(stage, Stage.EGG),
+    stage = if (stage == "TEEN") Stage.KID else enumValueOrDefault(stage, Stage.EGG), // TEEN was renamed
     path = enumValueOrDefault(path, EvolutionPath.NONE),
+    species = enumValueOrDefault(species, Species.SPROUT),
     hunger = hunger,
     happiness = happiness,
     energy = energy,
@@ -20,6 +21,7 @@ fun Pet.toEntity() = PetEntity(
     name = name,
     stage = stage.name,
     path = path.name,
+    species = species.name,
     hunger = hunger,
     happiness = happiness,
     energy = energy,

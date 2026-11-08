@@ -6,14 +6,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 
 @Database(
-    entities = [PetEntity::class, HabitLogEntity::class, StepDayEntity::class],
-    version = 1,
+    entities = [PetEntity::class, HabitLogEntity::class, StepDayEntity::class, BattleLogEntity::class],
+    version = 2,
+    autoMigrations = [AutoMigration(from = 1, to = 2)],
 )
 @ConstructedBy(PetPalDatabaseConstructor::class)
 abstract class PetPalDatabase : RoomDatabase() {
     abstract fun petDao(): PetDao
     abstract fun habitLogDao(): HabitLogDao
     abstract fun stepDayDao(): StepDayDao
+    abstract fun battleLogDao(): BattleLogDao
 }
 
 // Room's KSP processor generates the actual implementations.

@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.dp
 
 /**
  * Neumorphic ("soft UI") surface: same color as the background, lifted by a dark
- * shadow bottom-right and a soft highlight top-left. When pressed (or [pressed] is
+ * shadow bottom-right (optional highlight top-left; off by default). When pressed (or [pressed] is
  * forced, e.g. a selected toggle) the shadows collapse and an inset shade appears.
  *
  * Shadows are faked with stacked translucent rounded rects so this stays pure common code.
@@ -57,7 +57,7 @@ fun Modifier.neumorphic(
                 )
             }
         }
-        layer(highlight, -off, -off)
+        if (highlight.alpha > 0f) layer(highlight, -off, -off)
         layer(shadow, off, off)
     }
 
@@ -80,13 +80,12 @@ private fun DrawScope.insetShade(r: Float, amount: Float, shadow: Color, highlig
     )
 }
 
-/** Theme-derived neumorphic colors. Dark-heavy shadows in both themes. */
+/** Theme-derived neumorphic colors. Dark shadow only: no white top-left glow. */
 @Composable
 fun neuColors(surface: Color = MaterialTheme.colorScheme.background): Triple<Color, Color, Color> {
     val isDark = surface.luminance() < 0.5f
     val shadow = if (isDark) Color.Black.copy(alpha = 0.85f) else Color(0xFF0B1A0E).copy(alpha = 0.32f)
-    val highlight = if (isDark) Color.White.copy(alpha = 0.07f) else Color.White.copy(alpha = 0.95f)
-    return Triple(surface, shadow, highlight)
+    return Triple(surface, shadow, Color.Transparent)
 }
 
 @Composable
