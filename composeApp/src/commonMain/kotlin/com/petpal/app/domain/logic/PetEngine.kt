@@ -1,6 +1,8 @@
 package com.petpal.app.domain.logic
 
 import com.petpal.app.domain.battle.Move
+import com.petpal.app.domain.battle.Passive
+import kotlin.random.Random
 import com.petpal.app.domain.battle.SpeciesKit
 import com.petpal.app.domain.model.*
 import kotlin.math.sqrt
@@ -84,9 +86,35 @@ object PetEngine {
     }
 
     /** Pets never devolve, even if an older version evolved them earlier. */
-    fun addXp(pet: Pet, xp: Int): Pet = (pet.xp + xp).let {
-        syncMoves(pet.copy(xp = it, stage = maxOf(pet.stage, stageFor(it))))
+    fun addXp(pet: Pet, xp: Int, rng: Random = Random.Default): Pet = (pet.xp + xp).let {
+        rollPassives(syncMoves(pet.copy(xp = it, stage = maxOf(pet.stage, stageFor(it)))), rng)
     }
+
+    /** One rolled passive per stage reached: Baby, Kid, Teen, Adult. */
+    private fun passivesOwed(stage: Stage) = stage.ordinal
+
+    fun needsPassiveRoll(pet: Pet) = pet.passives.size < passivesOwed(pet.stage)
+
+    /** Rolls one of the two options for every stage the pet reached without a roll yet. */
+    fun rollPassives(pet: Pet, rng: Random = Random.Default): Pet {
+        if (!needsPassiveRoll(pet)) return pet
+        val got = pet.passives.toMutableList()
+        while (got.size < passivesOwed(pet.stage)) {
+            val (a, b) = SpeciesKit.passiveOptions(pet.species, Stage.entries[got.size + 1])
+            got += if (rng.nextBoolean()) a else b
+        }
+        return pet.copy(passives = got)
+    }
+
+    /** The pet's passive right now. */
+    fun passive(pet: Pet): Passive = SpeciesKit.passiveFor(pet.species, pet.stage, passiveAt(pet, pet.stage))
+
+    /** Passive rolled at [stage], or null if the pet hasn't reached it (Egg shows its Baby options). */
+    fun passiveAt(pet: Pet, stage: Stage): Passive? = pet.passives.getOrNull((stage.ordinal - 1).coerceAtLeast(0))
+
+    fun fighterInfo(pet: Pet, stage: Stage = pet.stage) = com.petpal.app.domain.battle.FighterInfo(
+        pet.name, pet.species, stage, levelFor(pet.xp), battleMoves(pet), passiveAt(pet, stage),
+    )
 
     /** Moves unlocked by the pet's level that it hasn't been offered yet, in unlock order. */
     fun pendingMoves(pet: Pet): List<Move> {
@@ -120,6 +148,20 @@ object PetEngine {
         return syncMoves(pet.copy(moves = moves, seenMoves = pet.seenMoves + move))
     }
 
+    /** The current stage's two unique options while the player hasn't picked one yet, else null. */
+    fun pendingUnique(pet: Pet): Pair<Move, Move>? =
+        SpeciesKit.uniqueOptions(pet.species, pet.stage)?.takeIf { (a, b) -> a !in pet.uniquePicks && b !in pet.uniquePicks }
+
+    /** Locks in [move] as this stage's unique. Only one of the pair can ever be picked. */
+    fun pickUnique(pet: Pet, move: Move): Pet {
+        val options = pendingUnique(pet) ?: return pet
+        if (move != options.first && move != options.second) return pet
+        return pet.copy(uniquePicks = pet.uniquePicks + move)
+    }
+
+    /** Everything a battle needs: learned moves plus picked uniques. */
+    fun battleMoves(pet: Pet): List<Move> = pet.moves + pet.uniquePicks
+
     /** One relearn point every this many levels (Lv 10, 20, ... 100 = 10 points total). */
     const val RELEARN_EVERY = 10
 
@@ -145,21 +187,24 @@ object PetEngine {
     }
 
     /**
-     * Swapping partners is earned by walking with the current one. Either way the new pet
-     * starts over as a Lv 1 egg; the counter restarts from the reset.
+     * New pets are unlocked by walking: a random one every 10k steps, or one you pick at 50k.
+     * The counter restarts at each unlock. Unlocked pets start as Lv 1 eggs; only the active pet grows.
      */
-    enum class ResetKind(val steps: Long, val label: String) {
+    enum class UnlockKind(val steps: Long, val label: String) {
         RANDOM(10_000, "Random pet"),
-        CHOOSE(50_000, "Choose your pet"),
+        CHOOSE(50_000, "Choose a pet"),
     }
 
-    fun stepsSinceReset(pet: Pet, lifetimeSteps: Long) = (lifetimeSteps - pet.stepsAtReset).coerceAtLeast(0)
+    /** Steps walked since the newest pet was adopted or unlocked. */
+    fun stepsSinceUnlock(pets: List<Pet>, lifetimeSteps: Long) =
+        (lifetimeSteps - (pets.maxOfOrNull { it.stepsAtReset } ?: 0)).coerceAtLeast(0)
 
-    fun canReset(pet: Pet, lifetimeSteps: Long, kind: ResetKind) = stepsSinceReset(pet, lifetimeSteps) >= kind.steps
+    fun canUnlock(pets: List<Pet>, lifetimeSteps: Long, kind: UnlockKind) =
+        pets.size < Species.entries.size && stepsSinceUnlock(pets, lifetimeSteps) >= kind.steps
 
-    /** A fresh Lv 1 egg of [species] that keeps the name. */
-    fun reset(old: Pet, species: Species, now: Long, lifetimeSteps: Long): Pet =
-        syncMoves(Pet(name = old.name, species = species, lastUpdated = now, stepsAtReset = lifetimeSteps))
+    /** A fresh Lv 1 egg of [species], named after it. */
+    fun newPet(id: Long, species: Species, now: Long, lifetimeSteps: Long): Pet =
+        syncMoves(Pet(id = id, name = species.label, species = species, lastUpdated = now, stepsAtReset = lifetimeSteps))
 
     const val STEP_XP = 120 // per 1,000 steps
 }

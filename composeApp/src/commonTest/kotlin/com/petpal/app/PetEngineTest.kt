@@ -1,6 +1,7 @@
 package com.petpal.app
 
 import com.petpal.app.domain.battle.Move
+import com.petpal.app.domain.battle.Passive
 import com.petpal.app.domain.battle.SpeciesKit
 import com.petpal.app.domain.logic.*
 import com.petpal.app.domain.model.*
@@ -26,6 +27,52 @@ class PetEngineTest {
         assertEquals(0, PetEngine.xpToNextStage(adult))
     }
 
+    @Test fun pickOneUniquePerStage() {
+        val kid = base.copy(species = Species.DRAKE, xp = PetEngine.xpForLevel(PetEngine.KID_LEVEL), stage = Stage.KID)
+        val (a, b) = PetEngine.pendingUnique(kid)!!
+        val picked = PetEngine.pickUnique(kid, b)
+        assertEquals(listOf(b), picked.uniquePicks)
+        assertNull(PetEngine.pendingUnique(picked))
+        assertEquals(picked, PetEngine.pickUnique(picked, a)) // can't take the other one too
+        assertEquals(b, SpeciesKit.unique(Species.DRAKE, Stage.KID, picked.uniquePicks))
+        // reaching Teen asks again
+        val teen = PetEngine.addXp(picked, PetEngine.xpForLevel(PetEngine.TEEN_LEVEL))
+        assertEquals(SpeciesKit.uniqueOptions(Species.DRAKE, Stage.TEEN), PetEngine.pendingUnique(teen))
+    }
+
+    @Test fun evolvingRollsOneOfTheStagesTwoPassives() {
+        val egg = base.copy(species = Species.DRAKE)
+        assertTrue(egg.passives.isEmpty())
+        val adult = PetEngine.addXp(egg, PetEngine.xpForLevel(PetEngine.ADULT_LEVEL), kotlin.random.Random(3))
+        assertEquals(Stage.ADULT, adult.stage)
+        assertEquals(4, adult.passives.size) // Baby, Kid, Teen, Adult
+        listOf(Stage.BABY, Stage.KID, Stage.TEEN, Stage.ADULT).forEachIndexed { i, st ->
+            val (a, b) = SpeciesKit.passiveOptions(Species.DRAKE, st)
+            assertTrue(adult.passives[i] == a || adult.passives[i] == b, st.name)
+        }
+        assertEquals(adult.passives.last(), PetEngine.passive(adult))
+        assertEquals(adult, PetEngine.rollPassives(adult)) // already rolled: stays put
+        // both options of a stage come up
+        val rolls = (0 until 20).map { PetEngine.addXp(egg, PetEngine.xpForLevel(PetEngine.HATCH_LEVEL), kotlin.random.Random(it)).passives.single() }
+        assertEquals(SpeciesKit.passiveOptions(Species.DRAKE, Stage.BABY).toList().toSet(), rolls.toSet())
+        // it reaches battles and survives the link protocol
+        val info = PetEngine.fighterInfo(adult)
+        assertEquals(adult.passives.last(), info.passive)
+        val back = com.petpal.app.domain.battle.Protocol.parse(com.petpal.app.domain.battle.Protocol.hello(info))
+            as com.petpal.app.domain.battle.Protocol.Hello
+        assertEquals(info.passive, back.info.passive)
+        // a passive that isn't one of the stage's options is ignored
+        assertEquals(Passive.BLAZE, com.petpal.app.domain.battle.FighterInfo("X", Species.DRAKE, Stage.BABY, stagePassive = Passive.VAMPIRE).passive)
+    }
+
+    @Test fun everyStageHasTwoDistinctPassives() {
+        Species.entries.forEach { s ->
+            val all = SpeciesKit.passiveOptions(s).flatMap { it.toList() }
+            assertEquals(8, all.toSet().size, s.name)
+            assertEquals(SpeciesKit.passive(s), all.first(), s.name)
+        }
+    }
+
     @Test fun teenStageSitsBetweenKidAndAdult() {
         assertEquals(Stage.KID, PetEngine.stageFor(PetEngine.xpForLevel(PetEngine.TEEN_LEVEL - 1)))
         assertEquals(Stage.TEEN, PetEngine.stageFor(PetEngine.xpForLevel(PetEngine.TEEN_LEVEL)))
@@ -48,22 +95,23 @@ class PetEngineTest {
         assertEquals(0, PetEngine.relearnPoints(base.copy(xp = PetEngine.xpForLevel(9))))
     }
 
-    @Test fun resetNeedsStepsAndStartsOverAtLevelOne() {
-        val old = PetEngine.syncMoves(base.copy(species = Species.DRAKE, xp = PetEngine.xpForLevel(40), relearnsUsed = 2,
-            stepsAtReset = 5_000))
-        assertFalse(PetEngine.canReset(old, 14_999, PetEngine.ResetKind.RANDOM))
-        assertTrue(PetEngine.canReset(old, 15_000, PetEngine.ResetKind.RANDOM))
-        assertFalse(PetEngine.canReset(old, 54_999, PetEngine.ResetKind.CHOOSE))
-        assertTrue(PetEngine.canReset(old, 55_000, PetEngine.ResetKind.CHOOSE))
+    @Test fun unlockNeedsStepsAndStartsAtLevelOne() {
+        val old = PetEngine.syncMoves(base.copy(species = Species.DRAKE, xp = PetEngine.xpForLevel(40), stepsAtReset = 5_000))
+        val pets = listOf(old)
+        assertFalse(PetEngine.canUnlock(pets, 14_999, PetEngine.UnlockKind.RANDOM))
+        assertTrue(PetEngine.canUnlock(pets, 15_000, PetEngine.UnlockKind.RANDOM))
+        assertFalse(PetEngine.canUnlock(pets, 54_999, PetEngine.UnlockKind.CHOOSE))
+        assertTrue(PetEngine.canUnlock(pets, 55_000, PetEngine.UnlockKind.CHOOSE))
 
-        val fresh = PetEngine.reset(old, Species.OTTER, now = 1L, lifetimeSteps = 55_000)
+        val fresh = PetEngine.newPet(2, Species.OTTER, now = 1L, lifetimeSteps = 55_000)
         assertEquals(1, PetEngine.levelFor(fresh.xp))
         assertEquals(Stage.EGG, fresh.stage)
-        assertEquals(Species.OTTER, fresh.species)
-        assertEquals("Mochi", fresh.name)
-        assertEquals(0, fresh.relearnsUsed)
+        assertEquals("Otter", fresh.name)
         assertEquals(SpeciesKit.starters(Species.OTTER), fresh.moves)
-        assertEquals(0, PetEngine.stepsSinceReset(fresh, 55_000)) // counter restarts
+        assertEquals(0, PetEngine.stepsSinceUnlock(pets + fresh, 55_000)) // counter restarts
+        // nothing left to unlock once every species is owned
+        val all = Species.entries.mapIndexed { i, s -> PetEngine.newPet(i.toLong(), s, 0, 0) }
+        assertFalse(PetEngine.canUnlock(all, 1_000_000, PetEngine.UnlockKind.RANDOM))
     }
 
     @Test fun evolvesByLevelFifty() {

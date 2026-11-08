@@ -38,8 +38,11 @@ class BattleTest {
             val cpu = CpuOpponent.random(me, Random(seed))
             assertEquals(30, cpu.level)
             assertEquals(Stage.KID, cpu.stage)
-            assertEquals(SpeciesKit.MAX_MOVES, cpu.moves.size)
-            assertTrue(cpu.moves.all { SpeciesKit.canLearn(cpu.species, it) && it.level <= 30 })
+            val (normal, unique) = cpu.moves.partition { it.category != MoveCategory.UNIQUE }
+            assertEquals(SpeciesKit.MAX_MOVES, normal.size)
+            assertTrue(normal.all { SpeciesKit.canLearn(cpu.species, it) && it.level <= 30 })
+            assertEquals(1, unique.size) // one of its Kid options
+            assertEquals(Stage.KID, SpeciesKit.uniqueStage(cpu.species, unique.single()))
         }
     }
 
@@ -76,12 +79,25 @@ class BattleTest {
         assertEquals(emptyList(), u(Stage.EGG))
         assertEquals(listOf(Move.FLAME_BURST), u(Stage.BABY))
         assertEquals(listOf(Move.INFERNO), u(Stage.KID))
+        assertEquals(listOf(Move.WING_BLAZE), u(Stage.TEEN))
         assertEquals(listOf(Move.DRAGON_FURY), u(Stage.ADULT))
+    }
+
+    @Test fun pickedUniqueReplacesTheDefault() {
+        val (a, b) = SpeciesKit.uniqueOptions(Species.DRAKE, Stage.KID)!!
+        assertEquals(Move.INFERNO, a)
+        val picked = FighterInfo("D", Species.DRAKE, Stage.KID, 30, listOf(b, Move.SMOKE_PUFF))
+        assertEquals(listOf(b), picked.loadout.filter { it.category == MoveCategory.UNIQUE }) // other stages' picks ignored
+        // every pet has a buff-or-debuff unique option somewhere
+        Species.entries.forEach { s ->
+            assertTrue(SpeciesKit.allUniques(s).any { it.damage == 0 }, s.name)
+        }
     }
 
     @Test fun moveCatalog() {
         assertTrue(Move.entries.size >= 100)
-        val uniques = Species.entries.flatMap { SpeciesKit.uniques(it).toList() }
+        val uniques = Species.entries.flatMap { SpeciesKit.allUniques(it) }
+        assertEquals(uniques.size, uniques.toSet().size) // no unique is shared
         assertEquals(uniques.toSet(), Move.entries.filter { it.category == MoveCategory.UNIQUE }.toSet())
         Species.entries.forEach { s ->
             val set = SpeciesKit.learnset(s).map { it.move }
@@ -236,8 +252,8 @@ class HitboxTest {
         assertTrue(e.snapshot(Move.BARRIER.windupMs).fighters[0].has(Status.SHIELD))
         e.tick(Move.BARRIER.windupMs + Mechanics.SHIELD_MS + 100)
         assertFalse(e.snapshot(Move.BARRIER.windupMs + Mechanics.SHIELD_MS + 100).fighters[0].has(Status.SHIELD))
-        val beaver = BattleEngine(listOf(FighterInfo("B", Species.BEAVER, Stage.KID, 1), b), Random(1))
-        assertTrue(beaver.snapshot(0).fighters[0].has(Status.SHIELD)) // Dam Builder starts shielded
+        val beaver = BattleEngine(listOf(FighterInfo("B", Species.BEAVER, Stage.BABY, 1), b), Random(1))
+        assertTrue(beaver.snapshot(0).fighters[0].has(Status.SHIELD)) // Dam Builder (its Baby passive) starts shielded
     }
 
     @Test fun trapRootsWhoeverStepsOnIt() {

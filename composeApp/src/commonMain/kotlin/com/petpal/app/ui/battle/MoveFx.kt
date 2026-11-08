@@ -8,6 +8,8 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotateRad
 import androidx.compose.ui.unit.dp
+import com.petpal.app.domain.battle.Effect
+import com.petpal.app.domain.battle.Element
 import com.petpal.app.domain.battle.Move
 import com.petpal.app.ui.battle.Glyph.*
 import com.petpal.app.ui.battle.Motion.*
@@ -325,7 +327,44 @@ internal val Move.fx: List<Layer>
                 Move.FLIPPER_SLAP -> listOf(L(DROP, BURST, 6), L(STAR, STAMP, 1))
                 Move.ICE_FLOE -> listOf(L(SHARD, TRAIL, 8), L(SNOW, BURST, 6))
                 Move.ARCTIC_TIDE -> listOf(L(DROP, SWEEP, 12, 1.2f), L(SHARD, BURST, 8), L(SNOW, RAIN, 8))
+                else -> genericFx() // stage-option uniques: built from their type and effect
     }
+
+/** Effect built from a move's type and effect, used by the per-stage unique options. */
+private fun Move.genericFx(): List<Layer> {
+    val big = 1f + damage / 40f
+    val typeGlyph = when (element) {
+        Element.FIRE -> FLAME; Element.WATER -> DROP; Element.GRASS -> LEAF; Element.ICE -> SNOW
+        Element.ELECTRIC -> BOLT; Element.FLYING -> FEATHER; Element.GROUND -> ROCK; Element.FIGHTING -> FIST
+        Element.NORMAL -> STAR
+    }
+    val second = element2?.let {
+        when (it) {
+            Element.FIRE -> Glyph.EMBER; Element.WATER -> Glyph.BUBBLE; Element.GRASS -> PETAL; Element.ICE -> SHARD
+            Element.ELECTRIC -> SPARK; Element.FLYING -> WIND; Element.GROUND -> SAND; Element.FIGHTING -> FIST
+            Element.NORMAL -> STAR
+        }
+    }
+    val main = when (effect) {
+        Effect.HEAL, Effect.AID, Effect.PACK_CALL -> listOf(L(PLUS, RISE, 6), L(typeGlyph, ORBIT, 4))
+        Effect.SHIELD, Effect.HARDEN, Effect.FORTRESS, Effect.CITADEL, Effect.GUARD ->
+            listOf(L(SHIELD, STAMP, 1, 1.8f), L(typeGlyph, ORBIT, 5))
+        Effect.COUNTER -> listOf(L(SHIELD, STAMP, 1, 1.3f, Color.White), L(typeGlyph, ORBIT, 3))
+        Effect.RAGE, Effect.BATTLE_CRY, Effect.ALPHA -> listOf(L(ARROW, RISE, 4, 1.2f), L(typeGlyph, BURST, 6))
+        Effect.HASTE -> listOf(L(WIND, ORBIT, 5), L(typeGlyph, TRAIL, 4))
+        Effect.ENERGIZE -> listOf(L(SPARK, CONVERGE, 8, 1f, Gold), L(typeGlyph, RISE, 3))
+        Effect.BLINK, Effect.SMOKE -> listOf(L(SMOKE, BURST, 6), L(typeGlyph, SPIRAL, 4))
+        Effect.WEAKEN, Effect.MARK, Effect.DISRUPT -> listOf(L(EYE, STAMP, 1, 1.3f), L(typeGlyph, SPIRAL, 5))
+        Effect.SLOW, Effect.ROOT, Effect.FREEZE, Effect.PARALYZE -> listOf(L(typeGlyph, CONVERGE, 8), L(RING, STAMP, 2))
+        Effect.LEECH, Effect.DRAIN, Effect.SIPHON -> listOf(L(typeGlyph, TRAIL, 5), L(HEART, CONVERGE, 4, 0.8f, Pink))
+        Effect.MULTI -> listOf(L(typeGlyph, TRAIL, 8, 0.9f), L(STAR, BURST, 4))
+        Effect.VANISH -> listOf(L(SMOKE, GROUND, 6), L(typeGlyph, RAIN, 6), L(STAR, STAMP, 1, big))
+        Effect.TRAP -> listOf(L(typeGlyph, GROUND, 6), L(RING, STAMP, 1, 1.4f))
+        Effect.KNOCKBACK, Effect.STUN -> listOf(L(typeGlyph, BURST, 8, big), L(STAR, SPIRAL, 3, 1f, Gold))
+        else -> listOf(L(typeGlyph, TRAIL, 6, big), L(STAR, STAMP, 1, big))
+    }
+    return main + listOfNotNull(second?.let { L(it, BURST, 5) })
+}
 
 private fun rnd(seed: Int): Float {
     var x = seed * 0x27d4eb2d + 0x165667b1

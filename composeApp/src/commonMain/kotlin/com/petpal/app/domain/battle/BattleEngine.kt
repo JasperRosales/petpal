@@ -17,8 +17,10 @@ data class FighterInfo(
     val stage: Stage,
     val level: Int = 1,
     val moves: List<Move> = emptyList(),
+    /** Passive rolled for this stage; anything that isn't one of the stage's two options falls back to the first. */
+    val stagePassive: Passive? = null,
 ) {
-    val passive get() = SpeciesKit.passive(species)
+    val passive get() = SpeciesKit.passiveFor(species, stage, stagePassive)
     /** Learned moves the species can really use at this level, plus the stage's unique. */
     val loadout: List<Move> = SpeciesKit.loadout(species, stage, level, moves)
 }
@@ -43,6 +45,8 @@ object BattleStats {
             f.passive == Passive.BLAZE && m.isFire -> 1.25f
             f.passive == Passive.ICE_BODY && Element.ICE in m.elements -> 1.15f
             f.passive == Passive.IRON_FIST && m.isPunch -> 1.25f
+            ELEMENT_BOOST[f.passive]?.let { it in m.elements } == true -> 1.2f
+            f.passive == Passive.FOCUS && m.category != MoveCategory.NORMAL -> 1.2f
             else -> 1f
         }
         return m.damage * power(f.stage) * boost
@@ -56,7 +60,18 @@ object BattleStats {
         else -> m.cooldownMs.toFloat()
     }).toLong()
 
-    fun speed(f: FighterInfo) = if (f.passive == Passive.QUICK_FEET) 0.25f else 0.2f
+    fun speed(f: FighterInfo) = when (f.passive) {
+        Passive.QUICK_FEET -> 0.25f
+        Passive.SWIFT -> 0.23f
+        else -> 0.2f
+    }
+
+    /** Passives that boost one type's moves. */
+    val ELEMENT_BOOST = mapOf(
+        Passive.TORRENT to Element.WATER, Passive.OVERGROW to Element.GRASS, Passive.FROSTBITE to Element.ICE,
+        Passive.VOLTAGE to Element.ELECTRIC, Passive.AERIAL to Element.FLYING, Passive.SAND_FORCE to Element.GROUND,
+        Passive.MARTIAL to Element.FIGHTING,
+    )
 }
 
 object Status {
@@ -381,9 +396,10 @@ class BattleEngine(
         f.forEachIndexed { i, me ->
             if (!alive(i)) return@forEachIndexed
             val opp = target(me)
-            if (now < me.burnUntil) hurt(me, 2f * dt, now, events, silent = true)
+            val dot = if (me.passive == Passive.ENDURANCE) 0.5f else 1f
+            if (now < me.burnUntil) hurt(me, 2f * dot * dt, now, events, silent = true)
             if (now < me.leechUntil && me.hp > 0) {
-                hurt(me, 1.5f * dt, now, events, silent = true)
+                hurt(me, 1.5f * dot * dt, now, events, silent = true)
                 val by = f[me.leechBy]
                 if (by.hp > 0) by.hp = minOf(by.maxHp.toFloat(), by.hp + 1.5f * dt)
             }
@@ -391,7 +407,7 @@ class BattleEngine(
             if (me.homeTurf) charge *= Terrain.HOME_ENERGY
             charge *= terrain.energyScale
             if (terrain.hpPerSec > 0 && me.hp > 0) me.hp = minOf(me.maxHp.toFloat(), me.hp + terrain.hpPerSec * dt)
-            if (terrain.hpPerSec < 0 && me.hp > 1) me.hp = maxOf(1f, me.hp + terrain.hpPerSec * dt)
+            if (terrain.hpPerSec < 0 && me.hp > 1) me.hp = maxOf(1f, me.hp + terrain.hpPerSec * dot * dt)
             me.energy = minOf(BattleRules.MAX_ENERGY.toFloat(), me.energy + charge * dt)
             if (me.passive == Passive.PHOTOSYNTHESIS && me.hp > 0) me.hp = minOf(me.maxHp.toFloat(), me.hp + 0.6f * dt)
             if (me.passive == Passive.REGROW && me.hp > 0 && me.hp < me.maxHp / 2f) me.hp += 1.2f * dt
@@ -501,6 +517,7 @@ class BattleEngine(
             if (now < me.slowUntil) speed *= 0.5f
             if (now < me.paralyzeUntil) speed *= 0.7f
             if (me.homeTurf) speed *= Terrain.HOME_SPEED
+            if (me.passive == Passive.ADRENALINE && me.hp < me.maxHp * 0.3f) speed *= 1.2f
             speed *= terrain.speedScale
         }
         val dx = me.tx - me.x
@@ -515,7 +532,7 @@ class BattleEngine(
 
     private fun selfEffect(me: Fighter, opp: Fighter, m: Move, now: Long, events: MutableList<String>) {
         fun heal(pct: Float) {
-            val amount = me.maxHp * pct
+            val amount = me.maxHp * pct * if (me.passive == Passive.MEDIC) 1.5f else 1f
             me.hp = minOf(me.maxHp.toFloat(), me.hp + amount)
             events += "${me.info.name} heals ${amount.roundToInt()} HP"
         }
@@ -569,7 +586,8 @@ class BattleEngine(
                 val team = teams[f.indexOf(me)]
                 f.indices.filter { teams[it] == team && alive(it) }.forEach { i ->
                     val ally = f[i]
-                    ally.hp = minOf(ally.maxHp.toFloat(), ally.hp + ally.maxHp * Mechanics.AID_HEAL)
+                    val boost = if (me.passive == Passive.MEDIC) 1.5f else 1f
+                    ally.hp = minOf(ally.maxHp.toFloat(), ally.hp + ally.maxHp * Mechanics.AID_HEAL * boost)
                 }
                 events += if (f.size > 2) "$name patches up the team!" else "$name heals ${(me.maxHp * Mechanics.AID_HEAL).roundToInt()} HP"
             }
@@ -632,7 +650,18 @@ class BattleEngine(
         var dmg = BattleStats.baseDamage(me.info, m) * hits * (0.85f + rng.nextFloat() * 0.3f)
         if (now < me.rageUntil) dmg *= 1.3f
         val crit = terrain.critChance > 0 && rng.nextFloat() < terrain.critChance
-        if (crit) dmg *= Terrain.CRIT
+        val lucky = me.passive == Passive.LUCKY && rng.nextFloat() < 0.1f
+        if (crit || lucky) dmg *= Terrain.CRIT
+        val melee = m.shape == HitShape.MELEE
+        when (me.passive) {
+            Passive.ADRENALINE -> if (me.hp < me.maxHp * 0.3f) dmg *= 1.2f
+            Passive.SNIPER -> if (hypot(me.x - opp.x, me.y - opp.y) > 0.3f) dmg *= 1.2f
+            Passive.BRAWLER -> if (melee) dmg *= 1.15f
+            Passive.GUTS -> if (now < me.burnUntil || now < me.slowUntil || now < me.paralyzeUntil) dmg *= 1.3f
+            Passive.BERSERK -> dmg *= 1f + 0.4f * (1f - me.hp / me.maxHp).coerceIn(0f, 1f)
+            else -> Unit
+        }
+        if (opp.passive == Passive.GRIT && opp.hp < opp.maxHp / 2f) dmg *= 0.8f
         if (now < me.weakenUntil) dmg *= 0.7f
         if (me.passive == Passive.LOYAL_HEART && me.hp < me.maxHp / 2f) dmg *= 1.25f
         if (m.effect == Effect.EXECUTE && opp.hp < opp.maxHp * 0.3f) dmg *= 2f
@@ -659,7 +688,15 @@ class BattleEngine(
         val toHp = absorb(opp, dealt.toFloat())
         hurt(opp, toHp, now, events)
         if (me.passive == Passive.VAMPIRE) me.hp = minOf(me.maxHp.toFloat(), me.hp + dealt * 0.1f)
-        if (me.passive == Passive.CHATTER && rng.nextFloat() < 0.25f) opp.weakenUntil = maxOf(opp.weakenUntil, now + 3000)
+        if (melee && opp.passive == Passive.STATIC_FUR && me.passive != Passive.SLIPPERY && rng.nextFloat() < 0.25f) {
+            me.paralyzeUntil = maxOf(me.paralyzeUntil, now + 3000)
+            events += "$name is paralyzed by static!"
+        }
+        if (melee && opp.passive == Passive.FLAME_BODY && me.passive != Passive.ICE_BODY && rng.nextFloat() < 0.25f) {
+            me.burnUntil = maxOf(me.burnUntil, now + 3000)
+            events += "$name is burned by ${opp.info.name}'s flames!"
+        }
+        if (me.passive == Passive.CHATTER && opp.passive != Passive.IRON_WILL && rng.nextFloat() < 0.25f) opp.weakenUntil = maxOf(opp.weakenUntil, now + 3000)
         if (opp.passive == Passive.SPIKY && m.shape == HitShape.MELEE) hurt(me, dealt * 0.2f, now, events, silent = true)
         if (me.passive == Passive.STICKY_PAWS) {
             val stolen = minOf(8f, opp.energy)
@@ -669,7 +706,7 @@ class BattleEngine(
         me.energy = minOf(BattleRules.MAX_ENERGY.toFloat(), me.energy + dealt * 1.5f)
         opp.energy = minOf(BattleRules.MAX_ENERGY.toFloat(), opp.energy + dealt * 0.8f)
         val times = if (hits > 1) " ($hits hits)" else ""
-        val notes = listOfNotNull("critical".takeIf { crit }, "guarded".takeIf { guarded }, "shielded".takeIf { toHp < dealt })
+        val notes = listOfNotNull("critical".takeIf { crit || lucky }, "guarded".takeIf { guarded }, "shielded".takeIf { toHp < dealt })
         events += "${m.label} hits $target for $dealt$times" + if (notes.isEmpty()) "" else notes.joinToString(", ", " (", ")")
 
         when (m.effect) {
@@ -721,10 +758,10 @@ class BattleEngine(
             Effect.FREEZE -> if (immune) null else { stun((1500 * terrain.chillScale).toLong()); "$target is frozen!" }
             Effect.ROOT -> if (immune) null else { opp.rootUntil = now + 2500; "$target is trapped!" }
             Effect.PARALYZE -> if (immune) null else { opp.paralyzeUntil = now + 4000; "$target is paralyzed!" }
-            Effect.WEAKEN -> { opp.weakenUntil = now + 5000; "$target is weakened" }
+            Effect.WEAKEN -> if (opp.passive == Passive.IRON_WILL) null else { opp.weakenUntil = now + 5000; "$target is weakened" }
             Effect.LEECH -> { opp.leechUntil = now + 5000; if (by != null) opp.leechBy = f.indexOf(by); "$target is seeded" }
             Effect.MARK -> { opp.markUntil = now + Mechanics.MARK_MS; "$target is marked!" }
-            Effect.DISRUPT -> {
+            Effect.DISRUPT -> if (opp.passive == Passive.IRON_WILL) null else {
                 opp.info.loadout.forEach { mv ->
                     opp.readyAt[mv.ordinal] = maxOf(opp.readyAt[mv.ordinal], now) + Mechanics.DISRUPT_MS
                 }

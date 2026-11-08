@@ -28,9 +28,9 @@ class DocsGenerator {
         "|---|---|---|---|---|---|---|---|---|---|"
 
     private fun owner(m: Move): String {
-        val s = Species.entries.first { SpeciesKit.uniques(it).toList().contains(m) }
-        val tier = when (m) { SpeciesKit.uniques(s).first -> "Baby"; SpeciesKit.uniques(s).second -> "Kid/Teen"; else -> "Adult" }
-        return "${s.label} $tier"
+        val s = Species.entries.first { m in SpeciesKit.allUniques(it) }
+        val st = SpeciesKit.uniqueStage(s, m)!!
+        return "${s.label} ${st.name.lowercase().replaceFirstChar { it.uppercase() }}"
     }
 
     private fun moves() = buildString {
@@ -58,10 +58,10 @@ class DocsGenerator {
         appendLine()
         appendLine("## Uniques")
         appendLine()
-        appendLine("Each species gets a Baby unique that upgrades at Kid (Lv ${com.petpal.app.domain.logic.PetEngine.KID_LEVEL}, kept through Teen at Lv ${com.petpal.app.domain.logic.PetEngine.TEEN_LEVEL}) and Adult (Lv ${com.petpal.app.domain.logic.PetEngine.ADULT_LEVEL}).")
+        appendLine("Each species has two unique options per stage (Baby, Kid, Teen, Adult). The player picks one when the pet reaches the stage and keeps it for good. Uniques can be attacks, buffs or debuffs.")
         appendLine()
         appendLine(header.replace("| Lv |", "| Owner |"))
-        Species.entries.flatMap { SpeciesKit.uniques(it).toList() }.forEach { appendLine(it.row(owner(it))) }
+        Species.entries.flatMap { SpeciesKit.allUniques(it) }.forEach { appendLine(it.row(owner(it))) }
     }
 
     private fun pets() = buildString {
@@ -72,26 +72,28 @@ class DocsGenerator {
         appendLine("${Species.entries.size} species. Every pet starts with ${SpeciesKit.STARTERS} moves, keeps up to ${SpeciesKit.MAX_MOVES}, and has its unique in slot 5.")
         appendLine("Base HP: Egg 85, Baby 100, Kid 115, Teen 122, Adult 130 (the same multiplier scales damage).")
         appendLine()
-        appendLine("| Pet | Types | Passive | Uniques (Baby / Kid / Adult) |")
-        appendLine("|---|---|---|---|")
+        appendLine("Every stage (Baby, Kid, Teen, Adult) has two passive options. When the pet hatches or evolves, one of the two is rolled at random.")
+        appendLine()
+        appendLine("| Pet | Types | Baby | Kid | Teen | Adult |")
+        appendLine("|---|---|---|---|---|---|")
         Species.entries.forEach { s ->
-            val p = SpeciesKit.passive(s)
-            val u = SpeciesKit.uniques(s)
-            appendLine("| [${s.label}](#${s.label.lowercase()}) | ${types(s)} | ${p.label} | ${u.first.label} / ${u.second.label} / ${u.third.label} |")
+            appendLine("| [${s.label}](#${s.label.lowercase()}) | ${types(s)} | " +
+                SpeciesKit.passiveOptions(s).joinToString(" | ") { (a, b) -> "${a.label} / ${b.label}" } + " |")
         }
         Species.entries.forEach { s ->
-            val p = SpeciesKit.passive(s)
-            val u = SpeciesKit.uniques(s)
             appendLine()
             appendLine("## ${s.label}")
             appendLine()
             appendLine("_${s.trait}_")
             appendLine()
             appendLine("- **Types:** ${types(s)}")
-            appendLine("- **Passive, ${p.label}:** ${p.description}")
+            val stages = listOf(Stage.BABY, Stage.KID, Stage.TEEN, Stage.ADULT)
+            appendLine("- **Passive options by stage (one is rolled):**")
+            stages.forEach { st -> SpeciesKit.passiveOptions(s, st).let { (a, b) -> appendLine("  - ${st.name.lowercase().replaceFirstChar { it.uppercase() }}: **${a.label}** (${a.description}) or **${b.label}** (${b.description})") } }
             appendLine("- **Max HP:** ${Stage.entries.joinToString(" / ") { st -> "${st.name.lowercase().replaceFirstChar { it.uppercase() }} ${BattleStats.maxHp(FighterInfo("", s, st))}" }}")
             appendLine("- **Starters:** ${SpeciesKit.starters(s).joinToString { it.label }}")
-            appendLine("- **Uniques:** ${u.first.label} (Baby) → ${u.second.label} (Kid) → ${u.third.label} (Adult)")
+            appendLine("- **Unique options by stage (pick one):**")
+            stages.forEach { st -> SpeciesKit.uniqueOptions(s, st)!!.let { (a, b) -> appendLine("  - ${st.name.lowercase().replaceFirstChar { it.uppercase() }}: ${a.label} or ${b.label}") } }
             val extras = SpeciesKit.extras(s)
             if (extras.isNotEmpty()) appendLine("- **Off-type moves it can learn:** ${extras.joinToString { it.label }}")
             appendLine("- **Can never learn:** ${SpeciesKit.banned(s).joinToString { it.label }}")

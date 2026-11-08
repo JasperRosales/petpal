@@ -19,6 +19,10 @@ data class PetEntity(
     @ColumnInfo(defaultValue = "") val seenMoves: String = "",
     @ColumnInfo(defaultValue = "0") val relearnsUsed: Int = 0,
     @ColumnInfo(defaultValue = "0") val stepsAtReset: Long = 0,
+    /** The one pet that earns XP and battles. Exactly one row is active. */
+    @ColumnInfo(defaultValue = "1") val active: Boolean = true,
+    @ColumnInfo(defaultValue = "") val uniquePicks: String = "", // comma-separated Move names
+    @ColumnInfo(defaultValue = "") val passives: String = "", // comma-separated Passive names, one per evolution
 )
 
 @Entity(tableName = "habit_log")
@@ -51,11 +55,20 @@ data class StepDayEntity(
 
 @Dao
 interface PetDao {
-    @Query("SELECT * FROM pet WHERE id = 1")
+    @Query("SELECT * FROM pet WHERE active = 1 LIMIT 1")
     fun observePet(): Flow<PetEntity?>
 
-    @Query("SELECT * FROM pet WHERE id = 1")
+    @Query("SELECT * FROM pet WHERE active = 1 LIMIT 1")
     suspend fun getPet(): PetEntity?
+
+    @Query("SELECT * FROM pet ORDER BY id")
+    fun observeAll(): Flow<List<PetEntity>>
+
+    @Query("SELECT * FROM pet ORDER BY id")
+    suspend fun getAll(): List<PetEntity>
+
+    @Query("UPDATE pet SET active = CASE WHEN id = :id THEN 1 ELSE 0 END")
+    suspend fun setActive(id: Long)
 
     @Upsert
     suspend fun upsert(pet: PetEntity)

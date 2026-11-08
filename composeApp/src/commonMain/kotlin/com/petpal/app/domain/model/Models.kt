@@ -53,7 +53,9 @@ data class Pet(
     val moves: List<Move> = emptyList(), // learned moves, at most SpeciesKit.MAX_MOVES
     val seenMoves: Set<Move> = emptySet(), // moves already offered (learned or declined)
     val relearnsUsed: Int = 0, // relearn points spent; see PetEngine.relearnPoints
-    val stepsAtReset: Long = 0, // lifetime step total when this pet was adopted/reset; see PetEngine.ResetKind
+    val uniquePicks: List<Move> = emptyList(),
+    val passives: List<com.petpal.app.domain.battle.Passive> = emptyList(), // rolled on evolving: Kid, Teen, Adult // the chosen unique of each stage's pair; see SpeciesKit.uniqueOptions
+    val stepsAtReset: Long = 0, // lifetime step total when this pet was adopted/unlocked; see PetEngine.UnlockKind
 )
 
 data class BattleRecord(

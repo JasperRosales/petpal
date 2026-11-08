@@ -29,11 +29,15 @@ import com.petpal.app.ui.battle.BattleViewModel
 import com.petpal.app.ui.battle.LocalBattleFullscreen
 import com.petpal.app.ui.habits.HabitsScreen
 import com.petpal.app.ui.home.HomeScreen
+import com.petpal.app.ui.pets.PetsScreen
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Pets
 import com.petpal.app.ui.stats.StatsScreen
 import com.petpal.app.ui.theme.PetPalIcons
 
 private enum class Tab(val route: String, val label: String, val icon: ImageVector) {
     Home("home", "Home", PetPalIcons.Home),
+    Pets("pets", "Pets", Icons.Rounded.Pets),
     Habits("habits", "Habits", PetPalIcons.Habits),
     Battle("battle", "Battle", PetPalIcons.Battle),
     Stats("stats", "Stats", PetPalIcons.Stats),
@@ -48,6 +52,13 @@ class RootViewModel(private val petRepository: PetRepository) : ViewModel() {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     fun learn(move: Move, forget: Move?) = viewModelScope.launch { petRepository.learnMove(move, forget) }
+
+    /** Pet plus its new stage's two unique options, until one is picked. */
+    val uniquePrompt = petRepository.pet
+        .map { pet -> PetEngine.pendingUnique(pet)?.let { pet to it } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    fun pickUnique(move: Move) = viewModelScope.launch { petRepository.pickUnique(move) }
 }
 
 @Composable
@@ -57,8 +68,12 @@ fun PetPalNavHost(stepPermissionGranted: Boolean, root: RootViewModel = koinView
         false -> OnboardingScreen()
         true -> {
             MainTabs(stepPermissionGranted)
+            val uniquePrompt = root.uniquePrompt.collectAsStateWithLifecycle().value
             val prompt = root.learnPrompt.collectAsStateWithLifecycle().value
-            if (prompt != null) {
+            if (uniquePrompt != null) {
+                val (pet, options) = uniquePrompt
+                com.petpal.app.ui.home.UniquePickDialog(pet, options) { root.pickUnique(it) }
+            } else if (prompt != null) {
                 val (pet, move) = prompt
                 LearnMoveDialog(pet, move) { forget -> root.learn(move, forget) }
             }
@@ -99,6 +114,7 @@ private fun MainTabs(stepPermissionGranted: Boolean) {
         CompositionLocalProvider(LocalBattleFullscreen provides battleFullscreen) {
         NavHost(nav, startDestination = Tab.Home.route, modifier = Modifier.padding(padding)) {
             composable(Tab.Home.route) { HomeScreen(snackbar, stepPermissionGranted) }
+            composable(Tab.Pets.route) { PetsScreen(snackbar) }
             composable(Tab.Habits.route) { HabitsScreen() }
             composable(Tab.Battle.route) { BattleScreen(battleVm) }
             composable(Tab.Stats.route) { StatsScreen() }

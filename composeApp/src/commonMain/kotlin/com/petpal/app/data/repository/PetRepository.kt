@@ -21,6 +21,7 @@ class PetRepository(
     private val mutex = Mutex()
 
     val pet: Flow<Pet> = petDao.observePet().filterNotNull().map { PetEngine.syncMoves(it.toDomain()) }
+        .onEach { if (PetEngine.needsPassiveRoll(it)) refresh() } // evolved before passives were rolled
 
     /** False until the personality quiz has given this device its one partner pet. */
     val hasPet: Flow<Boolean> = petDao.observePet().map { it != null }.distinctUntilChanged()
@@ -38,12 +39,22 @@ class PetRepository(
     /** Current pet, or null before it's adopted. */
     suspend fun refresh(): Pet? = mutex.withLock { load() }
 
-    private suspend fun load(): Pet? = petDao.getPet()?.toDomain()?.let(PetEngine::syncMoves)
+    private suspend fun load(): Pet? {
+        val pet = petDao.getPet()?.toDomain()?.let(PetEngine::syncMoves) ?: return null
+        if (!PetEngine.needsPassiveRoll(pet)) return pet
+        return PetEngine.rollPassives(pet).also { petDao.upsert(it.toEntity()) }
+    }
 
     /** Resolves the learn prompt: swap out [forget], or skip the new move when [forget] is null. */
     suspend fun learnMove(move: Move, forget: Move?) = mutex.withLock {
         val pet = load() ?: return@withLock
         petDao.upsert(PetEngine.learn(pet, move, forget).toEntity())
+    }
+
+    /** Locks in the current stage's unique. */
+    suspend fun pickUnique(move: Move) = mutex.withLock {
+        val pet = load() ?: return@withLock
+        petDao.upsert(PetEngine.pickUnique(pet, move).toEntity())
     }
 
     /** Spends a relearn point to bring back an old move (swapping out [forget] if slots are full). */
@@ -52,7 +63,7 @@ class PetRepository(
         petDao.upsert(PetEngine.relearn(pet, move, forget).toEntity())
     }
 
-    /** One pet per device: does nothing if a pet already exists. */
+    /** First pet from the quiz: does nothing if a pet already exists. */
     suspend fun adopt(name: String, species: Species) = mutex.withLock {
         if (petDao.getPet() != null) return@withLock
         val pet = PetEngine.syncMoves(Pet(name = name.trim().ifEmpty { species.label }, species = species,
@@ -63,21 +74,31 @@ class PetRepository(
     /** Lifetime steps ever counted on this device. */
     val lifetimeSteps: Flow<Long> = stepDayDao.observeLifetime()
 
+    /** Every pet this device owns, in unlock order. */
+    val pets: Flow<List<Pet>> = petDao.observeAll().map { list -> list.map { PetEngine.syncMoves(it.toDomain()) } }
+
     /**
-     * Swaps the partner for a new Lv 1 egg once enough steps were walked since the last reset.
-     * [species] is ignored for a random reset (any species but the current one).
-     * Returns the new species, or null if the reset isn't unlocked.
+     * Adds a new Lv 1 egg to the collection once enough steps were walked since the last unlock.
+     * [species] is ignored for a random unlock. Returns the new species, or null if not unlocked.
      */
-    suspend fun resetPet(kind: PetEngine.ResetKind, species: Species?): Species? = mutex.withLock {
-        val pet = load() ?: return@withLock null
+    suspend fun unlockPet(kind: PetEngine.UnlockKind, species: Species?): Species? = mutex.withLock {
+        val all = petDao.getAll().map { it.toDomain() }
+        if (all.isEmpty()) return@withLock null
         val lifetime = stepDayDao.lifetime()
-        if (!PetEngine.canReset(pet, lifetime, kind)) return@withLock null
+        if (!PetEngine.canUnlock(all, lifetime, kind)) return@withLock null
+        val owned = all.map { it.species }.toSet()
         val next = when (kind) {
-            PetEngine.ResetKind.RANDOM -> Species.entries.filter { it != pet.species }.random()
-            PetEngine.ResetKind.CHOOSE -> species ?: return@withLock null
-        }
-        petDao.upsert(PetEngine.reset(pet, next, time.nowMillis(), lifetime).toEntity())
+            PetEngine.UnlockKind.RANDOM -> (Species.entries - owned).randomOrNull()
+            PetEngine.UnlockKind.CHOOSE -> species?.takeIf { it !in owned }
+        } ?: return@withLock null
+        val pet = PetEngine.newPet(all.maxOf { it.id } + 1, next, time.nowMillis(), lifetime)
+        petDao.upsert(pet.toEntity(active = false))
         next
+    }
+
+    /** Makes [id] the active pet: the one that earns XP and battles. */
+    suspend fun switchPet(id: Long) = mutex.withLock {
+        if (petDao.getAll().any { it.id == id }) petDao.setActive(id)
     }
 
     suspend fun rename(name: String) = mutex.withLock {

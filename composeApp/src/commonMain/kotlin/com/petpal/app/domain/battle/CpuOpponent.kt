@@ -13,6 +13,8 @@ object CpuOpponent {
         val picks = (attacks.shuffled(rng).take(3) + utility.shuffled(rng).take(1))
             .let { it + (known - it.toSet()).shuffled(rng) }
             .take(SpeciesKit.MAX_MOVES)
-        return FighterInfo("$prefix ${species.label}", species, me.stage, me.level, picks)
+        val unique = SpeciesKit.uniqueOptions(species, me.stage)?.let { if (rng.nextBoolean()) it.first else it.second }
+        val passive = SpeciesKit.passiveOptions(species, me.stage).let { if (rng.nextBoolean()) it.first else it.second }
+        return FighterInfo("$prefix ${species.label}", species, me.stage, me.level, picks + listOfNotNull(unique), passive)
     }
 }

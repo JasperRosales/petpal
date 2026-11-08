@@ -109,7 +109,7 @@ private fun Question(step: Int, vm: OnboardingViewModel) {
 private fun Result(result: PersonalityQuiz.Result, onAdopt: (String) -> Unit) {
     val species = result.species
     var name by remember { mutableStateOf("") }
-    val passive = SpeciesKit.passive(species)
+    val (passive, passive2) = SpeciesKit.passiveOptions(species, Stage.BABY)
     Column(
         Modifier.fillMaxSize().padding(24.dp).systemBarsPadding().verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -156,12 +156,14 @@ private fun Result(result: PersonalityQuiz.Result, onAdopt: (String) -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Rounded.AutoAwesome, null, tint = MaterialTheme.colorScheme.tertiary)
                     Spacer(Modifier.width(8.dp))
-                    Text("Passive: ${passive.label}", style = MaterialTheme.typography.titleSmall)
+                    Text("Passive: ${passive.label} or ${passive2.label}", style = MaterialTheme.typography.titleSmall)
                 }
-                Text(passive.description, style = MaterialTheme.typography.bodySmall)
+                Text("One is rolled at random when it hatches, and again at each evolution.", style = MaterialTheme.typography.labelSmall)
+                Text("${passive.label}: ${passive.description}", style = MaterialTheme.typography.bodySmall)
+                Text("${passive2.label}: ${passive2.description}", style = MaterialTheme.typography.bodySmall)
                 Text("Moves", style = MaterialTheme.typography.titleSmall)
                 val learnset = SpeciesKit.learnset(species)
-                val (babyUnique, kidUnique, adultUnique) = SpeciesKit.uniques(species)
+                val (babyA, babyB) = SpeciesKit.uniqueOptions(species).first()
                 SpeciesKit.starters(species).forEach { m ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(m.icon(), null, Modifier.size(18.dp))
@@ -171,9 +173,9 @@ private fun Result(result: PersonalityQuiz.Result, onAdopt: (String) -> Unit) {
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(babyUnique.icon(), null, Modifier.size(18.dp))
+                    Icon(babyA.icon(), null, Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("${babyUnique.label} → ${kidUnique.label} → ${adultUnique.label}", style = MaterialTheme.typography.bodyMedium,
+                    Text("${babyA.label} or ${babyB.label}, new picks each stage", style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.weight(1f))
                     Text("Unique", style = MaterialTheme.typography.labelSmall)
                 }

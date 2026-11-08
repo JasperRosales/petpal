@@ -2,7 +2,7 @@
 
 _Generated from the game data by `DocsGenerator`. Don't edit by hand._
 
-267 moves. Ranges are in arena widths (the arena is 1.0 wide and 1.2 tall).
+417 moves. Ranges are in arena widths (the arena is 1.0 wide and 1.2 tall).
 Normal moves only have a cooldown, Specials also need a full energy bar, and Uniques are
 species signatures in slot 5, usable 2x per battle.
 
@@ -276,97 +276,247 @@ species signatures in slot 5, usable 2x per battle.
 
 ## Uniques
 
-Each species gets a Baby unique that upgrades at Kid (Lv 20, kept through Teen at Lv 35) and Adult (Lv 50).
+Each species has two unique options per stage (Baby, Kid, Teen, Adult). The player picks one when the pet reaches the stage and keeps it for good. Uniques can be attacks, buffs or debuffs.
 
 | Move | Type | Category | Owner | Dmg | Range | Cooldown | Wind-up | Hitbox | Effect |
 |---|---|---|---|---|---|---|---|---|---|
 | Sun Ray | Grass | Unique | Sprout Baby | 18 | 0.65 | 15.0s | 600ms | beam | - |
-| Solar Beam | Grass | Unique | Sprout Kid/Teen | 26 | 0.75 | 15.0s | 700ms | beam | - |
+| Pollen Puff | Grass | Unique | Sprout Baby | - | 0.50 | 15.0s | 300ms | cone | weaken |
+| Solar Beam | Grass | Unique | Sprout Kid | 26 | 0.75 | 15.0s | 700ms | beam | - |
+| Root Bind | Grass | Unique | Sprout Kid | 20 | 0.45 | 15.0s | 350ms | projectile | root |
+| Bloom Burst | Grass | Unique | Sprout Teen | 28 | 0.60 | 15.0s | 500ms | projectile | leech |
+| Gaia Shield | Ground | Unique | Sprout Teen | - | self | 15.0s | 250ms | self | guard + heal |
 | Solar Flare | Grass | Unique | Sprout Adult | 34 | 0.80 | 15.0s | 700ms | beam | stun |
+| World Tree | Grass | Unique | Sprout Adult | - | self | 15.0s | 400ms | self | rage + haste + heal |
 | Shadow Swipe | Normal | Unique | Kitty Baby | 17 | 0.30 | 15.0s | 300ms | melee | lunge |
-| Shadow Claw | Normal | Unique | Kitty Kid/Teen | 24 | 0.35 | 15.0s | 300ms | melee | lunge |
+| Cat Nap | Normal | Unique | Kitty Baby | - | self | 15.0s | 300ms | self | heal |
+| Shadow Claw | Normal | Unique | Kitty Kid | 24 | 0.35 | 15.0s | 300ms | melee | lunge |
+| Hiss | Normal | Unique | Kitty Kid | - | 0.50 | 15.0s | 250ms | cone | paralyze |
+| Phantom Pounce | Normal | Unique | Kitty Teen | 28 | 0.35 | 15.0s | 700ms | melee | vanish |
+| Static Purr | Electric | Unique | Kitty Teen | - | self | 15.0s | 250ms | self | haste |
 | Night Terror | Normal | Unique | Kitty Adult | 32 | 0.40 | 15.0s | 300ms | melee | lunge |
+| Ninth Life | Normal | Unique | Kitty Adult | - | self | 15.0s | 250ms | self | guard + harden + heal |
 | Flame Burst | Fire | Unique | Drake Baby | 20 | 0.50 | 15.0s | 550ms | cone | burn |
-| Inferno | Fire | Unique | Drake Kid/Teen | 28 | 0.55 | 15.0s | 600ms | cone | burn |
+| Smoke Puff | Fire | Unique | Drake Baby | - | self | 15.0s | 200ms | self | smoke cloud + back off |
+| Inferno | Fire | Unique | Drake Kid | 28 | 0.55 | 15.0s | 600ms | cone | burn |
+| Dragon Roar | Fire | Unique | Drake Kid | - | 0.50 | 15.0s | 300ms | cone | weaken |
+| Wing Blaze | Flying | Unique | Drake Teen | 28 | 0.45 | 15.0s | 400ms | cone | knockback |
+| Scale Armor | Fire | Unique | Drake Teen | - | self | 15.0s | 250ms | self | harden |
 | Dragon Fury | Fire | Unique | Drake Adult | 36 | 0.60 | 15.0s | 600ms | cone | burn |
+| Dragon Ascent | Fire | Unique | Drake Adult | - | self | 15.0s | 350ms | self | rage + haste |
 | Moon Hop | Normal | Unique | Bunny Baby | 16 | 0.35 | 15.0s | 350ms | projectile | stun |
-| Moon Kick | Normal | Unique | Bunny Kid/Teen | 22 | 0.40 | 15.0s | 350ms | projectile | stun |
+| Thump | Ground | Unique | Bunny Baby | - | 0.45 | 15.0s | 250ms | cone | slow |
+| Moon Kick | Normal | Unique | Bunny Kid | 22 | 0.40 | 15.0s | 350ms | projectile | stun |
+| Lucky Foot | Normal | Unique | Bunny Kid | - | self | 15.0s | 200ms | self | haste |
+| Crescent Kick | Fighting | Unique | Bunny Teen | 28 | 0.30 | 15.0s | 350ms | melee | lunge + knockback |
+| Moonlight | Normal | Unique | Bunny Teen | - | self | 15.0s | 350ms | self | heal |
 | Lunar Strike | Normal | Unique | Bunny Adult | 30 | 0.45 | 15.0s | 350ms | projectile | stun |
+| Eclipse | Normal | Unique | Bunny Adult | - | 0.60 | 15.0s | 400ms | cone | disrupt |
 | Rally Bark | Normal | Unique | Pup Baby | - | self | 15.0s | 400ms | self | rage + haste |
-| Pack Call | Normal | Unique | Pup Kid/Teen | - | self | 15.0s | 400ms | self | rage + heal |
+| Puppy Eyes | Normal | Unique | Pup Baby | - | 0.50 | 15.0s | 250ms | cone | weaken |
+| Pack Call | Normal | Unique | Pup Kid | - | self | 15.0s | 400ms | self | rage + heal |
+| Fetch Dash | Ground | Unique | Pup Kid | 24 | 0.35 | 15.0s | 300ms | melee | lunge |
+| Guard Dog | Normal | Unique | Pup Teen | - | self | 15.0s | 100ms | self | counter |
+| Fire Howl | Fire | Unique | Pup Teen | 28 | 0.50 | 15.0s | 450ms | cone | burn |
 | Alpha Howl | Normal | Unique | Pup Adult | - | self | 15.0s | 400ms | self | rage + haste + heal |
+| Loyal Guardian | Normal | Unique | Pup Adult | - | self | 15.0s | 350ms | self | team heal |
 | Static Eye | Electric | Unique | Owl Baby | 18 | 0.75 | 15.0s | 600ms | strike | paralyze |
-| Storm Eye | Electric | Unique | Owl Kid/Teen | 25 | 0.85 | 15.0s | 650ms | strike | stun |
+| Hoot | Normal | Unique | Owl Baby | - | 0.55 | 15.0s | 250ms | cone | mark |
+| Storm Eye | Electric | Unique | Owl Kid | 25 | 0.85 | 15.0s | 650ms | strike | stun |
+| Silent Glide | Flying | Unique | Owl Kid | - | self | 15.0s | 150ms | self | teleport |
+| Feather Volley | Flying | Unique | Owl Teen | 10 | 0.60 | 15.0s | 400ms | cone | hits 2-4x |
+| Wise Gaze | Electric | Unique | Owl Teen | - | 0.60 | 15.0s | 300ms | strike | disrupt |
 | Tempest Eye | Electric | Unique | Owl Adult | 32 | 0.90 | 15.0s | 650ms | strike | paralyze |
+| Night Watch | Flying | Unique | Owl Adult | - | self | 15.0s | 100ms | self | counter |
 | Shell Up | Ground | Unique | Turtle Baby | - | self | 15.0s | 200ms | self | harden |
-| Fortress | Ground | Unique | Turtle Kid/Teen | - | self | 15.0s | 200ms | self | guard + heal |
+| Shell Bash | Ground | Unique | Turtle Baby | 16 | 0.22 | 15.0s | 300ms | melee | knockback |
+| Fortress | Ground | Unique | Turtle Kid | - | self | 15.0s | 200ms | self | guard + heal |
+| Aqua Shell | Water | Unique | Turtle Kid | - | self | 15.0s | 250ms | self | shield |
+| Tidal Shell | Water | Unique | Turtle Teen | 28 | 0.50 | 15.0s | 450ms | cone | slow |
+| Bedrock | Ground | Unique | Turtle Teen | - | self | 15.0s | 250ms | self | harden |
 | Citadel | Ground | Unique | Turtle Adult | - | self | 15.0s | 200ms | self | guard + harden + heal |
+| Ancient Wave | Water | Unique | Turtle Adult | 32 | 0.70 | 15.0s | 550ms | cone | knockback |
 | Wisp Flame | Fire | Unique | Fox Baby | 16 | 0.55 | 15.0s | 450ms | cone | burn |
-| Foxfire | Fire | Unique | Fox Kid/Teen | 22 | 0.60 | 15.0s | 450ms | cone | burn |
+| Fox Trick | Normal | Unique | Fox Baby | - | 0.50 | 15.0s | 250ms | cone | disrupt |
+| Foxfire | Fire | Unique | Fox Kid | 22 | 0.60 | 15.0s | 450ms | cone | burn |
+| Illusion | Normal | Unique | Fox Kid | - | self | 15.0s | 150ms | self | teleport |
+| Frost Fox | Ice | Unique | Fox Teen | 28 | 0.50 | 15.0s | 400ms | cone | slow |
+| Mirage Tails | Normal | Unique | Fox Teen | - | self | 15.0s | 100ms | self | counter |
 | Nine Tails | Fire | Unique | Fox Adult | 30 | 0.65 | 15.0s | 450ms | cone | burn |
+| Kitsune Veil | Fire | Unique | Fox Adult | - | self | 15.0s | 200ms | self | smoke cloud + back off |
 | Splash Wave | Water | Unique | Frog Baby | 16 | 0.60 | 15.0s | 500ms | cone | knockback |
-| Tidal Wave | Water | Unique | Frog Kid/Teen | 22 | 0.70 | 15.0s | 550ms | cone | knockback |
+| Croak | Normal | Unique | Frog Baby | - | 0.50 | 15.0s | 250ms | cone | weaken |
+| Tidal Wave | Water | Unique | Frog Kid | 22 | 0.70 | 15.0s | 550ms | cone | knockback |
+| Tongue Lash | Water | Unique | Frog Kid | 22 | 0.50 | 15.0s | 250ms | cone | pull |
+| Lily Leap | Grass | Unique | Frog Teen | 28 | 0.40 | 15.0s | 700ms | melee | vanish |
+| Rain Song | Water | Unique | Frog Teen | - | self | 15.0s | 350ms | self | heal |
 | Tsunami | Water | Unique | Frog Adult | 30 | 0.75 | 15.0s | 550ms | cone | pull |
+| Swamp King | Grass | Unique | Frog Adult | - | 0.60 | 15.0s | 350ms | cone | root |
 | Bear Swipe | Normal | Unique | Bear Baby | 22 | 0.20 | 15.0s | 450ms | melee | stun |
-| Maul | Normal | Unique | Bear Kid/Teen | 30 | 0.22 | 15.0s | 450ms | melee | stun |
+| Bear Hug | Fighting | Unique | Bear Baby | 16 | 0.20 | 15.0s | 300ms | melee | root |
+| Maul | Normal | Unique | Bear Kid | 30 | 0.22 | 15.0s | 450ms | melee | stun |
+| Hibernate | Normal | Unique | Bear Kid | - | self | 15.0s | 300ms | self | guard + heal |
+| Hammer Paw | Fighting | Unique | Bear Teen | 30 | 0.22 | 15.0s | 400ms | melee | lunge + knockback |
+| Mighty Roar | Normal | Unique | Bear Teen | - | 0.50 | 15.0s | 300ms | cone | weaken |
 | Grizzly Rampage | Normal | Unique | Bear Adult | 38 | 0.24 | 15.0s | 450ms | melee | stun |
+| Ursa Major | Normal | Unique | Bear Adult | - | self | 15.0s | 400ms | self | rage + haste + heal |
 | Frost Slide | Ice | Unique | Penguin Baby | 17 | 0.35 | 15.0s | 300ms | melee | lunge |
-| Polar Crash | Ice | Unique | Penguin Kid/Teen | 25 | 0.30 | 15.0s | 400ms | cone | knockback |
+| Huddle | Ice | Unique | Penguin Baby | - | self | 15.0s | 250ms | self | shield |
+| Polar Crash | Ice | Unique | Penguin Kid | 25 | 0.30 | 15.0s | 400ms | cone | knockback |
+| Snowball | Ice | Unique | Penguin Kid | 22 | 0.50 | 15.0s | 300ms | cone | slow |
+| Glacier Dive | Water | Unique | Penguin Teen | 28 | 0.50 | 15.0s | 700ms | melee | vanish |
+| Cold Snap | Ice | Unique | Penguin Teen | - | 0.50 | 15.0s | 350ms | cone | freeze |
 | Emperor Blizzard | Ice | Unique | Penguin Adult | 32 | 0.70 | 15.0s | 650ms | cone | freeze |
+| Iceberg Wall | Ice | Unique | Penguin Adult | - | self | 15.0s | 250ms | self | guard + harden + heal |
 | Spike Roll | Ground | Unique | Hedgehog Baby | 16 | 0.32 | 15.0s | 300ms | melee | lunge |
-| Needle Storm | Grass | Unique | Hedgehog Kid/Teen | 8 | 0.50 | 15.0s | 450ms | projectile | hits 2-4x |
+| Curl Up | Ground | Unique | Hedgehog Baby | - | self | 15.0s | 200ms | self | harden |
+| Needle Storm | Grass | Unique | Hedgehog Kid | 8 | 0.50 | 15.0s | 450ms | projectile | hits 2-4x |
+| Spiny Shield | Grass | Unique | Hedgehog Kid | - | self | 15.0s | 100ms | self | counter |
+| Pin Missile | Grass | Unique | Hedgehog Teen | 9 | 0.55 | 15.0s | 400ms | projectile | hits 2-4x |
+| Hedge Maze | Grass | Unique | Hedgehog Teen | 26 | 0.60 | 15.0s | 300ms | self | trap |
 | Quill Barrage | Grass | Unique | Hedgehog Adult | 11 | 0.60 | 15.0s | 450ms | projectile | hits 2-4x |
+| Thorn Fortress | Grass | Unique | Hedgehog Adult | - | self | 15.0s | 250ms | self | guard + heal |
 | Echo Shriek | Normal | Unique | Bat Baby | 16 | 0.55 | 15.0s | 400ms | cone | weaken |
-| Vampire Fang | Normal | Unique | Bat Kid/Teen | 24 | 0.25 | 15.0s | 300ms | melee | drain |
+| Sonar | Normal | Unique | Bat Baby | - | 0.60 | 15.0s | 250ms | cone | mark |
+| Vampire Fang | Normal | Unique | Bat Kid | 24 | 0.25 | 15.0s | 300ms | melee | drain |
+| Night Flight | Flying | Unique | Bat Kid | - | self | 15.0s | 200ms | self | haste |
+| Leech Life | Normal | Unique | Bat Teen | 26 | 0.25 | 15.0s | 300ms | melee | leech |
+| Sonic Screech | Normal | Unique | Bat Teen | - | 0.55 | 15.0s | 300ms | cone | disrupt |
 | Blood Moon | Normal | Unique | Bat Adult | 32 | 0.60 | 15.0s | 600ms | projectile | drain |
+| Dusk Swarm | Flying | Unique | Bat Adult | 12 | 0.60 | 15.0s | 450ms | cone | hits 2-4x |
 | Antler Jab | Grass | Unique | Deer Baby | 17 | 0.22 | 15.0s | 300ms | melee | knockback |
-| Verdant Charge | Grass | Unique | Deer Kid/Teen | 25 | 0.35 | 15.0s | 350ms | melee | lunge |
+| Fawn Leap | Normal | Unique | Deer Baby | - | self | 15.0s | 150ms | self | teleport |
+| Verdant Charge | Grass | Unique | Deer Kid | 25 | 0.35 | 15.0s | 350ms | melee | lunge |
+| Forest Blessing | Grass | Unique | Deer Kid | - | self | 15.0s | 350ms | self | team heal |
+| Frost Antlers | Ice | Unique | Deer Teen | 28 | 0.30 | 15.0s | 350ms | melee | lunge + stun |
+| Grace | Grass | Unique | Deer Teen | - | self | 15.0s | 350ms | self | heal |
 | Spirit Stampede | Ice | Unique | Deer Adult | 33 | 0.45 | 15.0s | 450ms | cone | stun |
+| Sacred Grove | Grass | Unique | Deer Adult | - | 0.60 | 15.0s | 400ms | cone | leech |
 | Pebble Toss | Water | Unique | Otter Baby | 16 | 0.45 | 15.0s | 300ms | cone | slow |
-| River Rush | Water | Unique | Otter Kid/Teen | 24 | 0.35 | 15.0s | 300ms | melee | lunge |
+| Clam Smash | Water | Unique | Otter Baby | 16 | 0.20 | 15.0s | 300ms | melee | stun |
+| River Rush | Water | Unique | Otter Kid | 24 | 0.35 | 15.0s | 300ms | melee | lunge |
+| Playtime | Normal | Unique | Otter Kid | - | self | 15.0s | 300ms | self | energy +50 |
+| Volt Splash | Electric | Unique | Otter Teen | 28 | 0.55 | 15.0s | 450ms | strike | chain |
+| Float | Water | Unique | Otter Teen | - | self | 15.0s | 200ms | self | haste |
 | Rapid Current | Water | Unique | Otter Adult | 32 | 0.65 | 15.0s | 550ms | cone | pull |
+| Otter Party | Water | Unique | Otter Adult | - | self | 15.0s | 350ms | self | team heal |
 | Bamboo Smack | Grass | Unique | Panda Baby | 18 | 0.22 | 15.0s | 350ms | melee | stun |
-| Bamboo Storm | Grass | Unique | Panda Kid/Teen | 26 | 0.50 | 15.0s | 450ms | projectile | knockback |
+| Lazy Roll | Normal | Unique | Panda Baby | - | self | 15.0s | 300ms | self | heal |
+| Bamboo Storm | Grass | Unique | Panda Kid | 26 | 0.50 | 15.0s | 450ms | projectile | knockback |
+| Panda Palm | Fighting | Unique | Panda Kid | 24 | 0.20 | 15.0s | 300ms | melee | knockback |
+| Bamboo Wall | Grass | Unique | Panda Teen | - | self | 15.0s | 250ms | self | shield |
+| Kung Fu Kick | Fighting | Unique | Panda Teen | 28 | 0.30 | 15.0s | 350ms | melee | lunge + stun |
 | Panda Quake | Ground | Unique | Panda Adult | 34 | 0.80 | 15.0s | 600ms | projectile | stun |
+| Zen Master | Fighting | Unique | Panda Adult | - | self | 15.0s | 250ms | self | guard + harden + heal |
 | Tail Lash | Ground | Unique | Lizard Baby | 17 | 0.22 | 15.0s | 300ms | melee | knockback |
-| Magma Tail | Fire | Unique | Lizard Kid/Teen | 25 | 0.30 | 15.0s | 350ms | cone | burn |
+| Sunbathe | Fire | Unique | Lizard Baby | - | self | 15.0s | 300ms | self | rage |
+| Magma Tail | Fire | Unique | Lizard Kid | 25 | 0.30 | 15.0s | 350ms | cone | burn |
+| Sand Spit | Ground | Unique | Lizard Kid | 20 | 0.45 | 15.0s | 300ms | projectile | weaken |
+| Molten Scales | Fire | Unique | Lizard Teen | - | self | 15.0s | 250ms | self | harden |
+| Dune Lash | Ground | Unique | Lizard Teen | 28 | 0.30 | 15.0s | 300ms | projectile | knockback |
 | Volcano Roar | Fire | Unique | Lizard Adult | 33 | 0.60 | 15.0s | 600ms | cone | burn |
+| Basilisk Gaze | Fire | Unique | Lizard Adult | - | 0.60 | 15.0s | 350ms | cone | paralyze |
 | Snatch | Normal | Unique | Raccoon Baby | 16 | 0.22 | 15.0s | 250ms | melee | steal energy |
-| Trash Toss | Normal | Unique | Raccoon Kid/Teen | 24 | 0.45 | 15.0s | 400ms | projectile | weaken |
+| Scavenge | Normal | Unique | Raccoon Baby | - | self | 15.0s | 300ms | self | energy +50 |
+| Trash Toss | Normal | Unique | Raccoon Kid | 24 | 0.45 | 15.0s | 400ms | projectile | weaken |
+| Masked Feint | Normal | Unique | Raccoon Kid | - | 0.50 | 15.0s | 250ms | cone | disrupt |
+| Garbage Shock | Electric | Unique | Raccoon Teen | 28 | 0.40 | 15.0s | 350ms | strike | paralyze |
+| Sneak | Normal | Unique | Raccoon Teen | - | self | 15.0s | 150ms | self | teleport |
 | Midnight Heist | Electric | Unique | Raccoon Adult | 31 | 0.30 | 15.0s | 900ms | melee | vanish |
+| Grand Larceny | Normal | Unique | Raccoon Adult | 30 | 0.30 | 15.0s | 300ms | melee | lunge + steal energy |
 | Seed Spit | Normal | Unique | Hamster Baby | 16 | 0.50 | 15.0s | 300ms | projectile | slow |
-| Wheel Dash | Electric | Unique | Hamster Kid/Teen | 24 | 0.35 | 15.0s | 300ms | melee | lunge |
+| Cheek Stuff | Normal | Unique | Hamster Baby | - | self | 15.0s | 300ms | self | heal |
+| Wheel Dash | Electric | Unique | Hamster Kid | 24 | 0.35 | 15.0s | 300ms | melee | lunge |
+| Spark Roll | Electric | Unique | Hamster Kid | 22 | 0.35 | 15.0s | 300ms | melee | lunge + paralyze |
+| Sunflower Seed | Grass | Unique | Hamster Teen | 28 | 0.50 | 15.0s | 350ms | projectile | leech |
+| Turbo Wheel | Electric | Unique | Hamster Teen | - | self | 15.0s | 200ms | self | haste |
 | Thunder Wheel | Electric | Unique | Hamster Adult | 32 | 0.40 | 15.0s | 350ms | melee | lunge |
+| Hoard | Normal | Unique | Hamster Adult | - | self | 15.0s | 300ms | self | guard + heal |
 | Squawk | Normal | Unique | Parrot Baby | 15 | 0.55 | 15.0s | 350ms | projectile | weaken |
-| Feather Blaze | Fire | Unique | Parrot Kid/Teen | 24 | 0.55 | 15.0s | 450ms | cone | burn |
+| Mimic | Normal | Unique | Parrot Baby | - | 0.55 | 15.0s | 250ms | cone | disrupt |
+| Feather Blaze | Fire | Unique | Parrot Kid | 24 | 0.55 | 15.0s | 450ms | cone | burn |
+| Tropical Wind | Flying | Unique | Parrot Kid | 22 | 0.55 | 15.0s | 350ms | cone | knockback |
+| Plumage Flare | Fire | Unique | Parrot Teen | - | self | 15.0s | 300ms | self | rage + haste |
+| Echo Talk | Normal | Unique | Parrot Teen | - | 0.55 | 15.0s | 250ms | cone | mark |
 | Phoenix Dive | Fire | Unique | Parrot Adult | 33 | 0.40 | 15.0s | 900ms | melee | vanish |
+| Rainbow Wing | Flying | Unique | Parrot Adult | - | self | 15.0s | 400ms | self | rage + haste + heal |
 | Bubble Gill | Water | Unique | Axolotl Baby | 16 | 0.50 | 15.0s | 400ms | cone | slow |
-| Tide Pool | Water | Unique | Axolotl Kid/Teen | 23 | 0.55 | 15.0s | 450ms | cone | drain |
+| Regen Bubble | Water | Unique | Axolotl Baby | - | self | 15.0s | 300ms | self | heal |
+| Tide Pool | Water | Unique | Axolotl Kid | 23 | 0.55 | 15.0s | 450ms | cone | drain |
+| Gill Mist | Water | Unique | Axolotl Kid | - | 0.50 | 15.0s | 300ms | cone | slow |
+| Lotus Shield | Grass | Unique | Axolotl Teen | - | self | 15.0s | 250ms | self | shield |
+| Coral Whip | Water | Unique | Axolotl Teen | 28 | 0.30 | 15.0s | 300ms | cone | knockback |
 | Lotus Torrent | Grass | Unique | Axolotl Adult | 31 | 0.70 | 15.0s | 600ms | projectile | leech |
+| Rebirth | Water | Unique | Axolotl Adult | - | self | 15.0s | 400ms | self | rage + heal |
 | Burrow Jab | Ground | Unique | Mole Baby | 17 | 0.25 | 15.0s | 800ms | melee | vanish |
-| Drill Claw | Ground | Unique | Mole Kid/Teen | 9 | 0.22 | 15.0s | 300ms | melee | hits 2-4x |
+| Mud Flick | Ground | Unique | Mole Baby | 15 | 0.45 | 15.0s | 300ms | projectile | slow |
+| Drill Claw | Ground | Unique | Mole Kid | 9 | 0.22 | 15.0s | 300ms | melee | hits 2-4x |
+| Tunnel Net | Ground | Unique | Mole Kid | 22 | 0.60 | 15.0s | 300ms | self | trap |
+| Seismic Sense | Ground | Unique | Mole Teen | - | 0.60 | 15.0s | 300ms | cone | mark |
+| Live Wire | Electric | Unique | Mole Teen | 28 | 0.30 | 15.0s | 300ms | strike | paralyze |
 | Tremor Spark | Electric | Unique | Mole Adult | 32 | 0.80 | 15.0s | 650ms | strike | stun |
+| Earth Core | Ground | Unique | Mole Adult | - | self | 15.0s | 250ms | self | guard + heal |
 | Eucalyptus Dart | Grass | Unique | Koala Baby | 16 | 0.50 | 15.0s | 300ms | projectile | slow |
-| Drowsy Slam | Normal | Unique | Koala Kid/Teen | 24 | 0.22 | 15.0s | 400ms | melee | lunge + stun |
+| Snuggle | Normal | Unique | Koala Baby | - | self | 15.0s | 250ms | self | shield |
+| Drowsy Slam | Normal | Unique | Koala Kid | 24 | 0.22 | 15.0s | 400ms | melee | lunge + stun |
+| Lullaby | Grass | Unique | Koala Kid | - | 0.50 | 15.0s | 400ms | cone | freeze |
+| Gum Leaf | Grass | Unique | Koala Teen | 26 | 0.50 | 15.0s | 350ms | projectile | drain |
+| Static Snooze | Electric | Unique | Koala Teen | - | self | 15.0s | 300ms | self | energy +50 |
 | Dream Storm | Electric | Unique | Koala Adult | 32 | 0.70 | 15.0s | 600ms | strike | chain |
+| Eucalyptus Grove | Grass | Unique | Koala Adult | - | self | 15.0s | 350ms | self | team heal |
 | Fin Slice | Water | Unique | Shark Baby | 17 | 0.30 | 15.0s | 250ms | melee | lunge |
-| Jaw Lock | Water | Unique | Shark Kid/Teen | 25 | 0.22 | 15.0s | 300ms | melee | lunge + mark |
+| Blood Trail | Water | Unique | Shark Baby | - | 0.55 | 15.0s | 250ms | cone | mark |
+| Jaw Lock | Water | Unique | Shark Kid | 25 | 0.22 | 15.0s | 300ms | melee | lunge + mark |
+| Riptide | Water | Unique | Shark Kid | 22 | 0.50 | 15.0s | 300ms | cone | pull |
+| Shark Frenzy | Water | Unique | Shark Teen | - | self | 15.0s | 250ms | self | rage + haste |
+| Ice Fin | Ice | Unique | Shark Teen | 28 | 0.35 | 15.0s | 300ms | melee | lunge + slow |
 | Feeding Frenzy | Water | Unique | Shark Adult | 33 | 0.25 | 15.0s | 350ms | melee | lunge + drain |
+| Megalodon | Water | Unique | Shark Adult | 34 | 0.25 | 15.0s | 350ms | melee | lunge + execute |
 | Tongue Snap | Normal | Unique | Chameleon Baby | 16 | 0.50 | 15.0s | 250ms | projectile | pull |
-| Mirage Swap | Grass | Unique | Chameleon Kid/Teen | 24 | 0.50 | 15.0s | 300ms | projectile | swap places |
+| Camouflage | Grass | Unique | Chameleon Baby | - | self | 15.0s | 150ms | self | teleport |
+| Mirage Swap | Grass | Unique | Chameleon Kid | 24 | 0.50 | 15.0s | 300ms | projectile | swap places |
+| Color Flash | Normal | Unique | Chameleon Kid | - | 0.50 | 15.0s | 250ms | cone | disrupt |
+| Sticky Tongue | Grass | Unique | Chameleon Teen | 26 | 0.55 | 15.0s | 300ms | projectile | root |
+| Blend In | Grass | Unique | Chameleon Teen | - | self | 15.0s | 200ms | self | smoke cloud + back off |
 | Prism Blast | Fire | Unique | Chameleon Adult | 32 | 0.65 | 15.0s | 550ms | beam | disrupt |
+| Spectrum Veil | Normal | Unique | Chameleon Adult | - | self | 15.0s | 250ms | self | guard + harden + heal |
 | Log Toss | Ground | Unique | Beaver Baby | 17 | 0.45 | 15.0s | 300ms | projectile | knockback |
-| Timber Trap | Ground | Unique | Beaver Kid/Teen | 25 | 0.65 | 15.0s | 300ms | self | trap |
+| Gnaw | Normal | Unique | Beaver Baby | 16 | 0.20 | 15.0s | 250ms | melee | weaken |
+| Timber Trap | Ground | Unique | Beaver Kid | 25 | 0.65 | 15.0s | 300ms | self | trap |
+| Beaver Tail Slap | Water | Unique | Beaver Kid | 24 | 0.25 | 15.0s | 300ms | melee | knockback |
+| Lodge | Ground | Unique | Beaver Teen | - | self | 15.0s | 250ms | self | guard + heal |
+| Flood Gate | Water | Unique | Beaver Teen | 28 | 0.60 | 15.0s | 450ms | cone | slow |
 | Great Dam | Water | Unique | Beaver Adult | - | self | 15.0s | 250ms | self | shield |
+| Timber Fall | Ground | Unique | Beaver Adult | 34 | 0.40 | 15.0s | 500ms | projectile | stun |
 | Banana Toss | Grass | Unique | Monkey Baby | 16 | 0.50 | 15.0s | 300ms | projectile | slow |
-| Vine Swing | Fighting | Unique | Monkey Kid/Teen | 24 | 0.35 | 15.0s | 350ms | projectile | 2 stepping slashes |
+| Monkey Business | Normal | Unique | Monkey Baby | - | 0.50 | 15.0s | 250ms | cone | disrupt |
+| Vine Swing | Fighting | Unique | Monkey Kid | 24 | 0.35 | 15.0s | 350ms | projectile | 2 stepping slashes |
+| Chest Beat | Fighting | Unique | Monkey Kid | - | self | 15.0s | 300ms | self | rage |
+| Jungle Kick | Fighting | Unique | Monkey Teen | 28 | 0.30 | 15.0s | 300ms | projectile | knockback |
+| Prankster | Normal | Unique | Monkey Teen | - | 0.55 | 15.0s | 250ms | cone | mark |
 | Canopy Fury | Fighting | Unique | Monkey Adult | 32 | 0.30 | 15.0s | 400ms | melee | lunge + stun |
+| Ape King | Fighting | Unique | Monkey Adult | - | self | 15.0s | 400ms | self | rage + haste + heal |
 | Pouch Jab | Fighting | Unique | Kangaroo Baby | 17 | 0.22 | 15.0s | 250ms | melee | knockback |
-| Boxing Flurry | Fighting | Unique | Kangaroo Kid/Teen | 8 | 0.22 | 15.0s | 300ms | melee | hits 2-4x |
+| Hop Away | Normal | Unique | Kangaroo Baby | - | self | 15.0s | 150ms | self | teleport |
+| Boxing Flurry | Fighting | Unique | Kangaroo Kid | 8 | 0.22 | 15.0s | 300ms | melee | hits 2-4x |
+| Tail Stand | Fighting | Unique | Kangaroo Kid | - | self | 15.0s | 100ms | self | counter |
+| Mega Kick | Fighting | Unique | Kangaroo Teen | 30 | 0.25 | 15.0s | 400ms | melee | lunge + knockback |
+| Sand Kick | Ground | Unique | Kangaroo Teen | - | 0.45 | 15.0s | 250ms | cone | weaken |
 | Outback Stomp | Ground | Unique | Kangaroo Adult | 32 | 0.45 | 15.0s | 500ms | projectile | stun |
+| Champion | Fighting | Unique | Kangaroo Adult | - | self | 15.0s | 350ms | self | rage + haste |
 | Talon Grab | Flying | Unique | Eagle Baby | 16 | 0.40 | 15.0s | 300ms | cone | pull |
-| Sky Dive | Flying | Unique | Eagle Kid/Teen | 25 | 0.50 | 15.0s | 500ms | melee | vanish |
+| Keen Glare | Normal | Unique | Eagle Baby | - | 0.60 | 15.0s | 250ms | cone | mark |
+| Sky Dive | Flying | Unique | Eagle Kid | 25 | 0.50 | 15.0s | 500ms | melee | vanish |
+| Updraft | Flying | Unique | Eagle Kid | - | self | 15.0s | 200ms | self | haste |
+| Aerial Strike | Flying | Unique | Eagle Teen | 28 | 0.50 | 15.0s | 400ms | cone | knockback |
+| Raptor Cry | Flying | Unique | Eagle Teen | - | 0.55 | 15.0s | 300ms | cone | weaken |
 | Storm Talon | Flying | Unique | Eagle Adult | 33 | 0.55 | 15.0s | 450ms | cone | knockback |
+| Sky Sovereign | Flying | Unique | Eagle Adult | - | self | 15.0s | 400ms | self | rage + haste + heal |
 | Flipper Slap | Water | Unique | Seal Baby | 16 | 0.22 | 15.0s | 250ms | melee | slow |
-| Ice Floe | Ice | Unique | Seal Kid/Teen | 24 | 0.40 | 15.0s | 300ms | melee | lunge |
+| Bark Bark | Normal | Unique | Seal Baby | - | 0.50 | 15.0s | 250ms | cone | weaken |
+| Ice Floe | Ice | Unique | Seal Kid | 24 | 0.40 | 15.0s | 300ms | melee | lunge |
+| Ice Ball | Ice | Unique | Seal Kid | 22 | 0.50 | 15.0s | 300ms | cone | slow |
+| Seal Spin | Water | Unique | Seal Teen | 28 | 0.30 | 15.0s | 300ms | cone | knockback |
+| Blubber Up | Ice | Unique | Seal Teen | - | self | 15.0s | 250ms | self | harden |
 | Arctic Tide | Water | Unique | Seal Adult | 32 | 0.65 | 15.0s | 600ms | cone | freeze |
+| Polar Splash | Water | Unique | Seal Adult | - | 0.60 | 15.0s | 400ms | cone | freeze |

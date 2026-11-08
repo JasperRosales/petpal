@@ -79,10 +79,41 @@ fun LearnMoveDialog(pet: Pet, move: Move, onDecide: (forget: Move?) -> Unit) {
     )
 }
 
+/** The pet reached a new stage: pick one of its two uniques for good. */
+@Composable
+fun UniquePickDialog(pet: Pet, options: Pair<Move, Move>, onPick: (Move) -> Unit) {
+    var sel by remember(options) { mutableStateOf<Move?>(null) }
+    var preview by remember { mutableStateOf<Move?>(null) }
+    preview?.let { MovePreviewDialog(pet, it) { preview = null } }
+    AlertDialog(
+        onDismissRequest = {},
+        title = { Text("${pet.name} is now a ${pet.stage.label()}!") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Pick its ${pet.stage.label()} unique move. You only get one, and it can't be changed later.",
+                    style = MaterialTheme.typography.bodySmall)
+                listOf(options.first, options.second).forEach { m ->
+                    Row(verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().clickable { sel = m }) {
+                        RadioButton(selected = sel == m, onClick = { sel = m })
+                        Column(Modifier.weight(1f)) {
+                            Text(m.label, style = MaterialTheme.typography.bodyMedium)
+                            Text((if (m.isBuff) "Buff · " else if (m.damage == 0) "Debuff · " else "") + m.describe(),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        TextButton(onClick = { preview = m }) { Text("▶") }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = { sel?.let(onPick) }, enabled = sel != null) { Text("Pick") } },
+    )
+}
+
 /** Every move in the game, marking which ones this pet can learn and when. */
 @Composable
 fun MoveListDialog(pet: Pet, onDismiss: () -> Unit) {
-    val (babyUnique, kidUnique, adultUnique) = SpeciesKit.uniques(pet.species)
     val types = SpeciesKit.affinity(pet.species)
     var preview by remember { mutableStateOf<Move?>(null) }
     preview?.let { MovePreviewDialog(pet, it) { preview = null } }
@@ -121,14 +152,13 @@ fun MoveListDialog(pet: Pet, onDismiss: () -> Unit) {
                     }
                     item { Text("Uniques", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp)) }
                     items(Move.entries.filter { it.category == MoveCategory.UNIQUE }, key = { it.name }) { m ->
-                        val label = when (m) {
-                            babyUnique -> "Baby"
-                            kidUnique -> "Kid"
-                            adultUnique -> "Adult"
-                            else -> "Can't learn"
+                        val st = SpeciesKit.uniqueStage(pet.species, m)
+                        val label = when {
+                            st == null -> "Can't learn"
+                            m in pet.uniquePicks -> "${st.label()} ✓"
+                            else -> "${st.label()} option"
                         }
-                        MoveRow(m, label, Modifier.alpha(if (m == babyUnique || m == kidUnique || m == adultUnique) 1f else 0.4f),
-                            onView = { preview = m })
+                        MoveRow(m, label, Modifier.alpha(if (st != null) 1f else 0.4f), onView = { preview = m })
                     }
                     item {
                         Text("★ = off-type move this species can still learn.",

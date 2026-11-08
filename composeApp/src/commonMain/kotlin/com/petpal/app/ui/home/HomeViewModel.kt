@@ -65,11 +65,6 @@ class HomeViewModel(
     fun rename(name: String) = viewModelScope.launch { petRepository.rename(name) }
     fun relearn(move: Move, forget: Move?) = viewModelScope.launch { petRepository.relearnMove(move, forget) }
 
-    /** [onDone] gets the new species, or null if the reset wasn't unlocked. */
-    fun resetPet(kind: PetEngine.ResetKind, species: Species?, onDone: (Species?) -> Unit) = viewModelScope.launch {
-        onDone(petRepository.resetPet(kind, species))
-    }
-
     /** Call once the activity-recognition permission is granted. */
     fun startStepTracking() {
         if (stepJob?.isActive == true || !stepRepository.isAvailable) return

@@ -66,7 +66,7 @@ fun HomeScreen(
             ) { PetSprite(pet.stage, state.mood, pet.species) }
 
             PetHeader(pet, state.mood, state.streak)
-            PassiveCard(pet.species)
+            PassiveCard(pet)
             EvolutionCard(pet, state.mood)
 
             if (state.stepsAvailable) {
@@ -78,15 +78,6 @@ fun HomeScreen(
             }
 
             MovesCard(pet, vm::relearn)
-            val scope = rememberCoroutineScope()
-            ResetCard(pet, state.lifetimeSteps) { kind, species ->
-                vm.resetPet(kind, species) { got ->
-                    scope.launch {
-                        snackbar.showSnackbar(got?.let { "Say hello to your new ${it.label} egg! Walk to hatch it." }
-                            ?: "Not enough steps yet")
-                    }
-                }
-            }
             Spacer(Modifier.height(8.dp))
         }
     }
@@ -138,95 +129,6 @@ private fun RenameDialog(current: String, onDismiss: () -> Unit, onSave: (String
     )
 }
 
-/** Walk with your partner to unlock a new one: random at 10k steps, your pick at 50k. Both restart at Lv 1. */
-@Composable
-private fun ResetCard(pet: Pet, lifetimeSteps: Long, onReset: (PetEngine.ResetKind, Species?) -> Unit) {
-    val walked = PetEngine.stepsSinceReset(pet, lifetimeSteps)
-    var confirm by remember { mutableStateOf<PetEngine.ResetKind?>(null) }
-    var choosing by remember { mutableStateOf(false) }
-    var picked by remember { mutableStateOf<Species?>(null) }
-    val dim = MaterialTheme.colorScheme.onSurfaceVariant
-    ElevatedCard(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("New partner", style = MaterialTheme.typography.titleSmall)
-            Text("Steps walked with ${pet.name}: ${walked.withCommas()}", style = MaterialTheme.typography.bodySmall)
-            PetEngine.ResetKind.entries.forEach { kind ->
-                val ready = walked >= kind.steps
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text("${kind.label} · ${kind.steps.withCommas()} steps", style = MaterialTheme.typography.bodyMedium)
-                        LinearProgressIndicator(
-                            progress = { (walked.toFloat() / kind.steps).coerceIn(0f, 1f) },
-                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp, end = 12.dp),
-                            drawStopIndicator = {},
-                        )
-                    }
-                    TextButton(enabled = ready, onClick = {
-                        if (kind == PetEngine.ResetKind.CHOOSE) choosing = true else confirm = kind
-                    }) { Text(if (ready) "Reset" else "Locked") }
-                }
-            }
-            Text(
-                "Resetting swaps ${pet.name} for a new egg at Lv 1 (moves, XP and relearn points start over). " +
-                    "Battle history and step stats stay.",
-                style = MaterialTheme.typography.labelSmall, color = dim,
-            )
-        }
-    }
-
-    if (choosing) ChoosePetDialog(pet.species, onDismiss = { choosing = false }) { s ->
-        choosing = false; picked = s; confirm = PetEngine.ResetKind.CHOOSE
-    }
-    confirm?.let { kind ->
-        val target = if (kind == PetEngine.ResetKind.CHOOSE) picked?.label ?: "" else "random"
-        AlertDialog(
-            onDismissRequest = { confirm = null },
-            title = { Text("Start over with a $target egg?") },
-            text = { Text("${pet.name} (Lv ${PetEngine.levelFor(pet.xp)} ${pet.species.label}) will be replaced by a new " +
-                "Lv 1 egg. This can't be undone.") },
-            confirmButton = {
-                TextButton(onClick = { onReset(kind, picked); confirm = null; picked = null }) {
-                    Text("Reset", color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = { TextButton(onClick = { confirm = null; picked = null }) { Text("Cancel") } },
-        )
-    }
-}
-
-@Composable
-private fun ChoosePetDialog(current: Species, onDismiss: () -> Unit, onPick: (Species) -> Unit) {
-    var sel by remember { mutableStateOf<Species?>(null) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Choose your new partner") },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Species.entries.filter { it != current }.forEach { s ->
-                    val passive = SpeciesKit.passive(s)
-                    Row(
-                        Modifier.fillMaxWidth().clip(MaterialTheme.shapes.small).clickable { sel = s }
-                            .then(if (sel == s) Modifier.alpha(1f) else Modifier.alpha(0.85f)),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        RadioButton(selected = sel == s, onClick = { sel = s })
-                        PetSprite(Stage.BABY, Mood.HAPPY, s, size = 40.dp)
-                        Spacer(Modifier.width(8.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(s.label, style = MaterialTheme.typography.bodyMedium)
-                            Text("${SpeciesKit.affinity(s).joinToString("/") { it.label }} · ${passive.label}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = { TextButton(onClick = { sel?.let(onPick) }, enabled = sel != null) { Text("Next") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
-    )
-}
-
 private fun Long.withCommas() = toString().reversed().chunked(3).joinToString(",").reversed()
 
 /** Every stage of the pet's line, the current one highlighted, and progress to the next evolution. */
@@ -274,24 +176,44 @@ private fun EvolutionCard(pet: Pet, mood: Mood) {
             )
 
             // Details for the tapped stage
-            val unique = SpeciesKit.unique(pet.species, selected)
             val power = com.petpal.app.domain.battle.BattleStats.power(selected)
+            val stagePassive = PetEngine.passiveAt(pet, selected)
             Text(
-                buildString {
-                    append(selected.label())
-                    append(if (selected <= pet.stage) " (reached)" else " (locked)")
-                    append(" · HP & damage ×").append((power * 100).toInt() / 100.0)
-                    append(" · Unique: ").append(unique?.label ?: "none")
-                },
+                selected.label() + (if (selected <= pet.stage) " (reached)" else " (locked)") +
+                    " · HP & damage ×" + (power * 100).toInt() / 100.0,
                 style = MaterialTheme.typography.bodySmall,
             )
+            if (selected != Stage.EGG) {
+                val (pa, pb) = SpeciesKit.passiveOptions(pet.species, selected)
+                Text(if (stagePassive != null) "Passive (rolled):" else "Passive (one is rolled at random on evolving):",
+                    style = MaterialTheme.typography.bodySmall)
+                listOf(pa, pb).forEach { p ->
+                    Text(
+                        (if (p == stagePassive) "✓ " else if (stagePassive != null) "✗ " else "• ") + p.label + ": " + p.description,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (stagePassive != null && p != stagePassive) dim.copy(alpha = 0.5f) else dim,
+                    )
+                }
+            }
+            SpeciesKit.uniqueOptions(pet.species, selected)?.let { (a, b) ->
+                val picked = listOf(a, b).firstOrNull { it in pet.uniquePicks }
+                Text("Unique (pick one):", style = MaterialTheme.typography.bodySmall)
+                listOf(a, b).forEach { m ->
+                    Text(
+                        (if (m == picked) "✓ " else if (picked != null) "✗ " else "• ") + m.label + ": " +
+                            (if (m.isBuff) "Buff · " else if (m.damage == 0) "Debuff · " else "") + m.describe(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (picked != null && m != picked) dim.copy(alpha = 0.5f) else dim,
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun PassiveCard(species: Species) {
-    val passive = SpeciesKit.passive(species)
+private fun PassiveCard(pet: Pet) {
+    val passive = PetEngine.passive(pet)
     ElevatedCard(Modifier.fillMaxWidth()) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(PetPalIcons.Xp, null, tint = MaterialTheme.colorScheme.tertiary)
@@ -309,7 +231,6 @@ private fun PassiveCard(species: Species) {
 private fun MovesCard(pet: Pet, onRelearn: (Move, Move?) -> Unit) {
     val level = PetEngine.levelFor(pet.xp)
     val dim = MaterialTheme.colorScheme.onSurfaceVariant
-    val (babyUnique, kidUnique, adultUnique) = SpeciesKit.uniques(pet.species)
     val learnset = SpeciesKit.learnset(pet.species)
     var showAll by remember { mutableStateOf(false) }
     var preview by remember { mutableStateOf<Move?>(null) }
@@ -317,17 +238,13 @@ private fun MovesCard(pet: Pet, onRelearn: (Move, Move?) -> Unit) {
     preview?.let { MovePreviewDialog(pet, it) { preview = null } }
     ElevatedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            val unique = SpeciesKit.unique(pet.species, pet.stage)
+            val unique = SpeciesKit.unique(pet.species, pet.stage, pet.uniquePicks)
             val used = pet.moves.size + if (unique != null) 1 else 0
             Text("Moves ($used/${SpeciesKit.SLOTS})", style = MaterialTheme.typography.titleSmall)
             pet.moves.forEach { MoveRow(it, it.category.label, onView = { preview = it }) }
             repeat(SpeciesKit.MAX_MOVES - pet.moves.size) { LockedRow("Empty slot", "") }
-            when (unique) {
-                null -> LockedRow("Slot 5: ${babyUnique.label}", "on hatch")
-                babyUnique -> MoveRow(unique, "Unique, upgrades at Kid", onView = { preview = unique })
-                kidUnique -> MoveRow(unique, "Unique, upgrades at Adult (Lv ${PetEngine.ADULT_LEVEL})", onView = { preview = unique })
-                else -> MoveRow(unique, "Unique, max", onView = { preview = unique })
-            }
+            if (unique == null) LockedRow("Slot 5: unique", "on hatch")
+            else MoveRow(unique, "${pet.stage.label()} unique", onView = { preview = unique })
 
             val upcoming = learnset.filter { it.level > level }.take(3)
             if (upcoming.isNotEmpty()) {
@@ -335,9 +252,8 @@ private fun MovesCard(pet: Pet, onRelearn: (Move, Move?) -> Unit) {
                 upcoming.forEach { (m, lv) -> LockedRow(m.label, "Lv $lv") }
             }
             Text(
-                "Can learn ${learnset.size} of ${Move.entries.size} moves. Slot 5 is always the unique: " +
-                    "${babyUnique.label} at Baby, ${kidUnique.label} at Kid (Lv ${PetEngine.KID_LEVEL}) and Teen, " +
-                    "${adultUnique.label} at Adult (Lv ${PetEngine.ADULT_LEVEL}) (${BattleRules.UNIQUE_USES}x per battle). " +
+                "Can learn ${learnset.size} of ${Move.entries.size} moves. Slot 5 is the unique: each stage offers two " +
+                    "and you keep the one you pick (${BattleRules.UNIQUE_USES}x per battle). See Evolution for every stage's options. " +
                     "Special moves need a full energy bar; elemental moves cost energy. Tap ▶ to see a move in action.",
                 style = MaterialTheme.typography.labelSmall,
                 color = dim,

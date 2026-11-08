@@ -67,7 +67,7 @@ class BattleViewModel(
     private val format get() = _state.value.format
 
     private suspend fun myInfo(): FighterInfo =
-        petRepository.refresh()?.let { FighterInfo(it.name, it.species, it.stage, PetEngine.levelFor(it.xp), it.moves) } ?: error("No pet yet")
+        petRepository.refresh()?.let { PetEngine.fighterInfo(it) } ?: error("No pet yet")
 
     private fun start(block: suspend CoroutineScope.() -> Unit) {
         stop()

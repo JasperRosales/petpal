@@ -40,7 +40,7 @@ fun MovePreviewDialog(pet: Pet, move: Move, onDismiss: () -> Unit) {
 @Composable
 fun MovePreview(pet: Pet, move: Move, modifier: Modifier = Modifier) {
     val stage = if (pet.stage == Stage.EGG) Stage.BABY else pet.stage // eggs can't fight; show the hatchling
-    val me = remember(pet, move) { FighterInfo(pet.name, pet.species, stage, PetEngine.levelFor(pet.xp), listOf(move)) }
+    val me = remember(pet, move) { PetEngine.fighterInfo(pet, stage).copy(moves = listOf(move)) }
     val dummy = remember { FighterInfo("Dummy", Species.TURTLE, Stage.ADULT, 1) }
     var fight by remember(move) { mutableStateOf<FightState?>(null) }
 

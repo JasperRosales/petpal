@@ -5,7 +5,7 @@ PetPal is an offline habit pet. You raise one pixel pet, and it only grows from 
 ## Your pet
 
 - **One pet per device.** A short personality quiz picks its species the first time you open the app. See [PETS.md](PETS.md) for all 22 species.
-- **New partner.** Walk 10,000 steps with your pet to swap it for a random new species, or 50,000 to pick one yourself. The new pet starts over as a Lv 1 egg (keeps the name; battle history and step stats stay), and the step counter restarts.
+- **Pets tab.** Walk 10,000 steps to unlock a random new pet, or 50,000 to pick one yourself; the counter restarts after each unlock. New pets start as Lv 1 eggs. You keep every pet and can switch the active one any time; only the active pet earns XP and battles.
 - **Relearning moves.** Every 10 levels your pet earns a relearn point. Spend it on the Home tab to bring back a move it forgot or skipped.
 - **Stages.** Egg → Baby (Lv 3) → Kid (Lv 20) → Teen (Lv 35) → Adult (Lv 50). The stage sets max HP and damage (×0.85 / ×1.0 / ×1.15 / ×1.22 / ×1.3). Pets never devolve.
 - **Levels.** Level *n* needs 10·(n−1)² XP, up to Lv 100.
@@ -25,7 +25,8 @@ Only verifiable activity pays, so shaking the phone or farming the CPU won't get
 
 - A new pet knows 2 moves: Tackle and its first own-type attack.
 - Leveling up unlocks more of its learnset. A pet keeps 4 moves. When a new one unlocks with all 4 slots full, you pick which one to forget.
-- **Slot 5 is the unique**, the species' signature move. It unlocks at Baby, upgrades at Kid (kept through Teen) and again at Adult, and can be used twice per battle.
+- **Slot 5 is the unique.** Each stage (Baby, Kid, Teen, Adult) offers two unique options; when the pet reaches the stage you pick one and keep it for good (the first option is used until you pick). Uniques can be attacks, buffs or debuffs, and can be used twice per battle.
+- **Stage passives.** Every stage (Baby, Kid, Teen, Adult) has two passive options per species. When the pet hatches or evolves, one of the two is rolled at random and replaces the previous stage's passive. The roll is saved and never changes.
 - Each species learns Normal moves, its own types (Bunny, Bear and Panda also have Fighting), and a few off-type moves. Some moves are banned for the body type (no punches without fists, no flying without wings).
 - Combo moves have two types (Thunder Punch is Electric/Fighting, also Fire Punch, Ice Punch, Aqua Fist, Rock Smash, Sky Uppercut) and can be learned by a pet of either type.
 - **Categories:** Normal moves just have a cooldown. Specials also need a full energy bar, which they empty. Uniques are slot 5.
@@ -45,7 +46,7 @@ Battles are real-time and last 90 seconds.
   - strike that drops from above (lightning)
 - **Energy** builds over time and from hits you deal or take. Specials need a full bar.
 - **Evade** is built into every pet. It backs off from the target with a brief moment where it can't be hit, cancels your wind-up, and has a 3s cooldown.
-- **Status effects:** burn, slow, stun, freeze, paralyze, root, weaken, leech, plus self buffs like rage, haste, guard and harden. Passives change these rules per species (for example, Slippery can't be slowed or stunned).
+- **Status effects:** burn, slow, stun, freeze, paralyze, root, weaken, leech, plus self buffs like rage, haste, guard and harden. Passives change these rules per species and stage (for example, Slippery can't be slowed or stunned).
 - **Sound.** Every move has a sound for its type and shape (crackling fire, bubbles, zaps, slashes, rumbles), pitched a little differently per move. Hits thud and the hurt pet squeaks (smaller pets squeak higher). There are also sounds for knockouts and evades. The speaker icon under the timer mutes them. All sounds are synthesized on the phone, so there are no audio files.
 - **Winning.** Knock out the other side. If time runs out, the side with more HP left wins (it compares the HP fraction).
 
