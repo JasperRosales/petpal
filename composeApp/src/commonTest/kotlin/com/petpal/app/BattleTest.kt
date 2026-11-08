@@ -6,6 +6,43 @@ import kotlin.random.Random
 import kotlin.test.*
 
 class BattleTest {
+    @Test
+    fun duoBattleRunsToATeamResult() {
+        repeat(10) { seed ->
+            val rng = Random(seed)
+            val base = FighterInfo("Me", Species.PENGUIN, Stage.KID, 30)
+            val infos = listOf(base) + List(3) { CpuOpponent.random(base, Random(seed * 7 + it)) }
+            val engine = BattleEngine(infos, rng)
+            assertEquals(listOf(0, 0, 1, 1), infos.indices.map(engine::teamOf))
+            var now = 0L
+            while (!engine.ended) {
+                for (i in infos.indices) BattleBot.pick(engine, i, now, rng)?.let { engine.command(i, it, now) }
+                engine.tick(now)
+                now += 50
+            }
+            val snap = engine.snapshot(now)
+            assertTrue(snap.winner in -1..1)
+            if (snap.winner >= 0 && now < BATTLE_MS) { // the losing team is fully down
+                assertTrue(infos.indices.filter { engine.teamOf(it) != snap.winner }.all { snap.fighters[it].hp == 0 })
+            }
+            val enc = Protocol.parse(Protocol.setup(2, infos)) as Protocol.Setup
+            assertEquals(2, enc.you)
+            assertEquals(infos.map { it.species to it.moves }, enc.infos.map { it.species to it.moves })
+        }
+    }
+
+    @Test
+    fun cpuOpponentMatchesLevelWithValidMoves() {
+        val me = FighterInfo("Me", Species.DRAKE, Stage.KID, 30)
+        repeat(50) { seed ->
+            val cpu = CpuOpponent.random(me, Random(seed))
+            assertEquals(30, cpu.level)
+            assertEquals(Stage.KID, cpu.stage)
+            assertEquals(SpeciesKit.MAX_MOVES, cpu.moves.size)
+            assertTrue(cpu.moves.all { SpeciesKit.canLearn(cpu.species, it) && it.level <= 30 })
+        }
+    }
+
     private val a = FighterInfo("A", Species.DRAKE, Stage.KID, 40, listOf(Move.PUNCH, Move.EMBER, Move.FIRE_BREATH, Move.GUARD))
     private val b = FighterInfo("B", Species.KITTY, Stage.BABY, 40, listOf(Move.PUNCH, Move.BITE, Move.GUARD))
 
@@ -152,7 +189,7 @@ class HitboxTest {
     @Test fun evadeDodgesAndHasCooldown() {
         val e = BattleEngine(listOf(a, b), Random(1))
         var t = 0L
-        while (e.distance() > 0.1f && t < BATTLE_MS) { e.tick(t); t += 50 } // wait until they're close
+        while (e.distance(0) > 0.1f && t < BATTLE_MS) { e.tick(t); t += 50 } // wait until they're close
         assertNotNull(e.command(1, Move.PUNCH, t))
         assertNotNull(e.evade(0, t))
         assertNull(e.evade(0, t + 50)) // on cooldown

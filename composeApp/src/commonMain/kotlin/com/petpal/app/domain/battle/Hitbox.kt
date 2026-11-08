@@ -24,7 +24,7 @@ enum class HitShape {
 }
 
 private val BEAMS = setOf(Move.HYPER_BEAM, Move.ZAP_CANNON, Move.SUN_RAY, Move.SOLAR_BEAM, Move.SOLAR_FLARE, Move.OVERHEAT)
-private val WAVES = setOf(Move.SPLASH_WAVE, Move.TIDAL_WAVE, Move.TSUNAMI)
+private val WAVES = setOf(Move.SPLASH_WAVE, Move.TIDAL_WAVE, Move.TSUNAMI, Move.ECHO_SHRIEK)
 
 val Move.shape: HitShape
     get() = when {

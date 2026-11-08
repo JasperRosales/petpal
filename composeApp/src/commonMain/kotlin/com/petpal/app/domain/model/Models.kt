@@ -19,6 +19,14 @@ enum class Species(val label: String, val trait: String) {
     FOX("Fox", "Clever and playful. There's always a trick up your sleeve."),
     FROG("Frog", "Easygoing and fun. You adapt to anything life throws at you."),
     BEAR("Bear", "Strong and caring. You protect the people you love."),
+    PENGUIN("Penguin", "Cool and dependable. You stay steady when things get icy."),
+    HEDGEHOG("Hedgehog", "Shy but tough. Soft on the inside, prickly when it counts."),
+    BAT("Bat", "A night owl with a big heart. You see things nobody else does."),
+    DEER("Deer", "Graceful and gentle. Quick on your feet and kind to everyone."),
+    OTTER("Otter", "Playful and social. You turn any chore into a game."),
+    PANDA("Panda", "Laid-back and lovable. You take life one snack at a time."),
+    LIZARD("Lizard", "Patient and sun-loving. You soak up the good moments."),
+    RACCOON("Raccoon", "Resourceful and sneaky. You can make something out of anything."),
 }
 enum class BattleOutcome { WIN, LOSS, DRAW }
 

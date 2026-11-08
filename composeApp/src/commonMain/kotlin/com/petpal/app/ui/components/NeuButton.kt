@@ -38,7 +38,7 @@ fun Modifier.neumorphic(
     background: Color,
     shadow: Color,
     highlight: Color,
-    elevation: Dp = 6.dp,
+    elevation: Dp = 4.dp,
 ): Modifier = drawBehind {
     val r = cornerRadius.toPx()
     val off = elevation.toPx() * depth
@@ -84,7 +84,7 @@ private fun DrawScope.insetShade(r: Float, amount: Float, shadow: Color, highlig
 @Composable
 fun neuColors(surface: Color = MaterialTheme.colorScheme.background): Triple<Color, Color, Color> {
     val isDark = surface.luminance() < 0.5f
-    val shadow = if (isDark) Color.Black.copy(alpha = 0.85f) else Color(0xFF0B1A0E).copy(alpha = 0.32f)
+    val shadow = if (isDark) Color.Black.copy(alpha = 0.6f) else Color(0xFF0B1A0E).copy(alpha = 0.22f)
     return Triple(surface, shadow, Color.Transparent)
 }
 

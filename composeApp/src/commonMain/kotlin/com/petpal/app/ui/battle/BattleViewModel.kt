@@ -15,9 +15,13 @@ import kotlin.time.TimeSource
 
 enum class BattleScreenMode { LOBBY, HOSTING, SEARCHING, CONNECTING, FIGHT }
 
+/** SOLO = 1v1. DUO_RIVAL = you + CPU vs friend + CPU. DUO_PARTNER = you + friend vs 2 CPUs. */
+enum class BattleFormat(val label: String) { SOLO("1v1"), DUO_RIVAL("Duo: friend as rival"), DUO_PARTNER("Duo: friend as partner") }
+
 data class FightState(
     val me: Int,
     val fighters: List<FighterInfo>,
+    val humans: Set<Int> = setOf(me),
     val snap: BattleSnapshot,
     val log: List<String> = emptyList(),
     val practice: Boolean = false,
@@ -30,6 +34,7 @@ data class BattleUiState(
     val peers: List<Peer> = emptyList(),
     val message: String? = null,
     val fight: FightState? = null,
+    val format: BattleFormat = BattleFormat.SOLO,
 )
 
 class BattleViewModel(
@@ -46,40 +51,57 @@ class BattleViewModel(
 
     fun isAvailable(kind: LinkKind) = links[kind].isAvailable
 
+    fun setFormat(f: BattleFormat) = _state.update { it.copy(format = f) }
+    private val format get() = _state.value.format
+
     private suspend fun myInfo(): FighterInfo =
         petRepository.refresh()?.let { FighterInfo(it.name, it.species, it.stage, PetEngine.levelFor(it.xp), it.moves) } ?: error("No pet yet")
 
     private fun start(block: suspend CoroutineScope.() -> Unit) {
         stop()
+        val keep = format
         job = viewModelScope.launch {
             try {
                 block()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _state.update { BattleUiState(message = "Connection failed: ${e.message ?: e::class.simpleName}") }
+                _state.update { BattleUiState(message = "Connection failed: ${e.message ?: e::class.simpleName}", format = keep) }
             } finally {
                 conn?.close(); conn = null
             }
         }
     }
 
+    /** 1v1 vs a CPU, or (any duo format) you + CPU partner vs 2 CPUs. */
     fun practice() = start {
         val me = myInfo()
-        val cpu = me.copy(name = "Wild ${me.species.label}")
-        runHost(listOf(me, cpu), remote = null)
+        val infos = if (format == BattleFormat.SOLO) listOf(me, CpuOpponent.random(me))
+        else listOf(me, CpuOpponent.random(me, prefix = "CPU"), CpuOpponent.random(me), CpuOpponent.random(me))
+        runHost(infos, remote = null, remoteSlot = -1)
     }
 
     fun host(kind: LinkKind) = start {
-        _state.value = BattleUiState(mode = BattleScreenMode.HOSTING, link = kind)
+        val fmt = format
+        _state.value = BattleUiState(mode = BattleScreenMode.HOSTING, link = kind, format = fmt)
         val me = myInfo()
         val c = links[kind].host(me.name).also { conn = it }
-        val opp = handshake(c, me)
-        runHost(listOf(me, opp), remote = c)
+        val friend = handshake(c, me)
+        // Slots 0,1 are one team and 2,3 the other; empty slots are filled with CPUs.
+        val (infos, slot) = when (fmt) {
+            BattleFormat.SOLO -> listOf(me, friend) to 1
+            BattleFormat.DUO_RIVAL -> listOf(me, CpuOpponent.random(me, prefix = "CPU"), friend, CpuOpponent.random(friend, prefix = "CPU")) to 2
+            BattleFormat.DUO_PARTNER -> {
+                val lead = if (friend.level > me.level) friend else me
+                listOf(me, friend, CpuOpponent.random(lead), CpuOpponent.random(lead)) to 1
+            }
+        }
+        c.send(Protocol.setup(slot, infos))
+        runHost(infos, remote = c, remoteSlot = slot)
     }
 
     fun search(kind: LinkKind) = start {
-        _state.value = BattleUiState(mode = BattleScreenMode.SEARCHING, link = kind)
+        _state.value = BattleUiState(mode = BattleScreenMode.SEARCHING, link = kind, format = format)
         links[kind].discover().collect { peers -> _state.update { it.copy(peers = peers) } }
     }
 
@@ -89,8 +111,11 @@ class BattleViewModel(
             _state.value = BattleUiState(mode = BattleScreenMode.CONNECTING, link = kind, message = peer.name)
             val me = myInfo()
             val c = links[kind].connect(peer).also { conn = it }
-            val opp = handshake(c, me)
-            runGuest(listOf(opp, me), c)
+            handshake(c, me)
+            val setup = withTimeout(10_000) {
+                c.incoming.map { Protocol.parse(it) }.filterIsInstance<Protocol.Setup>().first()
+            }
+            runGuest(setup.infos, setup.you, c)
         }
     }
 
@@ -99,7 +124,7 @@ class BattleViewModel(
 
     fun leave() {
         stop()
-        _state.value = BattleUiState()
+        _state.value = BattleUiState(format = format)
     }
 
     private fun stop() {
@@ -120,9 +145,13 @@ class BattleViewModel(
     }
 
     /** Runs the simulation locally (practice, or host of an online match). */
-    private suspend fun runHost(infos: List<FighterInfo>, remote: BattleConnection?) = coroutineScope {
+    private suspend fun runHost(infos: List<FighterInfo>, remote: BattleConnection?, remoteSlot: Int) = coroutineScope {
         val engine = BattleEngine(infos)
         val rng = Random.Default
+        val humans = setOfNotNull(0, remoteSlot.takeIf { remote != null })
+        val bots = infos.indices.filter { it !in humans }
+        // CPU-only enemies (no friend on the other team) give practice XP
+        val practice = humans.all { engine.teamOf(it) == 0 }
         val commands = Channel<Pair<Int, Move?>>(Channel.UNLIMITED)
         sendMove = { commands.trySend(0 to it) }
         var opponentLeft = false
@@ -130,8 +159,8 @@ class BattleViewModel(
             launch {
                 c.incoming.collect { line ->
                     when (val msg = Protocol.parse(line)) {
-                        is Protocol.Command -> commands.trySend(1 to msg.move)
-                        Protocol.EvadeCmd -> commands.trySend(1 to null)
+                        is Protocol.Command -> commands.trySend(remoteSlot to msg.move)
+                        Protocol.EvadeCmd -> commands.trySend(remoteSlot to null)
                         else -> Unit
                     }
                 }
@@ -140,7 +169,8 @@ class BattleViewModel(
         }
         _state.value = BattleUiState(
             mode = BattleScreenMode.FIGHT,
-            fight = FightState(0, infos, engine.snapshot(0), practice = remote == null),
+            fight = FightState(0, infos, humans, engine.snapshot(0), practice = practice),
+            format = format,
         )
         val clock = TimeSource.Monotonic.markNow()
         while (isActive) {
@@ -150,8 +180,11 @@ class BattleViewModel(
                 val (i, m) = commands.tryReceive().getOrNull() ?: break
                 (if (m == null) engine.evade(i, now) else engine.command(i, m, now))?.let(events::add)
             }
-            if (remote == null && BattleBot.shouldEvade(engine, 1, now, rng)) engine.evade(1, now)?.let(events::add)
-            else if (remote == null) BattleBot.pick(engine, 1, now, rng)?.let { engine.command(1, it, now)?.let(events::add) }
+            for (b in bots) {
+                if (engine.isDown(b)) continue
+                if (BattleBot.shouldEvade(engine, b, now, rng)) engine.evade(b, now)?.let(events::add)
+                else BattleBot.pick(engine, b, now, rng)?.let { engine.command(b, it, now)?.let(events::add) }
+            }
             events += engine.tick(now)
             val snap = engine.snapshot(now)
             if (remote != null) runCatching {
@@ -165,23 +198,26 @@ class BattleViewModel(
         }
         reader?.cancel()
         sendMove = {}
-        finish(0, engine.snapshot(clock.elapsedNow().inWholeMilliseconds), remote == null)
+        finish(0, engine.snapshot(clock.elapsedNow().inWholeMilliseconds), practice)
         if (remote != null) delay(1500) // let the final state reach the guest
     }
 
-    private suspend fun runGuest(infos: List<FighterInfo>, c: BattleConnection) {
+    private suspend fun runGuest(infos: List<FighterInfo>, you: Int, c: BattleConnection) {
+        val teamOf = { i: Int -> i * 2 / infos.size }
+        val practice = teamOf(0) == teamOf(you) // partnered with the host vs CPUs
         sendMove = { m -> viewModelScope.launch { runCatching { c.send(if (m == null) Protocol.EVADE else Protocol.command(m)) } } }
         var last: BattleSnapshot? = null
         c.incoming.collect { line ->
             when (val msg = Protocol.parse(line)) {
                 is Protocol.State -> {
                     if (_state.value.mode != BattleScreenMode.FIGHT) {
-                        _state.value = BattleUiState(mode = BattleScreenMode.FIGHT, fight = FightState(1, infos, msg.snap))
+                        _state.value = BattleUiState(mode = BattleScreenMode.FIGHT, format = format,
+                            fight = FightState(you, infos, setOf(0, you), msg.snap, practice = practice))
                     }
                     last = msg.snap
                     push(msg.snap, emptyList())
                     if (msg.snap.ended) {
-                        finish(1, msg.snap, practice = false)
+                        finish(you, msg.snap, practice)
                         sendMove = {}
                         return@collect
                     }
@@ -205,9 +241,11 @@ class BattleViewModel(
 
     private suspend fun finish(me: Int, snap: BattleSnapshot, practice: Boolean) {
         if (_state.value.fight?.result != null) return
+        val fighters = _state.value.fight?.fighters.orEmpty()
+        val teamOf = { i: Int -> i * 2 / fighters.size.coerceAtLeast(2) }
         val outcome = when (snap.winner) {
             -1 -> BattleOutcome.DRAW
-            me -> BattleOutcome.WIN
+            teamOf(me) -> BattleOutcome.WIN
             else -> BattleOutcome.LOSS
         }
         val title = when (outcome) {
@@ -215,7 +253,8 @@ class BattleViewModel(
             BattleOutcome.LOSS -> "You lost"
             BattleOutcome.DRAW -> "Draw"
         }
-        val xp = petRepository.recordBattle(outcome, _state.value.fight?.fighters?.getOrNull(1 - me)?.name ?: "", practice)
+        val rivals = fighters.indices.filter { teamOf(it) != teamOf(me) }.joinToString(" & ") { fighters[it].name }
+        val xp = petRepository.recordBattle(outcome, rivals, practice)
         val detail = "+$xp XP${if (practice) " (CPU)" else ""}"
         _state.update { s -> s.copy(fight = s.fight?.copy(snap = snap, result = "$title  $detail")) }
     }

@@ -254,6 +254,30 @@ enum class Move(
     WISP_FLAME("Wisp Flame", U, Element.FIRE, 0, 16, 0.55f, 15_000, 450, 250, Effect.BURN),
     SPLASH_WAVE("Splash Wave", U, Element.WATER, 0, 16, 0.60f, 15_000, 500, 300, Effect.KNOCKBACK),
     BEAR_SWIPE("Bear Swipe", U, Element.NORMAL, 0, 22, 0.20f, 15_000, 450, 300, Effect.STUN),
+    FROST_SLIDE("Frost Slide", U, Element.ICE, 0, 17, 0.35f, 15_000, 300, 250, Effect.LUNGE),
+    POLAR_CRASH("Polar Crash", U, Element.ICE, 0, 25, 0.30f, 15_000, 400, 300, Effect.KNOCKBACK),
+    EMPEROR_BLIZZARD("Emperor Blizzard", U, Element.ICE, 0, 32, 0.70f, 15_000, 650, 300, Effect.FREEZE),
+    SPIKE_ROLL("Spike Roll", U, Element.GROUND, 0, 16, 0.32f, 15_000, 300, 250, Effect.LUNGE),
+    NEEDLE_STORM("Needle Storm", U, Element.GRASS, 0, 8, 0.50f, 15_000, 450, 300, Effect.MULTI),
+    QUILL_BARRAGE("Quill Barrage", U, Element.GRASS, 0, 11, 0.60f, 15_000, 450, 300, Effect.MULTI),
+    ECHO_SHRIEK("Echo Shriek", U, Element.NORMAL, 0, 16, 0.55f, 15_000, 400, 250, Effect.WEAKEN),
+    VAMPIRE_FANG("Vampire Fang", U, Element.NORMAL, 0, 24, 0.25f, 15_000, 300, 250, Effect.DRAIN),
+    BLOOD_MOON("Blood Moon", U, Element.NORMAL, 0, 32, 0.60f, 15_000, 600, 300, Effect.DRAIN),
+    ANTLER_JAB("Antler Jab", U, Element.GRASS, 0, 17, 0.22f, 15_000, 300, 250, Effect.KNOCKBACK),
+    VERDANT_CHARGE("Verdant Charge", U, Element.GRASS, 0, 25, 0.35f, 15_000, 350, 250, Effect.LUNGE),
+    SPIRIT_STAMPEDE("Spirit Stampede", U, Element.ICE, 0, 33, 0.45f, 15_000, 450, 300, Effect.STUN),
+    PEBBLE_TOSS("Pebble Toss", U, Element.WATER, 0, 16, 0.45f, 15_000, 300, 250, Effect.SLOW),
+    RIVER_RUSH("River Rush", U, Element.WATER, 0, 24, 0.35f, 15_000, 300, 250, Effect.LUNGE),
+    RAPID_CURRENT("Rapid Current", U, Element.WATER, 0, 32, 0.65f, 15_000, 550, 300, Effect.PULL),
+    BAMBOO_SMACK("Bamboo Smack", U, Element.GRASS, 0, 18, 0.22f, 15_000, 350, 300, Effect.STUN),
+    BAMBOO_STORM("Bamboo Storm", U, Element.GRASS, 0, 26, 0.50f, 15_000, 450, 300, Effect.KNOCKBACK),
+    PANDA_QUAKE("Panda Quake", U, Element.GROUND, 0, 34, 0.80f, 15_000, 600, 350, Effect.STUN),
+    TAIL_LASH("Tail Lash", U, Element.GROUND, 0, 17, 0.22f, 15_000, 300, 250, Effect.KNOCKBACK),
+    MAGMA_TAIL("Magma Tail", U, Element.FIRE, 0, 25, 0.30f, 15_000, 350, 250, Effect.BURN),
+    VOLCANO_ROAR("Volcano Roar", U, Element.FIRE, 0, 33, 0.60f, 15_000, 600, 300, Effect.BURN),
+    SNATCH("Snatch", U, Element.NORMAL, 0, 16, 0.22f, 15_000, 250, 250, Effect.SIPHON),
+    TRASH_TOSS("Trash Toss", U, Element.NORMAL, 0, 24, 0.45f, 15_000, 400, 250, Effect.WEAKEN),
+    MIDNIGHT_HEIST("Midnight Heist", U, Element.ELECTRIC, 0, 31, 0.30f, 15_000, 900, 300, Effect.VANISH),
     ;
 
     /** Buffs target the user; everything else (including 0-damage debuffs) targets the opponent. */
@@ -283,6 +307,14 @@ enum class Passive(val label: String, val description: String) {
     TRICKSTER("Trickster", "20% chance to dodge an attack completely."),
     SLIPPERY("Slippery", "Immune to slow and stun."),
     THICK_FUR("Thick Fur", "20% more max HP."),
+    ICE_BODY("Ice Body", "Can't be burned, and Ice moves deal 15% more damage."),
+    SPIKY("Spiky", "Close-range attackers take 20% of the damage back."),
+    VAMPIRE("Vampire", "Heals for 10% of all damage dealt."),
+    FLEET("Fleet", "Evade recharges twice as fast."),
+    PLAYFUL("Playful", "Energy charges 30% faster."),
+    BAMBOO_SNACK("Bamboo Snack", "Once per battle, heals 20% HP when it drops below 40%."),
+    SUN_SCALES("Sun Scales", "Takes 30% less damage from Fire and Ice moves."),
+    STICKY_PAWS("Sticky Paws", "Every hit steals 8 energy from the target."),
 }
 
 data class MoveUnlock(val move: Move, val level: Int)
@@ -308,6 +340,14 @@ object SpeciesKit {
         Species.FOX -> Passive.TRICKSTER
         Species.FROG -> Passive.SLIPPERY
         Species.BEAR -> Passive.THICK_FUR
+        Species.PENGUIN -> Passive.ICE_BODY
+        Species.HEDGEHOG -> Passive.SPIKY
+        Species.BAT -> Passive.VAMPIRE
+        Species.DEER -> Passive.FLEET
+        Species.OTTER -> Passive.PLAYFUL
+        Species.PANDA -> Passive.BAMBOO_SNACK
+        Species.LIZARD -> Passive.SUN_SCALES
+        Species.RACCOON -> Passive.STICKY_PAWS
     }
 
     /** The species' own types (besides Normal). */
@@ -322,6 +362,14 @@ object SpeciesKit {
         Species.FOX -> setOf(Element.FIRE, Element.ICE)
         Species.FROG -> setOf(Element.WATER, Element.GRASS)
         Species.BEAR -> setOf(Element.GROUND, Element.WATER)
+        Species.PENGUIN -> setOf(Element.ICE, Element.WATER)
+        Species.HEDGEHOG -> setOf(Element.GROUND, Element.GRASS)
+        Species.BAT -> setOf(Element.FLYING, Element.GROUND)
+        Species.DEER -> setOf(Element.GRASS, Element.ICE)
+        Species.OTTER -> setOf(Element.WATER, Element.ELECTRIC)
+        Species.PANDA -> setOf(Element.GRASS, Element.GROUND)
+        Species.LIZARD -> setOf(Element.FIRE, Element.GROUND)
+        Species.RACCOON -> setOf(Element.ELECTRIC, Element.ICE)
     }
 
     /** Off-type moves the species can still learn. */
@@ -336,6 +384,14 @@ object SpeciesKit {
         Species.FOX -> setOf(Move.THUNDER_WAVE, Move.DIG, Move.BOUNCE, Move.AERIAL_ACE, Move.SHOCK_WAVE)
         Species.FROG -> setOf(Move.BOUNCE, Move.SAND_TOMB, Move.ICY_WIND, Move.ICE_FANG, Move.THUNDER_WAVE)
         Species.BEAR -> setOf(Move.ICE_PUNCH, Move.ICE_FANG, Move.FIRE_FANG, Move.THUNDER_FANG, Move.AVALANCHE)
+        Species.PENGUIN -> setOf(Move.MUD_SLAP, Move.BULLDOZE, Move.SHOCK_WAVE)
+        Species.HEDGEHOG -> setOf(Move.FIRE_FANG, Move.FLAME_WHEEL, Move.THUNDER_FANG)
+        Species.BAT -> setOf(Move.ICY_WIND, Move.SHOCK_WAVE, Move.THUNDER_WAVE)
+        Species.DEER -> setOf(Move.WATER_GUN, Move.RAIN_DANCE, Move.BOUNCE, Move.SAND_ATTACK)
+        Species.OTTER -> setOf(Move.ICY_WIND, Move.ICE_FANG, Move.ROCK_THROW, Move.DIG)
+        Species.PANDA -> setOf(Move.ICE_PUNCH, Move.FIRE_FANG, Move.WATERFALL, Move.AVALANCHE)
+        Species.LIZARD -> setOf(Move.THUNDER_FANG, Move.LEECH_SEED, Move.WATER_GUN, Move.AERIAL_ACE)
+        Species.RACCOON -> setOf(Move.DIG, Move.MUD_SLAP, Move.FIRE_FANG, Move.SMOKESCREEN, Move.BOUNCE)
     }
 
     /** Normal or own-type moves this species can't do (no fists, no wings, too slow...). */
@@ -350,6 +406,16 @@ object SpeciesKit {
         Species.FOX -> setOf(Move.PUNCH, Move.MEGA_PUNCH, Move.BODY_SLAM, Move.GIGA_IMPACT, Move.ABSOLUTE_ZERO)
         Species.FROG -> setOf(Move.CLAW, Move.FURY_SWIPES, Move.BITE, Move.HYPER_FANG, Move.HOWL)
         Species.BEAR -> setOf(Move.ZOOMIES, Move.TELEPORT, Move.QUICK_ATTACK, Move.AQUA_JET, Move.DIVE)
+        Species.PENGUIN -> setOf(Move.CLAW, Move.FURY_SWIPES, Move.POUNCE, Move.HOWL, Move.TELEPORT)
+        Species.HEDGEHOG -> setOf(Move.PUNCH, Move.MEGA_PUNCH, Move.HOWL, Move.TELEPORT, Move.QUICK_JAB)
+        Species.BAT -> setOf(Move.PUNCH, Move.MEGA_PUNCH, Move.BODY_SLAM, Move.DOUBLE_KICK, Move.QUICK_JAB, Move.GIGA_IMPACT,
+            Move.DIG, Move.HEAD_SMASH)
+        Species.DEER -> setOf(Move.PUNCH, Move.MEGA_PUNCH, Move.QUICK_JAB, Move.BITE, Move.HYPER_FANG, Move.CLAW,
+            Move.FURY_SWIPES, Move.HOWL)
+        Species.OTTER -> setOf(Move.HOWL, Move.TELEPORT, Move.GIGA_IMPACT, Move.HEAD_SMASH)
+        Species.PANDA -> setOf(Move.ZOOMIES, Move.QUICK_ATTACK, Move.TELEPORT, Move.QUICK_JAB, Move.HOWL)
+        Species.LIZARD -> setOf(Move.PUNCH, Move.MEGA_PUNCH, Move.HOWL, Move.BODY_SLAM, Move.QUICK_JAB)
+        Species.RACCOON -> setOf(Move.HOWL, Move.BODY_SLAM, Move.GIGA_IMPACT, Move.ABSOLUTE_ZERO)
     }
 
     /** Baby unique, its Kid upgrade, and its Adult upgrade. */
@@ -364,6 +430,14 @@ object SpeciesKit {
         Species.FOX -> Triple(Move.WISP_FLAME, Move.FOXFIRE, Move.NINE_TAILS)
         Species.FROG -> Triple(Move.SPLASH_WAVE, Move.TIDAL_WAVE, Move.TSUNAMI)
         Species.BEAR -> Triple(Move.BEAR_SWIPE, Move.MAUL, Move.GRIZZLY_RAMPAGE)
+        Species.PENGUIN -> Triple(Move.FROST_SLIDE, Move.POLAR_CRASH, Move.EMPEROR_BLIZZARD)
+        Species.HEDGEHOG -> Triple(Move.SPIKE_ROLL, Move.NEEDLE_STORM, Move.QUILL_BARRAGE)
+        Species.BAT -> Triple(Move.ECHO_SHRIEK, Move.VAMPIRE_FANG, Move.BLOOD_MOON)
+        Species.DEER -> Triple(Move.ANTLER_JAB, Move.VERDANT_CHARGE, Move.SPIRIT_STAMPEDE)
+        Species.OTTER -> Triple(Move.PEBBLE_TOSS, Move.RIVER_RUSH, Move.RAPID_CURRENT)
+        Species.PANDA -> Triple(Move.BAMBOO_SMACK, Move.BAMBOO_STORM, Move.PANDA_QUAKE)
+        Species.LIZARD -> Triple(Move.TAIL_LASH, Move.MAGMA_TAIL, Move.VOLCANO_ROAR)
+        Species.RACCOON -> Triple(Move.SNATCH, Move.TRASH_TOSS, Move.MIDNIGHT_HEIST)
     }
 
     fun unique(s: Species, stage: Stage): Move? = when (stage) {

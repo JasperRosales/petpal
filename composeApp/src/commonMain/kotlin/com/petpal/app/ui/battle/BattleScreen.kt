@@ -37,6 +37,8 @@ import com.petpal.app.ui.components.NeuButton
 import com.petpal.app.ui.components.PetSprite
 import com.petpal.app.ui.theme.*
 import org.koin.compose.viewmodel.koinViewModel
+import org.koin.compose.koinInject
+import com.petpal.app.domain.platform.SoundPlayer
 import androidx.compose.ui.geometry.Rect
 import kotlin.math.PI
 import kotlin.math.atan2
@@ -48,7 +50,7 @@ import kotlin.math.sin
 fun BattleScreen(vm: BattleViewModel = koinViewModel()) {
     val s by vm.state.collectAsStateWithLifecycle()
     when (s.mode) {
-        BattleScreenMode.LOBBY -> Lobby(vm, s.message)
+        BattleScreenMode.LOBBY -> Lobby(vm, s.message, s.format)
         BattleScreenMode.HOSTING -> Waiting("Waiting for an opponent via ${s.link?.label}...", hostHint(s.link), vm::leave)
         BattleScreenMode.CONNECTING -> Waiting("Connecting to ${s.message}...", null, vm::leave)
         BattleScreenMode.SEARCHING -> Searching(s, vm)
@@ -63,7 +65,7 @@ private fun hostHint(kind: LinkKind?) = when (kind) {
 }
 
 @Composable
-private fun Lobby(vm: BattleViewModel, message: String?) {
+private fun Lobby(vm: BattleViewModel, message: String?, format: BattleFormat) {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -75,11 +77,12 @@ private fun Lobby(vm: BattleViewModel, message: String?) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         message?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        FormatPicker(format, vm::setFormat)
         LinkKind.entries.forEach { kind -> LinkCard(kind, vm) }
         NeuButton(
             onClick = vm::practice,
             icon = Icons.Rounded.SmartToy,
-            text = "Practice vs CPU",
+            text = if (format == BattleFormat.SOLO) "Practice vs CPU" else "Duo vs CPU (with a CPU partner)",
             modifier = Modifier.fillMaxWidth(),
         )
         Text(
@@ -87,6 +90,36 @@ private fun Lobby(vm: BattleViewModel, message: String?) {
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+@Composable
+private fun FormatPicker(format: BattleFormat, onPick: (BattleFormat) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("Format", style = MaterialTheme.typography.titleMedium)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            NeuButton(onClick = { onPick(BattleFormat.SOLO) }, text = "1v1", icon = Icons.Rounded.Person,
+                selected = format == BattleFormat.SOLO, modifier = Modifier.weight(1f))
+            NeuButton(onClick = { if (format == BattleFormat.SOLO) onPick(BattleFormat.DUO_RIVAL) }, text = "Duo 2v2",
+                icon = Icons.Rounded.Groups, selected = format != BattleFormat.SOLO, modifier = Modifier.weight(1f))
+        }
+        if (format != BattleFormat.SOLO) {
+            Text("A friend who joins plays as...", style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                NeuButton(onClick = { onPick(BattleFormat.DUO_RIVAL) }, text = "Rival", icon = Icons.Rounded.SportsMma,
+                    selected = format == BattleFormat.DUO_RIVAL, modifier = Modifier.weight(1f))
+                NeuButton(onClick = { onPick(BattleFormat.DUO_PARTNER) }, text = "Partner", icon = Icons.Rounded.Handshake,
+                    selected = format == BattleFormat.DUO_PARTNER, modifier = Modifier.weight(1f))
+            }
+            Text(
+                when (format) {
+                    BattleFormat.DUO_RIVAL -> "You + CPU vs friend + CPU"
+                    else -> "You + friend vs 2 CPUs"
+                } + ". Empty slots are filled with CPU pets at your level. The host picks the format.",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
@@ -175,9 +208,13 @@ private fun Fight(f: FightState, vm: BattleViewModel) {
         fullscreen?.value = true
         onDispose { fullscreen?.value = false }
     }
+    val sound = koinInject<SoundPlayer>()
+    var soundOn by remember { mutableStateOf(sound.enabled) }
+    BattleSounds(f, sound)
     val me = f.snap.fighters[f.me]
-    val opp = f.snap.fighters[1 - f.me]
     val info = f.fighters[f.me]
+    val myTeam = f.snap.fighters.indices.filter { teamOf(f, it) == teamOf(f, f.me) }.sortedBy { it != f.me }
+    val rivals = f.snap.fighters.indices.filter { teamOf(f, it) != teamOf(f, f.me) }
     Column(Modifier.fillMaxSize().background(EmberCanvas)) {
         Box(Modifier.weight(1f).fillMaxWidth()) {
             Arena(f, Modifier.fillMaxSize())
@@ -187,15 +224,31 @@ private fun Fight(f: FightState, vm: BattleViewModel) {
                     .padding(horizontal = 10.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                HpBar("You · ${info.name}", "Lv ${info.level}", me, MaterialTheme.colorScheme.primary, Modifier.weight(1f))
-                Text(
-                    "${f.snap.timeLeftMs / 1000}s",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.White,
-                    modifier = Modifier.padding(horizontal = 10.dp),
-                )
-                val o = f.fighters[1 - f.me]
-                HpBar(o.name, "Lv ${o.level}", opp, MaterialTheme.colorScheme.error, Modifier.weight(1f))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    myTeam.forEach { i ->
+                        val o = f.fighters[i]
+                        val tag = when { i == f.me -> "You · "; i in f.humans -> "Friend · "; else -> "" }
+                        HpBar("$tag${o.name}", "Lv ${o.level}", f.snap.fighters[i],
+                            if (i == f.me) MaterialTheme.colorScheme.primary else AllyBlue, Modifier.fillMaxWidth())
+                    }
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(horizontal = 6.dp)) {
+                    Text("${f.snap.timeLeftMs / 1000}s", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                    Icon(
+                        if (soundOn) Icons.Rounded.VolumeUp else Icons.Rounded.VolumeOff,
+                        contentDescription = if (soundOn) "Mute sounds" else "Unmute sounds",
+                        tint = Color.White.copy(alpha = 0.85f),
+                        modifier = Modifier.size(28.dp).clip(CircleShape)
+                            .clickable { soundOn = !soundOn; sound.enabled = soundOn }.padding(4.dp),
+                    )
+                }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    rivals.forEach { i ->
+                        val o = f.fighters[i]
+                        HpBar(if (i in f.humans) "Friend · ${o.name}" else o.name, "Lv ${o.level}", f.snap.fighters[i],
+                            MaterialTheme.colorScheme.error, Modifier.fillMaxWidth())
+                    }
+                }
             }
             if (f.log.isNotEmpty()) {
                 Column(
@@ -410,9 +463,10 @@ private fun DrawScope.drawMove(s: FighterSnap, info: FighterInfo, sx: Float, sy:
     val hitAt = m.windupMs
     if (shape == HitShape.SELF) {
         val after = age - hitAt
+        val c = Offset(s.x * sx, s.y * sy)
+        drawMoveFx(m, c, c, after, isSelf = true)
         if (m.effect != Effect.GUARD && after in 0..450) {
             val t = after / 450f
-            val c = Offset(s.x * sx, s.y * sy)
             for (k in 0..2) drawCircle(m.tint().copy(alpha = (1 - t) * 0.7f), (30 + 40 * t + k * 10).dp.toPx(), c,
                 style = Stroke((3 - k).dp.toPx()))
         }
@@ -462,10 +516,18 @@ private fun DrawScope.drawMove(s: FighterSnap, info: FighterInfo, sx: Float, sy:
         drawPath(path, tint.copy(alpha = 0.08f + 0.14f * t))
         drawPath(path, tint.copy(alpha = 0.6f), style = Stroke(1.5.dp.toPx(),
             pathEffect = PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 5.dp.toPx()))))
+        drawMoveFx(m, p(ox, oy), p(cx, cy), age - hitAt, isSelf = false)
         return
     }
 
     val after = age - hitAt
+    val impact = when (shape) {
+        HitShape.PROJECTILE -> if (s.projectileAgeMs < 0) null
+            else minOf(PROJECTILE_SPEED * s.projectileAgeMs / 1000f, range).let { p(ox + dx * it, oy + dy * it) }
+        HitShape.BEAM, HitShape.CONE -> p(ox + dx * range * 0.75f, oy + dy * range * 0.75f)
+        else -> p(cx, cy)
+    }
+    if (impact != null) drawMoveFx(m, p(ox, oy), impact, after, isSelf = false)
     when (shape) {
         HitShape.PROJECTILE -> {
             if (s.projectileAgeMs < 0) return
@@ -579,7 +641,8 @@ private fun Arena(f: FightState, modifier: Modifier) {
             drawArenaFloor()
             f.snap.fighters.forEachIndexed { i, s ->
                 val c = pos(s)
-                val ring = if (i == f.me) meColor else oppColor
+                if (s.hp <= 0) return@forEachIndexed
+                val ring = when { i == f.me -> meColor; teamOf(f, i) == teamOf(f, f.me) -> AllyBlue; else -> oppColor }
                 drawOval(Color.Black.copy(alpha = 0.2f), Offset(c.x - 26.dp.toPx(), c.y + 24.dp.toPx()),
                     Size(52.dp.toPx(), 12.dp.toPx()))
                 // hurtbox: exactly the circle moves are tested against (yours orange, theirs red)
@@ -636,6 +699,7 @@ private fun Arena(f: FightState, modifier: Modifier) {
                     .graphicsLayer {
                         scaleX = s.facing.toFloat()
                         alpha = when {
+                            s.hp <= 0 && f.snap.fighters.size > 2 -> 0.25f // knocked out
                             s.has(Status.VANISH) -> 0f // flying high or underground
                             s.has(Status.EVADE) -> 0.5f // dashing, can't be hit
                             hurt && (s.hurtAgeMs / 75) % 2 == 0L -> 0.35f
@@ -658,6 +722,10 @@ private fun Arena(f: FightState, modifier: Modifier) {
         }
     }
 }
+
+private val AllyBlue = Color(0xFF4FA3E0)
+
+private fun teamOf(f: FightState, i: Int) = i * 2 / f.fighters.size
 
 private fun statusIcons(f: FighterSnap) = buildList {
     if (f.has(Status.BURN)) add(Icons.Rounded.LocalFireDepartment to Color(0xFFE5532D))
@@ -686,6 +754,14 @@ fun Move.icon(): ImageVector = when (this) {
     Move.WISP_FLAME, Move.FOXFIRE, Move.NINE_TAILS -> Icons.Rounded.AutoAwesome
     Move.SPLASH_WAVE, Move.TIDAL_WAVE, Move.TSUNAMI -> Icons.Rounded.Waves
     Move.BEAR_SWIPE, Move.MAUL, Move.GRIZZLY_RAMPAGE -> Icons.Rounded.FrontHand
+    Move.FROST_SLIDE, Move.POLAR_CRASH, Move.EMPEROR_BLIZZARD -> Icons.Rounded.AcUnit
+    Move.SPIKE_ROLL, Move.NEEDLE_STORM, Move.QUILL_BARRAGE -> Icons.Rounded.Park
+    Move.ECHO_SHRIEK, Move.VAMPIRE_FANG, Move.BLOOD_MOON -> Icons.Rounded.NightsStay
+    Move.ANTLER_JAB, Move.VERDANT_CHARGE, Move.SPIRIT_STAMPEDE -> Icons.Rounded.Forest
+    Move.PEBBLE_TOSS, Move.RIVER_RUSH, Move.RAPID_CURRENT -> Icons.Rounded.Pool
+    Move.BAMBOO_SMACK, Move.BAMBOO_STORM, Move.PANDA_QUAKE -> Icons.Rounded.Spa
+    Move.TAIL_LASH, Move.MAGMA_TAIL, Move.VOLCANO_ROAR -> Icons.Rounded.Volcano
+    Move.SNATCH, Move.TRASH_TOSS, Move.MIDNIGHT_HEIST -> Icons.Rounded.Masks
     else -> when (effect) {
         Effect.GUARD -> Icons.Rounded.Shield
         Effect.RAGE -> Icons.Rounded.Campaign
@@ -729,6 +805,7 @@ fun Move.tint(): Color = when {
         this == Move.SHADOW_SWIPE || this == Move.MOON_HOP ->
         Color(0xFF7E57C2)
     this == Move.FOXFIRE || this == Move.NINE_TAILS || this == Move.WISP_FLAME -> Color(0xFF6C8CFF)
+    this == Move.ECHO_SHRIEK || this == Move.VAMPIRE_FANG || this == Move.BLOOD_MOON -> Color(0xFFC2185B)
     effect == Effect.GUARD -> ClearSky
     effect in setOf(Effect.HEAL, Effect.PACK_CALL, Effect.ALPHA) -> Color(0xFF4CAF6A)
     effect == Effect.RAGE || effect == Effect.BATTLE_CRY -> Color(0xFFD9534F)
