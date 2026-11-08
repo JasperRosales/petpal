@@ -12,3 +12,6 @@ captures/
 *.aab
 !release/*.apk
 demo/
+keystore.properties
+*.jks
+*.keystore
