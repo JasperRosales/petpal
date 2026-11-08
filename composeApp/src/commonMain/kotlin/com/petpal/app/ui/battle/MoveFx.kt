@@ -246,6 +246,18 @@ internal val Move.fx: List<Layer>
                 Move.TRASH_TOSS -> listOf(L(ROCK, TRAIL, 4, 1f, Stone), L(SMOKE, BURST, 5))
                 Move.MIDNIGHT_HEIST -> listOf(L(SHADOW, BURST, 6), L(SPARK, CONVERGE, 8, 1f, Gold), L(MOON, STAMP, 1, 1.4f, Lavender))
                 Move.SPIRIT_STAMPEDE -> listOf(L(SNOW, TRAIL, 10, 1f, Snow), L(LEAF, SPIRAL, 8, 1f, Leaf), L(SMOKE, GROUND, 8, 1f, Mist))
+                Move.SEED_SPIT -> listOf(L(SEED, TRAIL, 6, 1f, Bone), L(STAR, BURST, 3, 0.8f, Gold))
+                Move.WHEEL_DASH -> listOf(L(RING, SPIRAL, 3, 1.2f, Gold), L(SPARK, TRAIL, 6))
+                Move.THUNDER_WHEEL -> listOf(L(RING, SPIRAL, 4, 1.4f, Gold), L(BOLT, BURST, 5), L(SPARK, TRAIL, 8))
+                Move.SQUAWK -> listOf(L(NOTE, BURST, 6, 1.1f), L(RING, STAMP, 2, 1.4f))
+                Move.FEATHER_BLAZE -> listOf(L(FEATHER, TRAIL, 8, 1f, Gold), L(FLAME, BURST, 6))
+                Move.PHOENIX_DIVE -> listOf(L(FEATHER, RAIN, 8, 1.2f, Gold), L(FLAME, SPIRAL, 10, 1.3f), L(STAR, STAMP, 1, 1.6f))
+                Move.BUBBLE_GILL -> listOf(L(BUBBLE, TRAIL, 8, 1f, Pink))
+                Move.TIDE_POOL -> listOf(L(WAVE, SWEEP, 4, 1.2f), L(HEART, CONVERGE, 4, 0.8f, Pink))
+                Move.LOTUS_TORRENT -> listOf(L(PETAL, SPIRAL, 10, 1.1f, Pink), L(WAVE, TRAIL, 6), L(VINE, BURST, 4, 1f, Leaf))
+                Move.BURROW_JAB -> listOf(L(MUD, GROUND, 6, 1f, Dirt), L(CLAW, STAMP, 1, 1.4f))
+                Move.DRILL_CLAW -> listOf(L(CLAW, STAMP, 3, 1f), L(ROCK, BURST, 4, 0.8f, Dirt))
+                Move.TREMOR_SPARK -> listOf(L(CRACK, GROUND, 4, 1.4f, Dirt), L(BOLT, RAIN, 6), L(SPARK, BURST, 8))
     }
 
 private fun rnd(seed: Int): Float {

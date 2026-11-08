@@ -16,6 +16,40 @@ class PetEngineTest {
         assertEquals(Stage.BABY, pet.stage) // Lv 3
     }
 
+    @Test fun relearnPointBringsBackAForgottenMove() {
+        val pet = PetEngine.syncMoves(base.copy(species = Species.DRAKE, xp = PetEngine.xpForLevel(25)))
+        assertEquals(2, PetEngine.relearnPoints(pet)) // Lv 25 -> points at 10 and 20
+        assertEquals(SpeciesKit.MAX_MOVES, pet.moves.size)
+        // skip every pending move so there's something to relearn
+        var p = pet
+        while (PetEngine.pendingMove(p) != null) p = PetEngine.learn(p, PetEngine.pendingMove(p)!!, null)
+        val old = PetEngine.relearnable(p).first()
+        val forget = p.moves.first()
+        val after = PetEngine.relearn(p, old, forget)
+        assertTrue(old in after.moves && forget !in after.moves)
+        assertEquals(1, PetEngine.relearnPoints(after))
+        assertEquals(after, PetEngine.relearn(after, old, null)) // already known: no change
+        assertEquals(0, PetEngine.relearnPoints(base.copy(xp = PetEngine.xpForLevel(9))))
+    }
+
+    @Test fun resetNeedsStepsAndStartsOverAtLevelOne() {
+        val old = PetEngine.syncMoves(base.copy(species = Species.DRAKE, xp = PetEngine.xpForLevel(40), relearnsUsed = 2,
+            stepsAtReset = 5_000))
+        assertFalse(PetEngine.canReset(old, 14_999, PetEngine.ResetKind.RANDOM))
+        assertTrue(PetEngine.canReset(old, 15_000, PetEngine.ResetKind.RANDOM))
+        assertFalse(PetEngine.canReset(old, 54_999, PetEngine.ResetKind.CHOOSE))
+        assertTrue(PetEngine.canReset(old, 55_000, PetEngine.ResetKind.CHOOSE))
+
+        val fresh = PetEngine.reset(old, Species.OTTER, now = 1L, lifetimeSteps = 55_000)
+        assertEquals(1, PetEngine.levelFor(fresh.xp))
+        assertEquals(Stage.EGG, fresh.stage)
+        assertEquals(Species.OTTER, fresh.species)
+        assertEquals("Mochi", fresh.name)
+        assertEquals(0, fresh.relearnsUsed)
+        assertEquals(SpeciesKit.starters(Species.OTTER), fresh.moves)
+        assertEquals(0, PetEngine.stepsSinceReset(fresh, 55_000)) // counter restarts
+    }
+
     @Test fun evolvesByLevelFifty() {
         assertEquals(Stage.KID, PetEngine.stageFor(PetEngine.xpForLevel(20)))
         assertEquals(Stage.KID, PetEngine.stageFor(PetEngine.xpForLevel(50) - 1))
@@ -25,8 +59,6 @@ class PetEngineTest {
         // never devolves
         assertEquals(Stage.ADULT, PetEngine.addXp(base.copy(xp = 2000, stage = Stage.ADULT), 10).stage)
     }
-
-    @Test fun focusGivesNoXp() = assertEquals(0, PetEngine.reward(base, HabitType.FOCUS).xp)
 
     @Test fun levels() {
         assertEquals(1, PetEngine.levelFor(0))

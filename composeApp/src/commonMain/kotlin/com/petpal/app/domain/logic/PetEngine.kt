@@ -38,11 +38,10 @@ object PetEngine {
 
     /**
      * XP only comes from things the app can verify: hardware-counted steps and battles.
-     * CPU battles give reduced XP. Focus sessions are logged but give no XP.
+     * CPU battles give reduced XP.
      */
     fun reward(pet: Pet, type: HabitType): Pet = when (type) {
         HabitType.STEPS -> addXp(pet, STEP_XP)
-        HabitType.FOCUS -> pet
     }
 
     fun battleXp(outcome: BattleOutcome): Int = when (outcome) {
@@ -94,6 +93,47 @@ object PetEngine {
         val moves = if (forget != null && forget in pet.moves) pet.moves.map { if (it == forget) move else it } else pet.moves
         return syncMoves(pet.copy(moves = moves, seenMoves = pet.seenMoves + move))
     }
+
+    /** One relearn point every this many levels (Lv 10, 20, ... 100 = 10 points total). */
+    const val RELEARN_EVERY = 10
+
+    fun relearnPoints(pet: Pet): Int = (levelFor(pet.xp) / RELEARN_EVERY - pet.relearnsUsed).coerceAtLeast(0)
+
+    /** Moves the pet already unlocked (learned before or skipped) but doesn't know right now. */
+    fun relearnable(pet: Pet): List<Move> {
+        val level = levelFor(pet.xp)
+        return SpeciesKit.learnset(pet.species)
+            .filter { it.level <= level && it.move in pet.seenMoves && it.move !in pet.moves }
+            .map { it.move }
+    }
+
+    /** Spends a relearn point on [move], replacing [forget] when all slots are full. */
+    fun relearn(pet: Pet, move: Move, forget: Move?): Pet {
+        if (relearnPoints(pet) <= 0 || move !in relearnable(pet)) return pet
+        val moves = when {
+            pet.moves.size < SpeciesKit.MAX_MOVES -> pet.moves + move
+            forget != null && forget in pet.moves -> pet.moves.map { if (it == forget) move else it }
+            else -> return pet
+        }
+        return pet.copy(moves = moves, relearnsUsed = pet.relearnsUsed + 1)
+    }
+
+    /**
+     * Swapping partners is earned by walking with the current one. Either way the new pet
+     * starts over as a Lv 1 egg; the counter restarts from the reset.
+     */
+    enum class ResetKind(val steps: Long, val label: String) {
+        RANDOM(10_000, "Random pet"),
+        CHOOSE(50_000, "Choose your pet"),
+    }
+
+    fun stepsSinceReset(pet: Pet, lifetimeSteps: Long) = (lifetimeSteps - pet.stepsAtReset).coerceAtLeast(0)
+
+    fun canReset(pet: Pet, lifetimeSteps: Long, kind: ResetKind) = stepsSinceReset(pet, lifetimeSteps) >= kind.steps
+
+    /** A fresh Lv 1 egg of [species] that keeps the name. */
+    fun reset(old: Pet, species: Species, now: Long, lifetimeSteps: Long): Pet =
+        syncMoves(Pet(name = old.name, species = species, lastUpdated = now, stepsAtReset = lifetimeSteps))
 
     const val STEP_XP = 20 // per 1,000 steps
 }

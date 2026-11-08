@@ -49,6 +49,10 @@ import kotlin.math.sin
 @Composable
 fun BattleScreen(vm: BattleViewModel = koinViewModel()) {
     val s by vm.state.collectAsStateWithLifecycle()
+    // A stray back swipe mid-fight must not drop the match; once it's over (or before it starts) back leaves.
+    BattleBackHandler(enabled = s.mode != BattleScreenMode.LOBBY) {
+        if (s.mode != BattleScreenMode.FIGHT || s.fight?.result != null) vm.leave()
+    }
     when (s.mode) {
         BattleScreenMode.LOBBY -> Lobby(vm, s.message, s.format)
         BattleScreenMode.HOSTING -> Waiting("Waiting for an opponent via ${s.link?.label}...", hostHint(s.link), vm::leave)
@@ -219,11 +223,8 @@ private fun Fight(f: FightState, vm: BattleViewModel) {
         Box(Modifier.weight(1f).fillMaxWidth()) {
             Arena(f, Modifier.fillMaxSize())
             // HUD
-            Row(
-                Modifier.fillMaxWidth().background(Color.Black.copy(alpha = 0.35f))
-                    .padding(horizontal = 10.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
+            Column(Modifier.fillMaxWidth().background(Color.Black.copy(alpha = 0.35f)).padding(horizontal = 10.dp, vertical = 8.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     myTeam.forEach { i ->
                         val o = f.fighters[i]
@@ -250,6 +251,8 @@ private fun Fight(f: FightState, vm: BattleViewModel) {
                     }
                 }
             }
+            TerrainBadge(f)
+            }
             if (f.log.isNotEmpty()) {
                 Column(
                     Modifier.align(Alignment.BottomStart).padding(8.dp)
@@ -264,8 +267,21 @@ private fun Fight(f: FightState, vm: BattleViewModel) {
                     Modifier.align(Alignment.Center).padding(24.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
                 ) {
-                    Text(f.result, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(20.dp))
+                    // Arm the button after a beat so taps meant for move buttons don't skip the result.
+                    var armed by remember { mutableStateOf(false) }
+                    LaunchedEffect(Unit) { kotlinx.coroutines.delay(1200); armed = true }
+                    Column(Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        Text(f.result, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
+                        NeuButton(onClick = vm::battleAgain, text = "Battle again", icon = Icons.Rounded.Replay,
+                            filled = true, enabled = armed, surface = MaterialTheme.colorScheme.tertiaryContainer)
+                        NeuButton(onClick = vm::leave, text = "Back to lobby", enabled = armed,
+                            surface = MaterialTheme.colorScheme.tertiaryContainer)
+                        if (f.humans.size > 1) Text(
+                            "Both players tap Battle again for a rematch on the next map.",
+                            style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center,
+                        )
+                    }
                 }
             }
         }
@@ -275,9 +291,7 @@ private fun Fight(f: FightState, vm: BattleViewModel) {
                 .padding(10.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            if (f.result != null) {
-                NeuButton(onClick = vm::leave, text = "Back to lobby", filled = true, modifier = Modifier.fillMaxWidth())
-            } else {
+            run {
                 EnergyRow(me)
                 (info.loadout.withIndex() + IndexedValue(-1, null)).chunked(3).forEach { row ->
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -290,6 +304,22 @@ private fun Fight(f: FightState, vm: BattleViewModel) {
                 }
             }
         }
+    }
+}
+
+/** Current map and what it boosts; "home turf" when your pet shares the terrain's type. */
+@Composable
+private fun TerrainBadge(f: FightState) {
+    val t = f.terrain
+    val home = t.isHomeTurf(f.fighters[f.me])
+    Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Icon(Icons.Rounded.Terrain, null, Modifier.size(14.dp), tint = t.accent())
+        Spacer(Modifier.width(4.dp))
+        Text(
+            t.label + (t.element?.let { " · ${it.label} moves +${((Terrain.MOVE_BOOST - 1) * 100).toInt()}%" } ?: "") +
+                if (home) " · Home turf!" else "",
+            style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.9f), maxLines = 1,
+        )
     }
 }
 
@@ -350,7 +380,7 @@ private fun EvadeButton(me: FighterSnap, modifier: Modifier, onClick: () -> Unit
 
 @Composable
 private fun MoveButton(m: Move, cd: Long, info: FighterInfo, me: FighterSnap, modifier: Modifier, onClick: () -> Unit) {
-    val needsEnergy = m.category == MoveCategory.SPECIAL && me.energy < BattleRules.MAX_ENERGY
+    val needsEnergy = (m.category == MoveCategory.SPECIAL && me.energy < BattleRules.MAX_ENERGY) || me.energy < m.energyCost
     val usedUp = m.category == MoveCategory.UNIQUE && me.uniqueLeft <= 0
     val enabled = cd == 0L && !needsEnergy && !usedUp && !me.has(Status.STUN)
     val accent = m.tint()
@@ -378,6 +408,7 @@ private fun MoveButton(m: Move, cd: Long, info: FighterInfo, me: FighterSnap, mo
                     cd > 0 -> "${(cd / 100) / 10.0}s"
                     needsEnergy -> "need energy"
                     m.category == MoveCategory.UNIQUE -> "${me.uniqueLeft} left"
+                    m.energyCost > 0 -> "⚡${m.energyCost}"
                     m.isBuff -> "buff"
                     m.damage == 0 -> "debuff"
                     else -> m.category.label.lowercase()
@@ -624,7 +655,7 @@ private fun Move.coreTint(): Color = when (element) {
 }
 
 @Composable
-private fun Arena(f: FightState, modifier: Modifier) {
+internal fun Arena(f: FightState, modifier: Modifier) {
     val bob by rememberInfiniteTransition().animateFloat(
         0f, 1f, infiniteRepeatable(tween(500), RepeatMode.Reverse),
     )
@@ -638,7 +669,7 @@ private fun Arena(f: FightState, modifier: Modifier) {
         fun pos(s: FighterSnap) = Offset(s.x * sx, s.y * sy)
         val spriteDp = 72.dp
         Canvas(Modifier.matchParentSize()) {
-            drawArenaFloor()
+            if (f.terrain == Terrain.ARENA) drawArenaFloor() else drawTerrainFloor(f.terrain)
             f.snap.fighters.forEachIndexed { i, s ->
                 val c = pos(s)
                 if (s.hp <= 0) return@forEachIndexed
@@ -707,6 +738,22 @@ private fun Arena(f: FightState, modifier: Modifier) {
                         }
                     },
             )
+        }
+        // Smokescreen clouds drift over the pets: puffs swell in, then thin out before vanishing.
+        if (f.snap.smokes.isNotEmpty()) Canvas(Modifier.matchParentSize()) {
+            f.snap.smokes.forEach { sm ->
+                val t = sm.ageMs / Smoke.DURATION_MS.toFloat()
+                val alpha = (minOf(1f, sm.ageMs / 250f) * (1f - t * t)).coerceIn(0f, 1f)
+                val c = Offset(sm.x * sx, sm.y * sy)
+                val r = Smoke.RADIUS * minOf(sx, sy) * (0.7f + 0.3f * minOf(1f, sm.ageMs / 400f))
+                for (k in 0 until 7) {
+                    val a = k * 0.8976f + sm.ageMs / 1800f
+                    val o = Offset(c.x + cos(a) * r * 0.55f, c.y + sin(a) * r * 0.4f)
+                    drawCircle(Brush.radialGradient(listOf(Color(0xFF9A9A9A).copy(alpha = 0.55f * alpha), Color.Transparent), o, r * 0.75f),
+                        r * 0.75f, o)
+                }
+                drawCircle(Color(0xFFB0B0B0).copy(alpha = 0.45f * alpha), r * 0.6f, c)
+            }
         }
         // "YOU" marker bobbing above your pet
         val mine = pos(f.snap.fighters[f.me])

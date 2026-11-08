@@ -207,6 +207,86 @@ class HitboxTest {
         assertTrue(e.tick(300).none { "Punch" in it })
     }
 
+    @Test fun smokescreenLeavesCloudBacksOffAndSlows() {
+        val r = FighterInfo("R", Species.RACCOON, Stage.KID, 40, listOf(Move.PUNCH, Move.SMOKESCREEN))
+        assertTrue(Move.SMOKESCREEN in r.loadout)
+        val e = BattleEngine(listOf(r, b), Random(1))
+        var t = 0L
+        while (e.distance(0) > 0.12f && t < BATTLE_MS) { e.tick(t); t += 50 }
+        assertNotNull(e.command(0, Move.SMOKESCREEN, t))
+        e.tick(t + Move.SMOKESCREEN.windupMs)
+        val snap = e.snapshot(t + Move.SMOKESCREEN.windupMs + 50)
+        assertEquals(1, snap.smokes.size)
+        assertTrue(snap.fighters[0].has(Status.EVADE))
+        assertTrue(e.snapshot(t + Move.SMOKESCREEN.windupMs).fighters[0].evadeCdMs == 0L) // own Evade untouched
+        e.tick(t + 400)
+        assertTrue(e.snapshot(t + 400).fighters[1].has(Status.SLOW)) // enemy is in the smoke
+        val back = Protocol.parse(Protocol.state(snap)) as Protocol.State
+        assertEquals(snap.smokes.size, back.snap.smokes.size)
+        assertEquals(snap.fighters.size, back.snap.fighters.size)
+        e.tick(t + Smoke.DURATION_MS + 500)
+        assertTrue(e.snapshot(t + Smoke.DURATION_MS + 500).smokes.isEmpty())
+    }
+
+    @Test fun elementalMovesCostEnergy() {
+        assertEquals(0, Move.PUNCH.energyCost)
+        assertTrue(Move.EMBER.energyCost > 0)
+        val e = BattleEngine(listOf(a, b), Random(1))
+        val before = e.snapshot(0).fighters[0].energy
+        assertNotNull(e.command(0, Move.EMBER, 0))
+        assertEquals(before - Move.EMBER.energyCost, e.snapshot(0).fighters[0].energy)
+    }
+
+    @Test fun demoPreviewLandsTheMove() {
+        val e = BattleEngine(listOf(a, b), Random(1), demo = true)
+        e.place(0, 0.4f, ARENA_H / 2); e.place(1, 0.52f, ARENA_H / 2)
+        assertNotNull(e.command(0, Move.PUNCH, 0)) // any move works, even outside the loadout check
+        val log = (0..20).flatMap { e.tick(it * 50L) }
+        assertTrue(log.any { it.startsWith("Punch hits") }, log.toString())
+    }
+
+    @Test fun furySwipesStepsForwardAndSlashesTwice() {
+        val k = FighterInfo("K", Species.KITTY, Stage.KID, 40, listOf(Move.FURY_SWIPES))
+        val e = BattleEngine(listOf(k, b), Random(1), demo = true)
+        e.place(0, 0.3f, ARENA_H / 2); e.place(1, 0.55f, ARENA_H / 2)
+        assertNotNull(e.command(0, Move.FURY_SWIPES, 0))
+        val xs = mutableListOf<Float>()
+        val log = (0..30).flatMap { t -> e.tick(t * 25L).also { xs += e.snapshot(t * 25L).fighters[0].x } }
+        assertEquals(2, log.count { it.contains("Fury Swipes") && !it.contains("uses") }, log.toString())
+        assertTrue(xs.last() > 0.3f + TWIN_STEP * 1.5f, xs.toString()) // two steps forward
+    }
+
+    @Test fun terrainRotatesAndBoostsItsElement() {
+        val maps = (0 until Terrain.entries.size).map(Terrain::rotation)
+        assertEquals(Terrain.entries.toSet(), maps.toSet())
+        assertEquals(Terrain.ARENA, Terrain.rotation(Terrain.entries.size))
+        // every element except Normal has its own terrain
+        assertEquals(Element.entries.toSet() - Element.NORMAL, Terrain.entries.mapNotNull { it.element }.toSet())
+        assertTrue(Terrain.VOLCANO.boosts(Move.EMBER) && !Terrain.VOLCANO.boosts(Move.PUNCH))
+        assertTrue(Terrain.VOLCANO.isHomeTurf(a)) // Drake is Fire type
+        assertFalse(Terrain.ARENA.isHomeTurf(a))
+
+        fun avgDamage(t: Terrain): Double = (0 until 40).map { seed ->
+            val e = BattleEngine(listOf(a, b), Random(seed), demo = true, terrain = t)
+            e.place(0, 0.4f, ARENA_H / 2); e.place(1, 0.6f, ARENA_H / 2)
+            e.command(0, Move.EMBER, 0)
+            (0..40).forEach { e.tick(it * 50L) }
+            e.snapshot(2000).fighters[1].let { it.maxHp - it.hp }
+        }.average()
+        assertTrue(avgDamage(Terrain.VOLCANO) > avgDamage(Terrain.TUNDRA))
+
+        val setup = Protocol.parse(Protocol.setup(1, listOf(a, b), Terrain.WINDY_CLIFFS)) as Protocol.Setup
+        assertEquals(Terrain.WINDY_CLIFFS, setup.terrain)
+    }
+
+    @Test fun homeTurfChargesEnergyFaster() {
+        assertFalse(Terrain.TUNDRA.isHomeTurf(a))
+        val home = BattleEngine(listOf(a, b), Random(1), terrain = Terrain.VOLCANO) // Drake is Fire
+        val away = BattleEngine(listOf(a, b), Random(1), terrain = Terrain.TUNDRA)
+        for (t in 0..2000L step 50) { home.tick(t); away.tick(t) }
+        assertTrue(home.snapshot(2000).fighters[0].energy > away.snapshot(2000).fighters[0].energy)
+    }
+
     @Test fun evadeCommandRoundTrips() {
         assertEquals(Protocol.EvadeCmd, Protocol.parse(Protocol.EVADE))
     }

@@ -14,6 +14,8 @@ fun PetEntity.toDomain() = Pet(
     lastUpdated = lastUpdated,
     moves = moveList(moves),
     seenMoves = moveList(seenMoves).toSet(),
+    relearnsUsed = relearnsUsed,
+    stepsAtReset = stepsAtReset,
 )
 
 /** Unknown names (removed moves) are dropped. */
@@ -33,6 +35,8 @@ fun Pet.toEntity() = PetEntity(
     lastUpdated = lastUpdated,
     moves = moves.joinToString(",") { it.name },
     seenMoves = seenMoves.joinToString(",") { it.name },
+    relearnsUsed = relearnsUsed,
+    stepsAtReset = stepsAtReset,
 )
 
 /** Null for habit types that no longer exist (water, sleep, treat). */

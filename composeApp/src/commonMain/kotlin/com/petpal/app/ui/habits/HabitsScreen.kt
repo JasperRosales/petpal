@@ -16,7 +16,11 @@ import com.petpal.app.data.repository.PetRepository
 import com.petpal.app.domain.model.*
 import com.petpal.app.ui.home.label
 import com.petpal.app.ui.theme.PetPalIcons
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.DeleteSweep
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import kotlinx.datetime.*
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -29,17 +33,21 @@ data class HabitsState(
 }
 
 class HabitsViewModel(
-    petRepository: PetRepository,
+    private val petRepository: PetRepository,
     habitRepository: HabitRepository,
 ) : ViewModel() {
     val state = combine(habitRepository.todayLogs(), habitRepository.streak(), petRepository.battles, ::HabitsState)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HabitsState())
+
+    fun deleteBattle(id: Long) = viewModelScope.launch { petRepository.deleteBattle(id) }
+    fun clearBattles() = viewModelScope.launch { petRepository.clearBattles() }
 }
 
 @Composable
 fun HabitsScreen(vm: HabitsViewModel = koinViewModel()) {
     val s by vm.state.collectAsStateWithLifecycle()
     val tz = remember { TimeZone.currentSystemDefault() }
+    var confirmClear by remember { mutableStateOf(false) }
 
     LazyColumn(
         Modifier.fillMaxSize(),
@@ -57,7 +65,14 @@ fun HabitsScreen(vm: HabitsViewModel = koinViewModel()) {
             HabitCard(type, s.count(type))
         }
         item {
-            Text("Battle log", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
+            Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("Battle log", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                if (s.battles.isNotEmpty()) TextButton(onClick = { confirmClear = true }) {
+                    Icon(Icons.Rounded.DeleteSweep, null, Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Clear all")
+                }
+            }
         }
         if (s.battles.isEmpty()) item {
             Text(
@@ -76,17 +91,37 @@ fun HabitsScreen(vm: HabitsViewModel = koinViewModel()) {
             ListItem(
                 leadingContent = { Icon(PetPalIcons.Battle, null, tint = color) },
                 headlineContent = { Text("$label vs ${b.opponent}") },
-                supportingContent = { Text(if (b.xp > 0) "+${b.xp} XP" else "No XP") },
-                trailingContent = { Text("${t.month.name.take(3).lowercase().replaceFirstChar { it.uppercase() }} ${t.dayOfMonth}, ${t.hour.pad()}:${t.minute.pad()}") },
+                supportingContent = {
+                    val date = "${t.month.name.take(3).lowercase().replaceFirstChar { it.uppercase() }} ${t.dayOfMonth}, ${t.hour.pad()}:${t.minute.pad()}"
+                    Text("${if (b.xp > 0) "+${b.xp} XP" else "No XP"} · $date")
+                },
+                trailingContent = {
+                    IconButton(onClick = { vm.deleteBattle(b.id) }) {
+                        Icon(Icons.Rounded.Close, contentDescription = "Remove this entry",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                },
+                modifier = Modifier.animateItem(),
             )
         }
     }
+
+    if (confirmClear) AlertDialog(
+        onDismissRequest = { confirmClear = false },
+        title = { Text("Clear battle log?") },
+        text = { Text("Removes all ${s.battles.size} entries. Your XP and level stay the same.") },
+        confirmButton = {
+            TextButton(onClick = { vm.clearBattles(); confirmClear = false }) {
+                Text("Clear all", color = MaterialTheme.colorScheme.error)
+            }
+        },
+        dismissButton = { TextButton(onClick = { confirmClear = false }) { Text("Cancel") } },
+    )
 }
 
 @Composable
 private fun HabitCard(type: HabitType, count: Int) {
     val container = when (type) {
-        HabitType.FOCUS -> MaterialTheme.colorScheme.secondaryContainer
         HabitType.STEPS -> MaterialTheme.colorScheme.primaryContainer
     }
     Card(colors = CardDefaults.cardColors(containerColor = container)) {
@@ -104,7 +139,6 @@ private fun HabitCard(type: HabitType, count: Int) {
 
 private fun HabitType.hint() = when (this) {
     HabitType.STEPS -> "Auto: +20 XP per 1,000 steps (max 20k/day)"
-    HabitType.FOCUS -> "Finish a Focus session to log it"
 }
 
 private fun Int.pad() = toString().padStart(2, '0')

@@ -22,6 +22,10 @@ class StepRepository(
     fun todaySteps(): Flow<Long> =
         stepDayDao.observeLatest().map { if (it?.date == todayKey()) it.steps else 0L }
 
+    /** Steps per ISO date, from [fromDate] on. */
+    fun stepsFrom(fromDate: String): Flow<Map<String, Long>> =
+        stepDayDao.observeFrom(fromDate).map { days -> days.associate { it.date to it.steps } }
+
     /** Collect while the app is open: persists readings and pays out 1k-step rewards. */
     suspend fun track() {
         stepCounter.stepsSinceBoot().collect { total ->

@@ -6,8 +6,6 @@ import com.petpal.app.domain.platform.TimeProvider
 import com.petpal.app.ui.battle.BattleViewModel
 import com.petpal.app.ui.navigation.RootViewModel
 import com.petpal.app.ui.onboarding.OnboardingViewModel
-import com.petpal.app.ui.focus.FocusSession
-import com.petpal.app.ui.focus.FocusViewModel
 import com.petpal.app.ui.habits.HabitsViewModel
 import com.petpal.app.ui.home.HomeViewModel
 import com.petpal.app.ui.stats.StatsViewModel
@@ -22,15 +20,13 @@ val sharedModule = module {
     single { get<PetPalDatabase>().stepDayDao() }
     single { get<PetPalDatabase>().battleLogDao() }
 
-    single { PetRepository(get(), get(), get(), get()) }
+    single { PetRepository(get(), get(), get(), get(), get()) }
     single { HabitRepository(get(), get()) }
     single { StepRepository(get(), get(), get(), get()) }
-    single { FocusSession(get(), get()) }
 
     viewModel { HomeViewModel(get(), get(), get(), get()) }
     viewModel { HabitsViewModel(get(), get()) }
-    viewModel { FocusViewModel(get()) }
-    viewModel { StatsViewModel(get(), get()) }
+    viewModel { StatsViewModel(get(), get(), get()) }
     viewModel { BattleViewModel(get(), get()) }
     viewModel { OnboardingViewModel(get()) }
     viewModel { RootViewModel(get()) }

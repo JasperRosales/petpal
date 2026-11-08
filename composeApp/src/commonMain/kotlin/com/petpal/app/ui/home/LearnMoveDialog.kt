@@ -17,13 +17,22 @@ import com.petpal.app.domain.battle.Move
 import com.petpal.app.domain.battle.MoveCategory
 import com.petpal.app.domain.battle.SpeciesKit
 import com.petpal.app.domain.model.Pet
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.PlayCircle
+import com.petpal.app.ui.battle.MovePreviewDialog
 import com.petpal.app.ui.battle.color
 import com.petpal.app.ui.battle.icon
 import com.petpal.app.ui.battle.tint
 
 /** One move with icon, stats and a trailing label. */
 @Composable
-fun MoveRow(move: Move, trailing: String, modifier: Modifier = Modifier, leading: (@Composable () -> Unit)? = null) {
+fun MoveRow(
+    move: Move,
+    trailing: String,
+    modifier: Modifier = Modifier,
+    onView: (() -> Unit)? = null,
+    leading: (@Composable () -> Unit)? = null,
+) {
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         leading?.invoke()
         Icon(move.icon(), null, Modifier.size(20.dp), tint = move.tint())
@@ -34,6 +43,9 @@ fun MoveRow(move: Move, trailing: String, modifier: Modifier = Modifier, leading
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Text(trailing, style = MaterialTheme.typography.labelSmall, color = move.category.color())
+        if (onView != null) IconButton(onClick = onView, modifier = Modifier.size(36.dp)) {
+            Icon(Icons.Rounded.PlayCircle, contentDescription = "View ${move.label}", tint = move.tint())
+        }
     }
 }
 
@@ -41,12 +53,14 @@ fun MoveRow(move: Move, trailing: String, modifier: Modifier = Modifier, leading
 @Composable
 fun LearnMoveDialog(pet: Pet, move: Move, onDecide: (forget: Move?) -> Unit) {
     var forget by remember(move) { mutableStateOf<Move?>(null) }
+    var preview by remember { mutableStateOf<Move?>(null) }
+    preview?.let { MovePreviewDialog(pet, it) { preview = null } }
     AlertDialog(
         onDismissRequest = {},
         title = { Text("${pet.name} wants to learn ${move.label}!") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                MoveRow(move, move.category.label)
+                MoveRow(move, move.category.label, onView = { preview = move })
                 Text("But it already knows ${SpeciesKit.MAX_MOVES} moves. Forget one?",
                     style = MaterialTheme.typography.bodyMedium)
                 pet.moves.forEach { m ->
@@ -70,6 +84,8 @@ fun LearnMoveDialog(pet: Pet, move: Move, onDecide: (forget: Move?) -> Unit) {
 fun MoveListDialog(pet: Pet, onDismiss: () -> Unit) {
     val (babyUnique, kidUnique, adultUnique) = SpeciesKit.uniques(pet.species)
     val types = SpeciesKit.affinity(pet.species)
+    var preview by remember { mutableStateOf<Move?>(null) }
+    preview?.let { MovePreviewDialog(pet, it) { preview = null } }
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(Modifier.fillMaxSize().padding(12.dp), shape = MaterialTheme.shapes.large) {
             Column {
@@ -100,7 +116,7 @@ fun MoveListDialog(pet: Pet, onDismiss: () -> Unit) {
                                 m.element != Element.NORMAL && m.element !in types -> "Lv ${m.level} ★"
                                 else -> "Lv ${m.level}"
                             }
-                            MoveRow(m, label, Modifier.alpha(if (can) 1f else 0.4f))
+                            MoveRow(m, label, Modifier.alpha(if (can) 1f else 0.4f), onView = { preview = m })
                         }
                     }
                     item { Text("Uniques", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp)) }
@@ -111,7 +127,8 @@ fun MoveListDialog(pet: Pet, onDismiss: () -> Unit) {
                             adultUnique -> "Adult"
                             else -> "Can't learn"
                         }
-                        MoveRow(m, label, Modifier.alpha(if (m == babyUnique || m == kidUnique || m == adultUnique) 1f else 0.4f))
+                        MoveRow(m, label, Modifier.alpha(if (m == babyUnique || m == kidUnique || m == adultUnique) 1f else 0.4f),
+                            onView = { preview = m })
                     }
                     item {
                         Text("★ = off-type move this species can still learn.",

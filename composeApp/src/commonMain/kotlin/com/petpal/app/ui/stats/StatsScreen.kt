@@ -16,30 +16,46 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
-import com.petpal.app.data.repository.HabitRepository
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import com.petpal.app.data.repository.PetRepository
+import com.petpal.app.data.repository.StepRepository
 import com.petpal.app.domain.logic.DayMath
-import com.petpal.app.domain.model.HabitType
+import com.petpal.app.domain.model.BattleOutcome
 import com.petpal.app.domain.platform.TimeProvider
-import com.petpal.app.ui.home.label
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.*
 import org.koin.compose.viewmodel.koinViewModel
 
 data class DayCount(val date: LocalDate, val count: Int)
-data class StatsState(val days: List<DayCount> = emptyList(), val totals: Map<HabitType, Int> = emptyMap())
 
-class StatsViewModel(habitRepository: HabitRepository, time: TimeProvider) : ViewModel() {
+data class StatsState(
+    val steps: List<DayCount> = emptyList(),
+    val battles: List<DayCount> = emptyList(),
+    val wins: Int = 0,
+    val draws: Int = 0,
+    val losses: Int = 0,
+    val battleXp: Int = 0,
+)
+
+/** The two things PetPal tracks: steps and battles. */
+class StatsViewModel(stepRepository: StepRepository, petRepository: PetRepository, time: TimeProvider) : ViewModel() {
     private val tz = TimeZone.currentSystemDefault()
     private val today = DayMath.dateOf(time.nowMillis(), tz)
+    private val week = (6 downTo 0).map { today.minus(it, DateTimeUnit.DAY) }
 
-    val state = habitRepository.logsSinceDaysAgo(6).map { logs ->
-        val byDay = logs.groupingBy { DayMath.dateOf(it.timestamp, tz) }.eachCount()
+    val state = combine(
+        stepRepository.stepsFrom(week.first().toString()),
+        petRepository.battlesSince(DayMath.startOfDay(week.first(), tz)),
+    ) { steps, battles ->
+        val perDay = battles.groupingBy { DayMath.dateOf(it.timestamp, tz) }.eachCount()
         StatsState(
-            days = (6 downTo 0).map { ago ->
-                val d = today.minus(ago, DateTimeUnit.DAY)
-                DayCount(d, byDay[d] ?: 0)
-            },
-            totals = logs.groupingBy { it.type }.eachCount(),
+            steps = week.map { DayCount(it, (steps[it.toString()] ?: 0L).toInt()) },
+            battles = week.map { DayCount(it, perDay[it] ?: 0) },
+            wins = battles.count { it.outcome == BattleOutcome.WIN },
+            draws = battles.count { it.outcome == BattleOutcome.DRAW },
+            losses = battles.count { it.outcome == BattleOutcome.LOSS },
+            battleXp = battles.sumOf { it.xp },
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), StatsState())
 }
@@ -47,46 +63,59 @@ class StatsViewModel(habitRepository: HabitRepository, time: TimeProvider) : Vie
 @Composable
 fun StatsScreen(vm: StatsViewModel = koinViewModel()) {
     val s by vm.state.collectAsStateWithLifecycle()
-    var selected by remember { mutableStateOf<Int?>(null) }
 
-    Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
         Text("Last 7 days", style = MaterialTheme.typography.headlineMedium)
-
-        ElevatedCard(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(16.dp)) {
-                Text("Habits logged per day", style = MaterialTheme.typography.titleMedium)
-                // Tap a bar to read its value (selective labelling, no number on every bar)
-                val sel = selected?.let { s.days.getOrNull(it) }
-                Text(
-                    sel?.let { "${it.date.dayOfWeek.short()} ${it.date.dayOfMonth}: ${it.count} habits" }
-                        ?: "Tap a bar for details",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(12.dp))
-                if (s.days.isNotEmpty()) BarChart(s.days, selected) { selected = if (selected == it) null else it }
-            }
-        }
+        ChartCard("Steps per day", s.steps, unit = "steps", MaterialTheme.colorScheme.primary)
+        ChartCard("Battles per day", s.battles, unit = "battles", MaterialTheme.colorScheme.tertiary)
 
         ElevatedCard(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Totals", style = MaterialTheme.typography.titleMedium)
-                HabitType.entries.forEach { t ->
-                    Row {
-                        Text(t.label(), Modifier.weight(1f))
-                        Text("${s.totals[t] ?: 0}", style = MaterialTheme.typography.labelLarge)
-                    }
-                }
+                Text("This week", style = MaterialTheme.typography.titleMedium)
+                TotalRow("Steps", s.steps.sumOf { it.count }.withCommas())
+                TotalRow("Battles", "${s.battles.sumOf { it.count }}")
+                TotalRow("Won / Draw / Lost", "${s.wins} / ${s.draws} / ${s.losses}")
+                TotalRow("XP from battles", "+${s.battleXp}")
             }
         }
     }
 }
 
 @Composable
-private fun BarChart(days: List<DayCount>, selected: Int?, onSelect: (Int) -> Unit) {
+private fun ChartCard(title: String, days: List<DayCount>, unit: String, color: androidx.compose.ui.graphics.Color) {
+    var selected by remember { mutableStateOf<Int?>(null) }
+    ElevatedCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp)) {
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            // Tap a bar to read its value (selective labelling, no number on every bar)
+            val sel = selected?.let { days.getOrNull(it) }
+            Text(
+                sel?.let { "${it.date.dayOfWeek.short()} ${it.date.dayOfMonth}: ${it.count.withCommas()} $unit" }
+                    ?: "Tap a bar for details",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(12.dp))
+            if (days.isNotEmpty()) BarChart(days, selected, color) { selected = if (selected == it) null else it }
+        }
+    }
+}
+
+@Composable
+private fun TotalRow(label: String, value: String) = Row {
+    Text(label, Modifier.weight(1f))
+    Text(value, style = MaterialTheme.typography.labelLarge)
+}
+
+private fun Int.withCommas() = toString().reversed().chunked(3).joinToString(",").reversed()
+
+@Composable
+private fun BarChart(days: List<DayCount>, selected: Int?, bar: androidx.compose.ui.graphics.Color, onSelect: (Int) -> Unit) {
     val max = (days.maxOf { it.count }).coerceAtLeast(1)
-    val bar = MaterialTheme.colorScheme.primary
-    val dim = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)
+    val dim = bar.copy(alpha = 0.45f)
     val axis = MaterialTheme.colorScheme.outline
 
     Row(Modifier.fillMaxWidth().height(160.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {

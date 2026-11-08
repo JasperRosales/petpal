@@ -3,6 +3,7 @@ package com.petpal.app.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.petpal.app.data.repository.*
+import com.petpal.app.domain.battle.Move
 import com.petpal.app.domain.logic.DayMath
 import com.petpal.app.domain.logic.PetEngine
 import com.petpal.app.domain.model.*
@@ -21,6 +22,7 @@ data class HomeState(
     val todaySteps: Long = 0,
     val stepsAvailable: Boolean = false,
     val isNight: Boolean = false,
+    val lifetimeSteps: Long = 0,
 )
 
 class HomeViewModel(
@@ -38,8 +40,10 @@ class HomeViewModel(
         habitRepository.streak(),
         stepRepository.todaySteps(),
         isNight,
-    ) { pet, streak, steps, night ->
+        petRepository.lifetimeSteps,
+    ) { pet, streak, steps, night, lifetime ->
         HomeState(
+            lifetimeSteps = lifetime,
             pet = pet,
             mood = PetEngine.mood(night, activeToday = steps > 0 || streak > 0),
             streak = streak,
@@ -59,6 +63,12 @@ class HomeViewModel(
     }
 
     fun rename(name: String) = viewModelScope.launch { petRepository.rename(name) }
+    fun relearn(move: Move, forget: Move?) = viewModelScope.launch { petRepository.relearnMove(move, forget) }
+
+    /** [onDone] gets the new species, or null if the reset wasn't unlocked. */
+    fun resetPet(kind: PetEngine.ResetKind, species: Species?, onDone: (Species?) -> Unit) = viewModelScope.launch {
+        onDone(petRepository.resetPet(kind, species))
+    }
 
     /** Call once the activity-recognition permission is granted. */
     fun startStepTracking() {
@@ -75,5 +85,4 @@ class HomeViewModel(
 fun Stage.label() = name.lowercase().replaceFirstChar { it.uppercase() }
 fun HabitType.label() = when (this) {
     HabitType.STEPS -> "Steps"
-    HabitType.FOCUS -> "Focus"
 }

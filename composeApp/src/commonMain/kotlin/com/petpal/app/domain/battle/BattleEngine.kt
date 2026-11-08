@@ -48,8 +48,11 @@ object BattleStats {
 
     fun range(f: FighterInfo, m: Move) = m.range * if (f.passive == Passive.KEEN_EYE) 1.2f else 1f
 
-    fun cooldown(f: FighterInfo, m: Move) =
-        if (f.passive == Passive.QUICK_FEET) (m.cooldownMs * 0.9f).toLong() else m.cooldownMs
+    fun cooldown(f: FighterInfo, m: Move) = when {
+        f.passive == Passive.QUICK_FEET -> (m.cooldownMs * 0.9f).toLong()
+        f.passive == Passive.BURROWER && m.effect == Effect.VANISH -> (m.cooldownMs * 0.7f).toLong()
+        else -> m.cooldownMs
+    }
 
     fun speed(f: FighterInfo) = if (f.passive == Passive.QUICK_FEET) 0.25f else 0.2f
 }
@@ -77,6 +80,17 @@ object Evade {
     const val DURATION_MS = 350L // dash time, also the i-frame window
     const val DISTANCE = 0.25f
 }
+
+/** How far each Fury Swipes step moves forward. */
+const val TWIN_STEP = 0.09f
+
+/** Smokescreen: a cloud left behind that slows enemies standing in or near it. */
+object Smoke {
+    const val RADIUS = 0.16f
+    const val DURATION_MS = 4000L
+}
+
+data class SmokeSnap(val x: Float, val y: Float, val ageMs: Long)
 
 data class FighterSnap(
     val x: Float,
@@ -106,6 +120,7 @@ data class BattleSnapshot(
     val ended: Boolean,
     val winner: Int, // fighter index, -1 = draw or ongoing
     val fighters: List<FighterSnap>,
+    val smokes: List<SmokeSnap> = emptyList(),
 )
 
 /**
@@ -113,8 +128,14 @@ data class BattleSnapshot(
  * so the skill is timing a move for when the opponent drifts into range.
  * [now] is ms since the battle started.
  */
-class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Random.Default) {
-    private class Fighter(val info: FighterInfo, var x: Float, var y: Float) {
+class BattleEngine(
+    val infos: List<FighterInfo>,
+    private val rng: Random = Random.Default,
+    /** Move previews: pets hold still, any move is allowed and the energy bar starts full. */
+    private val demo: Boolean = false,
+    val terrain: Terrain = Terrain.ARENA,
+) {
+    private inner class Fighter(val info: FighterInfo, var x: Float, var y: Float) {
         val maxHp = BattleStats.maxHp(info)
         var hp = maxHp.toFloat()
         var tx = x; var ty = y
@@ -136,8 +157,11 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
         var leechUntil = 0L
         var counterUntil = 0L
         var evadeUntil = 0L
+        var stepUntil = 0L // short forward step (Fury Swipes)
+        var slashesLeft = 0
         var evadeReadyAt = 0L
-        var energy = 0f
+        // enough for one elemental move right away
+        var energy = if (demo) BattleRules.MAX_ENERGY.toFloat() else 35f + if (info.passive == Passive.CHEEK_POUCH) 30f else 0f
         var uniqueUsed = 0
         var hurtAt = -10_000L
         var leechBy = 0
@@ -152,6 +176,7 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
         var launchAt = 0L
         val readyAt = LongArray(Move.entries.size)
         val passive get() = info.passive
+        val homeTurf = terrain.isHomeTurf(info)
     }
 
     /** 2 fighters = 1v1; 4 = duo vs duo (0,1 vs 2,3). */
@@ -163,10 +188,17 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
         Fighter(info, if (teamOf(i) == 0) 0.25f else 0.75f, y)
     }
     private val teams = IntArray(f.size) { teamOf(it) }
+    private class Cloud(val team: Int, val x: Float, val y: Float, val at: Long)
+    private val clouds = mutableListOf<Cloud>()
     private var lastTick = 0L
     var ended = false; private set
     /** Winning team (same as the fighter index in 1v1), -1 = draw or ongoing. */
     var winner = -1; private set
+
+    /** Demo setup: puts fighter [i] at a spot and keeps it there. */
+    fun place(i: Int, x: Float, y: Float) {
+        f[i].x = x; f[i].y = y; f[i].tx = x; f[i].ty = y
+    }
 
     private fun alive(i: Int) = f[i].hp > 0f
     fun isDown(i: Int) = !alive(i)
@@ -187,9 +219,10 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
 
     fun isReady(i: Int, m: Move, now: Long): Boolean {
         val me = f[i]
-        return !ended && alive(i) && m in me.info.loadout && now >= me.busyUntil && now >= me.stunUntil &&
+        return !ended && alive(i) && (demo || m in me.info.loadout) && now >= me.busyUntil && now >= me.stunUntil &&
             now >= me.readyAt[m.ordinal] && me.projectile == null &&
             (m.category != MoveCategory.SPECIAL || me.energy >= BattleRules.MAX_ENERGY) &&
+            me.energy >= m.energyCost &&
             (m.category != MoveCategory.UNIQUE || me.uniqueUsed < BattleRules.UNIQUE_USES)
     }
 
@@ -211,6 +244,13 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
             me.pendingHit = false
             me.actionAt = now - 10_000
         }
+        dash(me, opp, now)
+        me.evadeReadyAt = now + if (me.passive == Passive.FLEET) Evade.COOLDOWN_MS / 2 else Evade.COOLDOWN_MS
+        return "${me.info.name} backs off!"
+    }
+
+    /** Quick dash straight away from [opp] with i-frames (Evade and Smokescreen). */
+    private fun dash(me: Fighter, opp: Fighter, now: Long) {
         var dx = me.x - opp.x
         var dy = me.y - opp.y
         val d = hypot(dx, dy)
@@ -228,8 +268,6 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
         me.nextWanderAt = now + Evade.DURATION_MS + 400
         me.evadeUntil = now + Evade.DURATION_MS
         me.busyUntil = maxOf(minOf(me.busyUntil, now), now + Evade.DURATION_MS)
-        me.evadeReadyAt = now + if (me.passive == Passive.FLEET) Evade.COOLDOWN_MS / 2 else Evade.COOLDOWN_MS
-        return "${me.info.name} backs off!"
     }
 
     /** True when an enemy attack is about to land near [i] (used by the bot). */
@@ -258,10 +296,26 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
         me.readyAt[m.ordinal] = now + (BattleStats.cooldown(me.info, m) * cdScale).toLong()
         if (m.effect == Effect.VANISH) me.vanishUntil = now + m.windupMs
         if (m.category == MoveCategory.SPECIAL) me.energy = 0f
+        me.energy -= m.energyCost
         if (m.category == MoveCategory.UNIQUE) me.uniqueUsed++
         me.busyUntil = now + m.windupMs + m.recoverMs
         me.pendingHit = true
+        if (m.effect == Effect.TWIN_SLASH) { me.slashesLeft = 2; stepForward(me, opp, now, m.windupMs) }
         return "${me.info.name} uses ${m.label}!"
+    }
+
+    /** A short hop toward [opp] that never runs into it (each Fury Swipes slash). */
+    private fun stepForward(me: Fighter, opp: Fighter, now: Long, ms: Long) {
+        val dx = opp.x - me.x
+        val dy = opp.y - me.y
+        val d = hypot(dx, dy)
+        val dist = minOf(TWIN_STEP, (d - PET_RADIUS * 1.4f).coerceAtLeast(0f))
+        if (d > 0.001f) {
+            me.tx = (me.x + dx / d * dist).coerceIn(0.05f, ARENA_W - 0.05f)
+            me.ty = (me.y + dy / d * dist).coerceIn(0.05f, ARENA_H - 0.05f)
+        }
+        me.stepUntil = now + ms
+        me.nextWanderAt = maxOf(me.nextWanderAt, now + ms + 300)
     }
 
     fun tick(now: Long): List<String> {
@@ -269,6 +323,13 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
         val dt = (now - lastTick).coerceIn(0, 200) / 1000f
         lastTick = now
         val events = mutableListOf<String>()
+
+        clouds.removeAll { now - it.at >= Smoke.DURATION_MS }
+        for (c in clouds) f.forEachIndexed { i, e ->
+            if (teams[i] != c.team && alive(i) && e.passive != Passive.SLIPPERY &&
+                hypot(e.x - c.x, e.y - c.y) <= Smoke.RADIUS + PET_RADIUS
+            ) e.slowUntil = maxOf(e.slowUntil, now + 400)
+        }
 
         f.forEachIndexed { i, me ->
             if (!alive(i)) return@forEachIndexed
@@ -279,9 +340,11 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
                 val by = f[me.leechBy]
                 if (by.hp > 0) by.hp = minOf(by.maxHp.toFloat(), by.hp + 1.5f * dt)
             }
-            val charge = if (me.passive == Passive.PLAYFUL) ENERGY_PER_SEC * 1.3f else ENERGY_PER_SEC
+            var charge = if (me.passive == Passive.PLAYFUL) ENERGY_PER_SEC * 1.3f else ENERGY_PER_SEC
+            if (me.homeTurf) charge *= Terrain.HOME_ENERGY
             me.energy = minOf(BattleRules.MAX_ENERGY.toFloat(), me.energy + charge * dt)
             if (me.passive == Passive.PHOTOSYNTHESIS && me.hp > 0) me.hp = minOf(me.maxHp.toFloat(), me.hp + 0.6f * dt)
+            if (me.passive == Passive.REGROW && me.hp > 0 && me.hp < me.maxHp / 2f) me.hp += 1.2f * dt
             move(me, opp, now, dt)
         }
 
@@ -296,7 +359,9 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
                 me.y = opp.y
                 me.vanishUntil = 0
             }
-            if (m.effect == Effect.LUNGE || m.effect == Effect.VANISH) { me.aimX = opp.x; me.aimY = opp.y }
+            if (m.effect == Effect.LUNGE || m.effect == Effect.VANISH || m.effect == Effect.TWIN_SLASH) {
+                me.aimX = opp.x; me.aimY = opp.y
+            }
             me.originX = me.x; me.originY = me.y
             when {
                 m.isBuff -> selfEffect(me, opp, m, now, events)
@@ -310,6 +375,12 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
                     if (caught.isEmpty()) strike(me, opp, m, now, events, connected = false)
                     else caught.forEach { strike(me, it, m, now, events, connected = true) }
                 }
+            }
+            if (m.effect == Effect.TWIN_SLASH && --me.slashesLeft > 0) { // second step + slash, replaying the wind-up
+                me.pendingHit = true
+                me.actionAt = now
+                me.busyUntil = now + m.windupMs + m.recoverMs
+                stepForward(me, opp, now, m.windupMs)
             }
             if (m.effect == Effect.RECHARGE) {
                 me.stunUntil = now + 1500
@@ -346,12 +417,14 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
         if (me.hp <= 0f) return
         me.facing = if (opp.x >= me.x) 1 else -1
         if (now < me.stunUntil || now < me.vanishUntil || now < me.rootUntil) return
-        val evading = now < me.evadeUntil
+        val evading = now < me.evadeUntil || now < me.stepUntil
         val lunging = me.action?.effect == Effect.LUNGE && now - me.actionAt < (me.action?.windupMs ?: 0)
         if (evading) {
             Unit // heading for the spot picked in evade()
         } else if (lunging) {
             me.tx = opp.x; me.ty = opp.y
+        } else if (demo) {
+            me.tx = me.x; me.ty = me.y
         } else if (now >= me.nextWanderAt || hypot(me.tx - me.x, me.ty - me.y) < 0.02f) {
             if (rng.nextFloat() < 0.5f) { // drift toward the opponent so fights happen in the big arena
                 me.tx = (opp.x + (rng.nextFloat() - 0.5f) * 0.6f).coerceIn(0.08f, ARENA_W - 0.08f)
@@ -363,7 +436,8 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
             me.nextWanderAt = now + 700 + rng.nextLong(1500)
         }
         var speed = when {
-            evading -> Evade.DISTANCE * 1000f / Evade.DURATION_MS
+            now < me.evadeUntil -> Evade.DISTANCE * 1000f / Evade.DURATION_MS
+            evading -> TWIN_STEP * 1000f / 150f // quick hop
             lunging -> 0.9f
             now < me.busyUntil -> 0.06f
             else -> BattleStats.speed(me.info)
@@ -372,6 +446,7 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
             if (now < me.hasteUntil) speed *= 1.5f
             if (now < me.slowUntil) speed *= 0.5f
             if (now < me.paralyzeUntil) speed *= 0.7f
+            if (me.homeTurf) speed *= Terrain.HOME_SPEED
         }
         val dx = me.tx - me.x
         val dy = me.ty - me.y
@@ -421,6 +496,11 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
             Effect.ENERGIZE -> {
                 me.energy = minOf(BattleRules.MAX_ENERGY.toFloat(), me.energy + 50f)
                 events += "$name charges up!"
+            }
+            Effect.SMOKE -> {
+                clouds += Cloud(teams[f.indexOf(me)], me.x, me.y, now)
+                dash(me, opp, now)
+                events += "$name hides behind a smokescreen!"
             }
             Effect.CITADEL -> { me.guardUntil = now + 4000; me.hardenUntil = now + 8000; heal(0.25f) }
             else -> Unit
@@ -472,6 +552,7 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
         val hits = if (m.effect == Effect.MULTI) 2 + rng.nextInt(3) else 1
         var dmg = BattleStats.baseDamage(me.info, m) * hits * (0.85f + rng.nextFloat() * 0.3f)
         if (now < me.rageUntil) dmg *= 1.3f
+        if (terrain.boosts(m)) dmg *= Terrain.MOVE_BOOST
         if (now < me.weakenUntil) dmg *= 0.7f
         if (me.passive == Passive.LOYAL_HEART && me.hp < me.maxHp / 2f) dmg *= 1.25f
         if (m.effect == Effect.EXECUTE && opp.hp < opp.maxHp * 0.3f) dmg *= 2f
@@ -491,6 +572,7 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
         }
         hurt(opp, dealt.toFloat(), now, events)
         if (me.passive == Passive.VAMPIRE) me.hp = minOf(me.maxHp.toFloat(), me.hp + dealt * 0.1f)
+        if (me.passive == Passive.CHATTER && rng.nextFloat() < 0.25f) opp.weakenUntil = maxOf(opp.weakenUntil, now + 3000)
         if (opp.passive == Passive.SPIKY && m.shape == HitShape.MELEE) hurt(me, dealt * 0.2f, now, events, silent = true)
         if (me.passive == Passive.STICKY_PAWS) {
             val stolen = minOf(8f, opp.energy)
@@ -576,6 +658,7 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
         timeLeftMs = (BATTLE_MS - now).coerceAtLeast(0),
         ended = ended,
         winner = winner,
+        smokes = clouds.map { SmokeSnap(it.x, it.y, now - it.at) },
         fighters = f.map { me ->
             var status = 0
             if (now < me.burnUntil) status = status or Status.BURN
@@ -631,6 +714,7 @@ object BattleBot {
         ready.firstOrNull { it.effect in BIG_HEALS && hp < 0.4f }?.let { return it }
         ready.firstOrNull { it.effect in BUFFS && rng.nextFloat() < 0.25f }?.let { return it }
         val d = engine.distance(me)
+        ready.firstOrNull { it.effect == Effect.SMOKE && d < 0.25f && rng.nextFloat() < 0.3f }?.let { return it }
         ready.firstOrNull { it.effect == Effect.COUNTER && d < 0.3f && rng.nextFloat() < 0.2f }?.let { return it }
         ready.firstOrNull { it.effect == Effect.BLINK && hp < 0.3f && d < 0.25f }?.let { return it }
         ready.firstOrNull { !it.isBuff && it.damage == 0 && d <= BattleStats.range(info, it) * 0.9f && rng.nextFloat() < 0.3f }

@@ -9,7 +9,7 @@ An offline-first habit pet app for Android. Raise a pixel pet that grows from yo
 | Doc | What's inside |
 |---|---|
 | [Concept](docs/CONCEPT.md) | How the game works: stages, XP, moves, battles, 1v1 / Duo 2v2, CPU seats |
-| [Pets](docs/PETS.md) | All 18 species: types, passives, uniques, HP, full learnsets |
+| [Pets](docs/PETS.md) | All 22 species: types, passives, uniques, HP, full learnsets |
 | [Move list](docs/MOVES.md) | Every move with type, damage, range, cooldown, hitbox and effect |
 | [Setup](PETPAL_SETUP.md) | Original project setup notes |
 

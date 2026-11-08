@@ -111,6 +111,7 @@ class DocsGenerator {
     private companion object {
         val EFFECTS = listOf(
             Effect.LUNGE to "Dashes at the target during the wind-up",
+            Effect.TWIN_SLASH to "Two short steps forward, slashing after each one",
             Effect.DRAIN to "Heals for half the damage dealt",
             Effect.BURN to "Damage over time for 3s",
             Effect.SLOW to "Halves the target's speed for 3s",
@@ -142,6 +143,7 @@ class DocsGenerator {
             Effect.FORTRESS to "Guard for 3s and heals 15%",
             Effect.ALPHA to "Rage + haste for 8s and heals 35%",
             Effect.CITADEL to "Guard 4s, harden 8s, heals 25%",
+            Effect.SMOKE to "Leaves a smoke cloud for 4s that slows enemies near it, then backs off like Evade",
         )
     }
 }

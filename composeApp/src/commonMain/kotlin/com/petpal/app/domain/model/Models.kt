@@ -5,7 +5,7 @@ import com.petpal.app.domain.battle.Move
 enum class Stage { EGG, BABY, KID, ADULT }
 enum class EvolutionPath { NONE, ATHLETIC, SCHOLAR, CHILL }
 enum class Mood { HAPPY, OKAY, SAD, SLEEPY }
-enum class HabitType { STEPS, FOCUS }
+enum class HabitType { STEPS }
 
 /** Partner pet species, assigned once by the personality quiz. Battle kit lives in SpeciesKit. */
 enum class Species(val label: String, val trait: String) {
@@ -27,6 +27,10 @@ enum class Species(val label: String, val trait: String) {
     PANDA("Panda", "Laid-back and lovable. You take life one snack at a time."),
     LIZARD("Lizard", "Patient and sun-loving. You soak up the good moments."),
     RACCOON("Raccoon", "Resourceful and sneaky. You can make something out of anything."),
+    HAMSTER("Hamster", "Busy and cheerful. You always have something stashed away for later."),
+    PARROT("Parrot", "Chatty and bright. You light up a room and never run out of things to say."),
+    AXOLOTL("Axolotl", "Gentle and resilient. No matter what happens, you bounce back."),
+    MOLE("Mole", "Hardworking and curious. You dig deep until you find the answer."),
 }
 enum class BattleOutcome { WIN, LOSS, DRAW }
 
@@ -40,6 +44,8 @@ data class Pet(
     val lastUpdated: Long, // epoch millis
     val moves: List<Move> = emptyList(), // learned moves, at most SpeciesKit.MAX_MOVES
     val seenMoves: Set<Move> = emptySet(), // moves already offered (learned or declined)
+    val relearnsUsed: Int = 0, // relearn points spent; see PetEngine.relearnPoints
+    val stepsAtReset: Long = 0, // lifetime step total when this pet was adopted/reset; see PetEngine.ResetKind
 )
 
 data class BattleRecord(

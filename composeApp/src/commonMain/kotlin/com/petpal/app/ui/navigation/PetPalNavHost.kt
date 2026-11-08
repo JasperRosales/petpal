@@ -25,8 +25,8 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
 import com.petpal.app.ui.battle.BattleScreen
+import com.petpal.app.ui.battle.BattleViewModel
 import com.petpal.app.ui.battle.LocalBattleFullscreen
-import com.petpal.app.ui.focus.FocusScreen
 import com.petpal.app.ui.habits.HabitsScreen
 import com.petpal.app.ui.home.HomeScreen
 import com.petpal.app.ui.stats.StatsScreen
@@ -35,7 +35,6 @@ import com.petpal.app.ui.theme.PetPalIcons
 private enum class Tab(val route: String, val label: String, val icon: ImageVector) {
     Home("home", "Home", PetPalIcons.Home),
     Habits("habits", "Habits", PetPalIcons.Habits),
-    Focus("focus", "Focus", PetPalIcons.Focus),
     Battle("battle", "Battle", PetPalIcons.Battle),
     Stats("stats", "Stats", PetPalIcons.Stats),
 }
@@ -73,6 +72,8 @@ private fun MainTabs(stepPermissionGranted: Boolean) {
     val snackbar = remember { SnackbarHostState() }
     val entry by nav.currentBackStackEntryAsState()
     val battleFullscreen = remember { mutableStateOf(false) }
+    // Activity-scoped so leaving the Battle tab (back gesture, tab switch) never kills a live match.
+    val battleVm = koinViewModel<BattleViewModel>()
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
@@ -99,8 +100,7 @@ private fun MainTabs(stepPermissionGranted: Boolean) {
         NavHost(nav, startDestination = Tab.Home.route, modifier = Modifier.padding(padding)) {
             composable(Tab.Home.route) { HomeScreen(snackbar, stepPermissionGranted) }
             composable(Tab.Habits.route) { HabitsScreen() }
-            composable(Tab.Focus.route) { FocusScreen() }
-            composable(Tab.Battle.route) { BattleScreen() }
+            composable(Tab.Battle.route) { BattleScreen(battleVm) }
             composable(Tab.Stats.route) { StatsScreen() }
         }
         }

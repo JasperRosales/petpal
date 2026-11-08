@@ -11,6 +11,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.TimeSource
 
 enum class BattleScreenMode { LOBBY, HOSTING, SEARCHING, CONNECTING, FIGHT }
@@ -26,6 +27,7 @@ data class FightState(
     val log: List<String> = emptyList(),
     val practice: Boolean = false,
     val result: String? = null, // set when over
+    val terrain: Terrain = Terrain.ARENA,
 )
 
 data class BattleUiState(
@@ -48,6 +50,11 @@ class BattleViewModel(
     private var conn: BattleConnection? = null
     /** null = evade */
     private var sendMove: (Move?) -> Unit = {}
+    /** Map rotation: each match hosted here moves on to the next terrain (random starting point). */
+    private var mapIndex = Random.nextInt(Terrain.entries.size)
+    private fun nextTerrain() = Terrain.rotation(mapIndex++)
+    /** Re-runs the last kind of match (same CPU format, same link, same host). */
+    private var again: (() -> Unit)? = null
 
     fun isAvailable(kind: LinkKind) = links[kind].isAvailable
 
@@ -68,20 +75,26 @@ class BattleViewModel(
             } catch (e: Exception) {
                 _state.update { BattleUiState(message = "Connection failed: ${e.message ?: e::class.simpleName}", format = keep) }
             } finally {
-                conn?.close(); conn = null
+                // A cancelled old job can finish after a new one connected: only clean up our own link.
+                if (job === coroutineContext[Job]) { conn?.close(); conn = null }
             }
         }
     }
 
     /** 1v1 vs a CPU, or (any duo format) you + CPU partner vs 2 CPUs. */
-    fun practice() = start {
+    fun practice(): Unit = start {
+        again = ::practice
         val me = myInfo()
         val infos = if (format == BattleFormat.SOLO) listOf(me, CpuOpponent.random(me))
         else listOf(me, CpuOpponent.random(me, prefix = "CPU"), CpuOpponent.random(me), CpuOpponent.random(me))
-        runHost(infos, remote = null, remoteSlot = -1)
+        runHost(infos, remote = null, remoteSlot = -1, terrain = nextTerrain())
     }
 
-    fun host(kind: LinkKind) = start {
+    /** "Battle again" on the result screen. Linked matches: the host re-hosts and the guest reconnects. */
+    fun battleAgain() = again?.invoke() ?: leave()
+
+    fun host(kind: LinkKind): Unit = start {
+        again = { host(kind) }
         val fmt = format
         _state.value = BattleUiState(mode = BattleScreenMode.HOSTING, link = kind, format = fmt)
         val me = myInfo()
@@ -96,8 +109,9 @@ class BattleViewModel(
                 listOf(me, friend, CpuOpponent.random(lead), CpuOpponent.random(lead)) to 1
             }
         }
-        c.send(Protocol.setup(slot, infos))
-        runHost(infos, remote = c, remoteSlot = slot)
+        val terrain = nextTerrain()
+        c.send(Protocol.setup(slot, infos, terrain))
+        runHost(infos, remote = c, remoteSlot = slot, terrain = terrain)
     }
 
     fun search(kind: LinkKind) = start {
@@ -107,16 +121,33 @@ class BattleViewModel(
 
     fun join(peer: Peer) {
         val kind = _state.value.link ?: return
-        start {
-            _state.value = BattleUiState(mode = BattleScreenMode.CONNECTING, link = kind, message = peer.name)
-            val me = myInfo()
-            val c = links[kind].connect(peer).also { conn = it }
-            handshake(c, me)
-            val setup = withTimeout(10_000) {
-                c.incoming.map { Protocol.parse(it) }.filterIsInstance<Protocol.Setup>().first()
+        join(kind, peer, rematch = false)
+    }
+
+    private fun join(kind: LinkKind, peer: Peer, rematch: Boolean): Unit = start {
+        again = { join(kind, peer, rematch = true) }
+        _state.value = BattleUiState(mode = BattleScreenMode.CONNECTING, link = kind, format = format,
+            message = if (rematch) "${peer.name} (waiting for the host to tap Battle again)" else peer.name)
+        val me = myInfo()
+        // On a rematch the host may not be listening yet, so keep knocking for a while.
+        val giveUpAt = TimeSource.Monotonic.markNow() + (if (rematch) 30_000 else 0).milliseconds
+        var c: BattleConnection
+        while (true) {
+            try {
+                c = links[kind].connect(peer); break
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (giveUpAt.hasPassedNow()) throw e
+                delay(1000)
             }
-            runGuest(setup.infos, setup.you, c)
         }
+        conn = c
+        handshake(c, me)
+        val setup = withTimeout(10_000) {
+            c.incoming.map { Protocol.parse(it) }.filterIsInstance<Protocol.Setup>().first()
+        }
+        runGuest(setup.infos, setup.you, c, setup.terrain)
     }
 
     fun use(move: Move) = sendMove(move)
@@ -145,8 +176,10 @@ class BattleViewModel(
     }
 
     /** Runs the simulation locally (practice, or host of an online match). */
-    private suspend fun runHost(infos: List<FighterInfo>, remote: BattleConnection?, remoteSlot: Int) = coroutineScope {
-        val engine = BattleEngine(infos)
+    private suspend fun runHost(
+        infos: List<FighterInfo>, remote: BattleConnection?, remoteSlot: Int, terrain: Terrain,
+    ) = coroutineScope {
+        val engine = BattleEngine(infos, terrain = terrain)
         val rng = Random.Default
         val humans = setOfNotNull(0, remoteSlot.takeIf { remote != null })
         val bots = infos.indices.filter { it !in humans }
@@ -169,7 +202,7 @@ class BattleViewModel(
         }
         _state.value = BattleUiState(
             mode = BattleScreenMode.FIGHT,
-            fight = FightState(0, infos, humans, engine.snapshot(0), practice = practice),
+            fight = FightState(0, infos, humans, engine.snapshot(0), practice = practice, terrain = terrain),
             format = format,
         )
         val clock = TimeSource.Monotonic.markNow()
@@ -202,7 +235,7 @@ class BattleViewModel(
         if (remote != null) delay(1500) // let the final state reach the guest
     }
 
-    private suspend fun runGuest(infos: List<FighterInfo>, you: Int, c: BattleConnection) {
+    private suspend fun runGuest(infos: List<FighterInfo>, you: Int, c: BattleConnection, terrain: Terrain) {
         val teamOf = { i: Int -> i * 2 / infos.size }
         val practice = teamOf(0) == teamOf(you) // partnered with the host vs CPUs
         sendMove = { m -> viewModelScope.launch { runCatching { c.send(if (m == null) Protocol.EVADE else Protocol.command(m)) } } }
@@ -212,7 +245,7 @@ class BattleViewModel(
                 is Protocol.State -> {
                     if (_state.value.mode != BattleScreenMode.FIGHT) {
                         _state.value = BattleUiState(mode = BattleScreenMode.FIGHT, format = format,
-                            fight = FightState(you, infos, setOf(0, you), msg.snap, practice = practice))
+                            fight = FightState(you, infos, setOf(0, you), msg.snap, practice = practice, terrain = terrain))
                     }
                     last = msg.snap
                     push(msg.snap, emptyList())

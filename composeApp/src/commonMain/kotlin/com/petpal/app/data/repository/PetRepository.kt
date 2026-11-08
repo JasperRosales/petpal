@@ -14,6 +14,7 @@ class PetRepository(
     private val petDao: PetDao,
     private val habitLogDao: HabitLogDao,
     private val battleLogDao: BattleLogDao,
+    private val stepDayDao: StepDayDao,
     private val time: TimeProvider,
     private val zone: () -> TimeZone = { TimeZone.currentSystemDefault() },
 ) {
@@ -27,6 +28,13 @@ class PetRepository(
     /** Recent battles, newest first. */
     val battles: Flow<List<BattleRecord>> = battleLogDao.observeRecent().map { list -> list.map { it.toDomain() } }
 
+    /** Battles since [from] (epoch ms), oldest first. Follows deletes in the battle log. */
+    fun battlesSince(from: Long): Flow<List<BattleRecord>> =
+        battleLogDao.observeSince(from).map { list -> list.map { it.toDomain() } }
+
+    suspend fun deleteBattle(id: Long) = battleLogDao.delete(id)
+    suspend fun clearBattles() = battleLogDao.deleteAll()
+
     /** Current pet, or null before it's adopted. */
     suspend fun refresh(): Pet? = mutex.withLock { load() }
 
@@ -38,11 +46,38 @@ class PetRepository(
         petDao.upsert(PetEngine.learn(pet, move, forget).toEntity())
     }
 
+    /** Spends a relearn point to bring back an old move (swapping out [forget] if slots are full). */
+    suspend fun relearnMove(move: Move, forget: Move?) = mutex.withLock {
+        val pet = load() ?: return@withLock
+        petDao.upsert(PetEngine.relearn(pet, move, forget).toEntity())
+    }
+
     /** One pet per device: does nothing if a pet already exists. */
     suspend fun adopt(name: String, species: Species) = mutex.withLock {
         if (petDao.getPet() != null) return@withLock
-        val pet = PetEngine.syncMoves(Pet(name = name.trim().ifEmpty { species.label }, species = species, lastUpdated = time.nowMillis()))
+        val pet = PetEngine.syncMoves(Pet(name = name.trim().ifEmpty { species.label }, species = species,
+            lastUpdated = time.nowMillis(), stepsAtReset = stepDayDao.lifetime()))
         petDao.upsert(pet.toEntity())
+    }
+
+    /** Lifetime steps ever counted on this device. */
+    val lifetimeSteps: Flow<Long> = stepDayDao.observeLifetime()
+
+    /**
+     * Swaps the partner for a new Lv 1 egg once enough steps were walked since the last reset.
+     * [species] is ignored for a random reset (any species but the current one).
+     * Returns the new species, or null if the reset isn't unlocked.
+     */
+    suspend fun resetPet(kind: PetEngine.ResetKind, species: Species?): Species? = mutex.withLock {
+        val pet = load() ?: return@withLock null
+        val lifetime = stepDayDao.lifetime()
+        if (!PetEngine.canReset(pet, lifetime, kind)) return@withLock null
+        val next = when (kind) {
+            PetEngine.ResetKind.RANDOM -> Species.entries.filter { it != pet.species }.random()
+            PetEngine.ResetKind.CHOOSE -> species ?: return@withLock null
+        }
+        petDao.upsert(PetEngine.reset(pet, next, time.nowMillis(), lifetime).toEntity())
+        next
     }
 
     suspend fun rename(name: String) = mutex.withLock {

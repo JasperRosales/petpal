@@ -17,6 +17,8 @@ data class PetEntity(
     val lastUpdated: Long,
     @ColumnInfo(defaultValue = "") val moves: String = "", // comma-separated Move names
     @ColumnInfo(defaultValue = "") val seenMoves: String = "",
+    @ColumnInfo(defaultValue = "0") val relearnsUsed: Int = 0,
+    @ColumnInfo(defaultValue = "0") val stepsAtReset: Long = 0,
 )
 
 @Entity(tableName = "habit_log")
@@ -79,6 +81,16 @@ interface StepDayDao {
     @Query("SELECT * FROM step_day ORDER BY date DESC LIMIT 1")
     fun observeLatest(): Flow<StepDayEntity?>
 
+    @Query("SELECT COALESCE(SUM(steps), 0) FROM step_day")
+    fun observeLifetime(): Flow<Long>
+
+    @Query("SELECT COALESCE(SUM(steps), 0) FROM step_day")
+    suspend fun lifetime(): Long
+
+    /** [from] is an ISO date; ISO strings sort like dates. */
+    @Query("SELECT * FROM step_day WHERE date >= :from ORDER BY date")
+    fun observeFrom(from: String): Flow<List<StepDayEntity>>
+
     @Upsert
     suspend fun upsert(day: StepDayEntity)
 }
@@ -90,6 +102,15 @@ interface BattleLogDao {
 
     @Query("SELECT * FROM battle_log ORDER BY timestamp DESC LIMIT 50")
     fun observeRecent(): Flow<List<BattleLogEntity>>
+
+    @Query("SELECT * FROM battle_log WHERE timestamp >= :from ORDER BY timestamp")
+    fun observeSince(from: Long): Flow<List<BattleLogEntity>>
+
+    @Query("DELETE FROM battle_log WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("DELETE FROM battle_log")
+    suspend fun deleteAll()
 
     @Query("SELECT COUNT(*) FROM battle_log WHERE timestamp >= :from AND xp > 0")
     suspend fun rewardedSince(from: Long): Int

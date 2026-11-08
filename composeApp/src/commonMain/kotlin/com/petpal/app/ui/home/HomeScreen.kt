@@ -1,5 +1,6 @@
 package com.petpal.app.ui.home
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -19,7 +20,9 @@ import com.petpal.app.domain.battle.SpeciesKit
 import com.petpal.app.domain.logic.PetEngine
 import com.petpal.app.domain.model.*
 import com.petpal.app.ui.components.*
+import com.petpal.app.ui.battle.MovePreviewDialog
 import com.petpal.app.ui.theme.PetPalIcons
+import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,7 +74,16 @@ fun HomeScreen(
                 )
             }
 
-            MovesCard(pet)
+            MovesCard(pet, vm::relearn)
+            val scope = rememberCoroutineScope()
+            ResetCard(pet, state.lifetimeSteps) { kind, species ->
+                vm.resetPet(kind, species) { got ->
+                    scope.launch {
+                        snackbar.showSnackbar(got?.let { "Say hello to your new ${it.label} egg! Walk to hatch it." }
+                            ?: "Not enough steps yet")
+                    }
+                }
+            }
             Spacer(Modifier.height(8.dp))
         }
     }
@@ -123,6 +135,97 @@ private fun RenameDialog(current: String, onDismiss: () -> Unit, onSave: (String
     )
 }
 
+/** Walk with your partner to unlock a new one: random at 10k steps, your pick at 50k. Both restart at Lv 1. */
+@Composable
+private fun ResetCard(pet: Pet, lifetimeSteps: Long, onReset: (PetEngine.ResetKind, Species?) -> Unit) {
+    val walked = PetEngine.stepsSinceReset(pet, lifetimeSteps)
+    var confirm by remember { mutableStateOf<PetEngine.ResetKind?>(null) }
+    var choosing by remember { mutableStateOf(false) }
+    var picked by remember { mutableStateOf<Species?>(null) }
+    val dim = MaterialTheme.colorScheme.onSurfaceVariant
+    ElevatedCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("New partner", style = MaterialTheme.typography.titleSmall)
+            Text("Steps walked with ${pet.name}: ${walked.withCommas()}", style = MaterialTheme.typography.bodySmall)
+            PetEngine.ResetKind.entries.forEach { kind ->
+                val ready = walked >= kind.steps
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("${kind.label} · ${kind.steps.withCommas()} steps", style = MaterialTheme.typography.bodyMedium)
+                        LinearProgressIndicator(
+                            progress = { (walked.toFloat() / kind.steps).coerceIn(0f, 1f) },
+                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp, end = 12.dp),
+                            drawStopIndicator = {},
+                        )
+                    }
+                    TextButton(enabled = ready, onClick = {
+                        if (kind == PetEngine.ResetKind.CHOOSE) choosing = true else confirm = kind
+                    }) { Text(if (ready) "Reset" else "Locked") }
+                }
+            }
+            Text(
+                "Resetting swaps ${pet.name} for a new egg at Lv 1 (moves, XP and relearn points start over). " +
+                    "Battle history and step stats stay.",
+                style = MaterialTheme.typography.labelSmall, color = dim,
+            )
+        }
+    }
+
+    if (choosing) ChoosePetDialog(pet.species, onDismiss = { choosing = false }) { s ->
+        choosing = false; picked = s; confirm = PetEngine.ResetKind.CHOOSE
+    }
+    confirm?.let { kind ->
+        val target = if (kind == PetEngine.ResetKind.CHOOSE) picked?.label ?: "" else "random"
+        AlertDialog(
+            onDismissRequest = { confirm = null },
+            title = { Text("Start over with a $target egg?") },
+            text = { Text("${pet.name} (Lv ${PetEngine.levelFor(pet.xp)} ${pet.species.label}) will be replaced by a new " +
+                "Lv 1 egg. This can't be undone.") },
+            confirmButton = {
+                TextButton(onClick = { onReset(kind, picked); confirm = null; picked = null }) {
+                    Text("Reset", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = { TextButton(onClick = { confirm = null; picked = null }) { Text("Cancel") } },
+        )
+    }
+}
+
+@Composable
+private fun ChoosePetDialog(current: Species, onDismiss: () -> Unit, onPick: (Species) -> Unit) {
+    var sel by remember { mutableStateOf<Species?>(null) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Choose your new partner") },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Species.entries.filter { it != current }.forEach { s ->
+                    val passive = SpeciesKit.passive(s)
+                    Row(
+                        Modifier.fillMaxWidth().clip(MaterialTheme.shapes.small).clickable { sel = s }
+                            .then(if (sel == s) Modifier.alpha(1f) else Modifier.alpha(0.85f)),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(selected = sel == s, onClick = { sel = s })
+                        PetSprite(Stage.BABY, Mood.HAPPY, s, size = 40.dp)
+                        Spacer(Modifier.width(8.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(s.label, style = MaterialTheme.typography.bodyMedium)
+                            Text("${SpeciesKit.affinity(s).joinToString("/") { it.label }} · ${passive.label}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = { sel?.let(onPick) }, enabled = sel != null) { Text("Next") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
+private fun Long.withCommas() = toString().reversed().chunked(3).joinToString(",").reversed()
+
 @Composable
 private fun PassiveCard(species: Species) {
     val passive = SpeciesKit.passive(species)
@@ -140,24 +243,27 @@ private fun PassiveCard(species: Species) {
 }
 
 @Composable
-private fun MovesCard(pet: Pet) {
+private fun MovesCard(pet: Pet, onRelearn: (Move, Move?) -> Unit) {
     val level = PetEngine.levelFor(pet.xp)
     val dim = MaterialTheme.colorScheme.onSurfaceVariant
     val (babyUnique, kidUnique, adultUnique) = SpeciesKit.uniques(pet.species)
     val learnset = SpeciesKit.learnset(pet.species)
     var showAll by remember { mutableStateOf(false) }
+    var preview by remember { mutableStateOf<Move?>(null) }
+    var relearning by remember { mutableStateOf(false) }
+    preview?.let { MovePreviewDialog(pet, it) { preview = null } }
     ElevatedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             val unique = SpeciesKit.unique(pet.species, pet.stage)
             val used = pet.moves.size + if (unique != null) 1 else 0
             Text("Moves ($used/${SpeciesKit.SLOTS})", style = MaterialTheme.typography.titleSmall)
-            pet.moves.forEach { MoveRow(it, it.category.label) }
+            pet.moves.forEach { MoveRow(it, it.category.label, onView = { preview = it }) }
             repeat(SpeciesKit.MAX_MOVES - pet.moves.size) { LockedRow("Empty slot", "") }
             when (unique) {
                 null -> LockedRow("Slot 5: ${babyUnique.label}", "on hatch")
-                babyUnique -> MoveRow(unique, "Unique, upgrades at Kid")
-                kidUnique -> MoveRow(unique, "Unique, upgrades at Adult")
-                else -> MoveRow(unique, "Unique, max")
+                babyUnique -> MoveRow(unique, "Unique, upgrades at Kid", onView = { preview = unique })
+                kidUnique -> MoveRow(unique, "Unique, upgrades at Adult", onView = { preview = unique })
+                else -> MoveRow(unique, "Unique, max", onView = { preview = unique })
             }
 
             val upcoming = learnset.filter { it.level > level }.take(3)
@@ -169,14 +275,67 @@ private fun MovesCard(pet: Pet) {
                 "Can learn ${learnset.size} of ${Move.entries.size} moves. Slot 5 is always the unique: " +
                     "${babyUnique.label} at Baby, ${kidUnique.label} at Kid (Lv ${PetEngine.KID_LEVEL}), " +
                     "${adultUnique.label} at Adult (Lv ${PetEngine.ADULT_LEVEL}) (${BattleRules.UNIQUE_USES}x per battle). " +
-                    "Special moves need a full energy bar.",
+                    "Special moves need a full energy bar; elemental moves cost energy. Tap ▶ to see a move in action.",
                 style = MaterialTheme.typography.labelSmall,
                 color = dim,
             )
-            TextButton(onClick = { showAll = true }) { Text("All moves") }
+            val points = PetEngine.relearnPoints(pet)
+            val options = PetEngine.relearnable(pet)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = { showAll = true }) { Text("All moves") }
+                Spacer(Modifier.weight(1f))
+                TextButton(onClick = { relearning = true }, enabled = points > 0 && options.isNotEmpty()) {
+                    Text("Relearn ($points)")
+                }
+            }
+            Text(
+                "Earn 1 relearn point every ${PetEngine.RELEARN_EVERY} levels. Spend it to bring back a move you " +
+                    "forgot or skipped." + if (points > 0 && options.isEmpty()) " Nothing to relearn yet." else "",
+                style = MaterialTheme.typography.labelSmall,
+                color = dim,
+            )
         }
     }
     if (showAll) MoveListDialog(pet, onDismiss = { showAll = false })
+    if (relearning) RelearnDialog(pet, onDismiss = { relearning = false }) { m, forget ->
+        onRelearn(m, forget); relearning = false
+    }
+}
+
+/** Pick an old move to bring back; when all slots are full, also pick the move it replaces. */
+@Composable
+private fun RelearnDialog(pet: Pet, onDismiss: () -> Unit, onConfirm: (Move, Move?) -> Unit) {
+    var pick by remember { mutableStateOf<Move?>(null) }
+    var forget by remember { mutableStateOf<Move?>(null) }
+    var preview by remember { mutableStateOf<Move?>(null) }
+    val full = pet.moves.size >= SpeciesKit.MAX_MOVES
+    preview?.let { MovePreviewDialog(pet, it) { preview = null } }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Relearn a move") },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Uses 1 of ${PetEngine.relearnPoints(pet)} relearn points.", style = MaterialTheme.typography.bodySmall)
+                PetEngine.relearnable(pet).forEach { m ->
+                    MoveRow(m, "Lv ${m.level}", Modifier.fillMaxWidth().clickable { pick = m }, onView = { preview = m },
+                        leading = { RadioButton(selected = pick == m, onClick = { pick = m }) })
+                }
+                if (full) {
+                    Text("Forget which move?", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))
+                    pet.moves.forEach { m ->
+                        MoveRow(m, m.category.label, Modifier.fillMaxWidth().clickable { forget = m },
+                            leading = { RadioButton(selected = forget == m, onClick = { forget = m }) })
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { pick?.let { onConfirm(it, forget) } }, enabled = pick != null && (!full || forget != null)) {
+                Text("Relearn")
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
 }
 
 @Composable

@@ -28,18 +28,18 @@ import org.koin.compose.viewmodel.koinViewModel
 
 class OnboardingViewModel(private val petRepository: PetRepository) : ViewModel() {
     var answers by mutableStateOf(listOf<Int>()); private set
-    var result by mutableStateOf<Species?>(null); private set
+    var result by mutableStateOf<PersonalityQuiz.Result?>(null); private set
     var started by mutableStateOf(false)
 
     fun answer(i: Int) {
         answers = answers + i
-        if (answers.size == PersonalityQuiz.questions.size) result = PersonalityQuiz.result(answers)
+        if (answers.size == PersonalityQuiz.questions.size) result = PersonalityQuiz.evaluate(answers)
     }
 
     fun back() { if (result == null && answers.isNotEmpty()) answers = answers.dropLast(1) }
 
     fun adopt(name: String) {
-        val s = result ?: return
+        val s = result?.species ?: return
         viewModelScope.launch { petRepository.adopt(name, s) }
     }
 }
@@ -106,7 +106,8 @@ private fun Question(step: Int, vm: OnboardingViewModel) {
 }
 
 @Composable
-private fun Result(species: Species, onAdopt: (String) -> Unit) {
+private fun Result(result: PersonalityQuiz.Result, onAdopt: (String) -> Unit) {
+    val species = result.species
     var name by remember { mutableStateOf("") }
     val passive = SpeciesKit.passive(species)
     Column(
@@ -124,6 +125,32 @@ private fun Result(species: Species, onAdopt: (String) -> Unit) {
         Text("Egg, Baby, Kid, Adult", style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(species.trait, textAlign = TextAlign.Center)
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Rounded.Psychology, null, tint = MaterialTheme.colorScheme.tertiary)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Your personality", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                    Text("${result.matchPercent}% match", style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary)
+                }
+                val pet = PersonalityQuiz.profiles.getValue(species)
+                result.traits.forEach { (trait, value) ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(trait.label, style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(76.dp))
+                        LinearProgressIndicator(progress = { value }, modifier = Modifier.weight(1f).height(8.dp),
+                            drawStopIndicator = {})
+                        Text("  ${(value * 100).toInt()}%", style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.width(44.dp))
+                    }
+                    if (pet[trait.ordinal] == 3 && value >= 0.4f) Text(
+                        "Strong ${trait.label.lowercase()}, just like a ${species.label.lowercase()}",
+                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 76.dp),
+                    )
+                }
+            }
+        }
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {

@@ -90,6 +90,10 @@ fun Species.colors(): Triple<Color, Color, Color> = when (this) {
     Species.PANDA -> Triple(Color(0xFFF7F5EF), Color(0xFF2B2B2B), Color(0xFFFFFFFF))
     Species.LIZARD -> Triple(Color(0xFF7FB85A), Color(0xFF4B7A33), Color(0xFFF2D08A))
     Species.RACCOON -> Triple(Color(0xFFA3A3A8), Color(0xFF55555C), Color(0xFFE6E6EA))
+    Species.HAMSTER -> Triple(Color(0xFFF2C27A), Color(0xFFB9824A), Color(0xFFFFF4E2))
+    Species.PARROT -> Triple(Color(0xFF5CC46A), Color(0xFF2F8A44), Color(0xFFF4E27A))
+    Species.AXOLOTL -> Triple(Color(0xFFF6B8CC), Color(0xFFE07A9E), Color(0xFFFFE4EC))
+    Species.MOLE -> Triple(Color(0xFF6B5A6E), Color(0xFF3E3342), Color(0xFFB8A9BC))
 }
 
 internal object PetArt {
@@ -169,6 +173,20 @@ internal object PetArt {
                 for (i in 0..span) for (y in wy - i..wy + 2) for (x in b.left - 1 - i..b.left) g.mirror(x, y, 'd')
             }
             Species.TURTLE -> g.ellipse(b0.cx, b0.cy - 1.2f, b0.rx + 0.8f, b0.ry, 'd')
+            Species.PARROT -> { // folded wings and a long tail feather
+                val wy = b.cy.toInt() - 1
+                val span = if (big) 2 else 1
+                for (i in 0..span) for (y in wy..wy + 3 + i) for (x in b.left - 1 - i..b.left) g.mirror(x, y, 'd')
+                g.rect(b.cx.toInt() - 1, b.bottom - 1, b.cx.toInt(), b.bottom + (if (grown) 2 else 1), 'r')
+            }
+            Species.AXOLOTL -> { // feathery gills fanning out from the head
+                val n = if (big) 3 else 2
+                for (k in 0 until n) {
+                    val y = b.top + 1 + k * 2
+                    val len = if (k == 1 || n == 2) 3 else 2
+                    for (x in b.left - len..b.left + 1) g.mirror(x, y, 'd')
+                }
+            }
             Species.BAT -> { // wide webbed wings
                 val wy = b.cy.toInt() - 3
                 val span = if (big) 4 else if (grown) 3 else 2
@@ -239,7 +257,8 @@ internal object PetArt {
                     if (big) { g.mirror(ax - 2, b.top - h, 'h'); g.mirror(ax + 1, b.top - h, 'h') }
                 }
             }
-            Species.OTTER, Species.RACCOON -> {
+            Species.PARROT -> g.spike(b.cx.toInt() - 1, b.top + 1, if (big) 4 else 3, 2, 'r') // crest
+            Species.OTTER, Species.RACCOON, Species.HAMSTER -> {
                 val r = if (big) 1.6f else 1.3f
                 g.ellipse(b.cx - b.rx * 0.65f, b.top + 1f, r, r, 'b'); g.ellipse(b.cx + b.rx * 0.65f, b.top + 1f, r, r, 'b')
             }
@@ -248,7 +267,7 @@ internal object PetArt {
                 g.ellipse(b.cx - b.rx * 0.62f, b.top + 0.6f, r, r, 'd'); g.ellipse(b.cx + b.rx * 0.62f, b.top + 0.6f, r, r, 'd')
             }
             Species.LIZARD -> if (big) g.spike(b.left + 3, b.top + 1, 2, 2, 'd')
-            Species.PUP, Species.PENGUIN, Species.HEDGEHOG -> Unit
+            Species.PUP, Species.PENGUIN, Species.HEDGEHOG, Species.AXOLOTL, Species.MOLE -> Unit
             Species.SPROUT, Species.TURTLE -> Unit
         }
 
@@ -271,6 +290,10 @@ internal object PetArt {
             Species.PENGUIN -> g.ellipse(b.cx, b.cy + b.ry * 0.15f, b.rx * 0.72f, b.ry * 0.8f, 'l', 'b')
             Species.OTTER -> g.ellipse(b.cx, b.cy + b.ry * 0.2f, 2.6f, 1.6f, 'l', 'b')
             Species.HEDGEHOG -> g.ellipse(b.cx, b.cy + b.ry * 0.1f, b.rx * 0.7f, b.ry * 0.75f, 'l', 'b')
+            Species.HAMSTER -> listOf(-1, 1).forEach { s -> // puffy cheek pouches
+                g.ellipse(b.cx + s * b.rx * 0.62f, b.cy + b.ry * 0.2f, 1.8f, 1.5f, 'l', 'b')
+            }
+            Species.PARROT -> g.ellipse(b.cx, b.cy + b.ry * 0.2f, b.rx * 0.6f, b.ry * 0.7f, 'l', 'b')
             else -> Unit
         }
         if (species == Species.PUP) {
@@ -305,11 +328,16 @@ internal object PetArt {
         }
         val my = (b.cy + b.ry * 0.25f).roundToInt()
         val c = N / 2
-        if (species == Species.OWL || species == Species.PENGUIN) {
+        if (species == Species.OWL || species == Species.PENGUIN || species == Species.PARROT) {
             g.set(c - 1, my - 1, 'y'); g.set(c, my - 1, 'y'); g.set(c - 1, my, 'y'); g.set(c, my, 'y')
+            if (species == Species.PARROT) { g.set(c - 1, my + 1, 'y'); g.set(c, my + 1, 'e') } // hooked beak
         } else {
+            if (species == Species.MOLE) { // big pink snout
+                g.set(c - 1, my - 1, 'p'); g.set(c, my - 1, 'p'); g.set(c - 2, my - 1, 'p'); g.set(c + 1, my - 1, 'p')
+                g.set(c - 1, my - 2, 'p'); g.set(c, my - 2, 'p')
+            }
             if (species in setOf(Species.PUP, Species.BEAR, Species.FOX, Species.KITTY, Species.HEDGEHOG, Species.DEER,
-                    Species.OTTER, Species.PANDA, Species.RACCOON)) {
+                    Species.OTTER, Species.PANDA, Species.RACCOON, Species.HAMSTER)) {
                 g.set(c - 1, my - 1, 'e'); g.set(c, my - 1, 'e') // nose
             }
             when (mood) {
@@ -319,7 +347,9 @@ internal object PetArt {
                 Mood.SLEEPY -> g.set(c, my + 1, 'm')
             }
         }
-        if (mood != Mood.SAD && species != Species.OWL && species != Species.PENGUIN) g.mirror(ex - 1, ey + 2, 'c')
+        if (mood != Mood.SAD && species != Species.OWL && species != Species.PENGUIN && species != Species.PARROT) {
+            g.mirror(ex - 1, ey + 2, 'c')
+        }
 
         // 5. Front details
         when (species) {
@@ -343,6 +373,12 @@ internal object PetArt {
                 if (g[c + dx, b.cy.toInt() + dy] == 'b') g.set(c + dx, b.cy.toInt() + dy, 'h') // fawn spots
             }
             Species.PENGUIN -> if (grown) { g.set(b.left, b.cy.toInt() + 1, 'd'); g.set(N - 1 - b.left, b.cy.toInt() + 1, 'd') }
+            Species.MOLE -> { // digging claws
+                val y = b.cy.toInt() + 2
+                g.mirror(b.left, y, 'h'); g.mirror(b.left, y + 1, 'h'); g.mirror(b.left + 1, y + 1, 'h')
+                if (grown) g.mirror(b.left - 1, y + 1, 'h')
+            }
+            Species.AXOLOTL -> if (grown) listOf(-2, 1).forEach { dx -> g.set(c + dx, b.cy.toInt() + 2, 'd') } // freckles
             else -> Unit
         }
         return g.rows()

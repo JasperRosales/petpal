@@ -9,7 +9,6 @@ object PetPalIcons {
     // Navigation
     val Home = Icons.Rounded.Home
     val Habits = Icons.Rounded.Checklist
-    val Focus = Icons.Rounded.Timer
     val Wardrobe = Icons.Rounded.Checkroom
     val Stats = Icons.Rounded.BarChart
     val Battle = Icons.Rounded.SportsMma
@@ -35,6 +34,5 @@ object PetPalIcons {
 
     fun forHabit(type: HabitType) = when (type) {
         HabitType.STEPS -> Steps
-        HabitType.FOCUS -> Focus
     }
 }

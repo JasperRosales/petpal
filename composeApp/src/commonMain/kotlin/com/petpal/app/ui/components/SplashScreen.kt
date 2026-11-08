@@ -40,8 +40,10 @@ fun SplashScreen(onDone: () -> Unit) {
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            // A mystery egg (spot colors differ per launch), not any one species
+            val eggSpecies = remember { Species.entries.random() }
             PetSprite(
-                stage = Stage.BABY, mood = Mood.HAPPY, species = Species.DRAKE, size = 140.dp,
+                stage = Stage.EGG, mood = Mood.HAPPY, species = eggSpecies, size = 140.dp,
                 modifier = Modifier.graphicsLayer {
                     scaleX = pop.value; scaleY = pop.value
                     translationY = -10.dp.toPx() * bob
