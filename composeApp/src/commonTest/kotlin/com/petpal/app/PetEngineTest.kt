@@ -1,5 +1,7 @@
 package com.petpal.app
 
+import com.petpal.app.domain.battle.Move
+import com.petpal.app.domain.battle.SpeciesKit
 import com.petpal.app.domain.logic.*
 import com.petpal.app.domain.model.*
 import kotlinx.datetime.LocalDate
@@ -8,40 +10,54 @@ import kotlin.test.*
 class PetEngineTest {
     private val base = Pet(name = "Mochi", lastUpdated = 0L)
 
-    @Test fun decaysOverTwoHours() {
-        val pet = PetEngine.applyDecay(base, now = 2 * 3_600_000L)
-        assertEquals(72.0, pet.hunger)
-        assertEquals(74.0, pet.happiness)
-        assertEquals(76.0, pet.energy)
-    }
-
-    @Test fun ignoresClockRollback() {
-        val pet = base.copy(lastUpdated = 10_000L)
-        assertEquals(pet, PetEngine.applyDecay(pet, now = 5_000L))
-    }
-
-    @Test fun neverGoesBelowZero() {
-        val pet = PetEngine.applyDecay(base, now = 1_000 * 3_600_000L)
-        assertEquals(0.0, pet.hunger)
-    }
-
-    @Test fun rewardCapsAt100AndEvolves() {
-        val pet = PetEngine.reward(base.copy(energy = 95.0, xp = 45), HabitType.STEPS)
-        assertEquals(100.0, pet.energy)
+    @Test fun stepsGiveXpAndEvolve() {
+        val pet = PetEngine.reward(base.copy(xp = 45), HabitType.STEPS)
+        assertEquals(65, pet.xp)
         assertEquals(Stage.BABY, pet.stage)
     }
 
-    @Test fun selfReportedHabitsGiveNoXp() {
-        listOf(HabitType.WATER, HabitType.SLEEP, HabitType.CUSTOM, HabitType.FOCUS).forEach {
-            assertEquals(0, PetEngine.reward(base, it).xp)
-        }
+    @Test fun focusGivesNoXp() = assertEquals(0, PetEngine.reward(base, HabitType.FOCUS).xp)
+
+    @Test fun levels() {
+        assertEquals(1, PetEngine.levelFor(0))
+        assertEquals(2, PetEngine.levelFor(10))
+        assertEquals(16, PetEngine.levelFor(2250))
+        assertEquals(PetEngine.MAX_LEVEL, PetEngine.levelFor(1_000_000))
+        assertEquals(40, PetEngine.nextLevelXp(15))
+        assertNull(PetEngine.nextLevelXp(1_000_000))
+    }
+
+    @Test fun newPetKnowsStarters() {
+        val pet = PetEngine.syncMoves(base)
+        assertEquals(SpeciesKit.learnset(Species.SPROUT).filter { it.level <= 1 }.map { it.move }, pet.moves)
+        assertNull(PetEngine.pendingMove(pet))
+    }
+
+    @Test fun fullMovesetAsksBeforeLearning() {
+        val pet = PetEngine.addXp(PetEngine.syncMoves(base), PetEngine.xpForLevel(3))
+        assertEquals(SpeciesKit.MAX_MOVES, pet.moves.size)
+        assertEquals(Move.GROWL, PetEngine.pendingMove(pet))
+
+        val swapped = PetEngine.learn(pet, Move.GROWL, forget = Move.TACKLE)
+        assertTrue(Move.GROWL in swapped.moves && Move.TACKLE !in swapped.moves)
+        assertEquals(SpeciesKit.MAX_MOVES, swapped.moves.size)
+        assertEquals(Move.PUNCH, PetEngine.pendingMove(swapped)) // also unlocked at Lv 3
+
+        val skipped = PetEngine.learn(pet, Move.GROWL, forget = null)
+        assertEquals(pet.moves, skipped.moves)
+        assertEquals(Move.PUNCH, PetEngine.pendingMove(skipped))
+    }
+
+    @Test fun oldPetsGetAMoveset() {
+        val pet = PetEngine.syncMoves(base.copy(xp = 5000))
+        assertEquals(SpeciesKit.MAX_MOVES, pet.moves.size)
+        assertNull(PetEngine.pendingMove(pet))
     }
 
     @Test fun moods() {
-        assertEquals(Mood.SLEEPY, PetEngine.moodOf(base.copy(energy = 10.0)))
-        assertEquals(Mood.SAD, PetEngine.moodOf(base.copy(hunger = 20.0)))
-        assertEquals(Mood.HAPPY, PetEngine.moodOf(base))
-        assertEquals(Mood.OKAY, PetEngine.moodOf(base.copy(happiness = 50.0)))
+        assertEquals(Mood.SLEEPY, PetEngine.mood(isNight = true, activeToday = true))
+        assertEquals(Mood.HAPPY, PetEngine.mood(isNight = false, activeToday = true))
+        assertEquals(Mood.OKAY, PetEngine.mood(isNight = false, activeToday = false))
     }
 }
 

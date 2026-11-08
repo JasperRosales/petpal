@@ -1,5 +1,6 @@
 package com.petpal.app.data.local
 
+import com.petpal.app.domain.battle.Move
 import com.petpal.app.domain.logic.StepDay
 import com.petpal.app.domain.model.*
 
@@ -9,12 +10,15 @@ fun PetEntity.toDomain() = Pet(
     stage = if (stage == "TEEN") Stage.KID else enumValueOrDefault(stage, Stage.EGG), // TEEN was renamed
     path = enumValueOrDefault(path, EvolutionPath.NONE),
     species = enumValueOrDefault(species, Species.SPROUT),
-    hunger = hunger,
-    happiness = happiness,
-    energy = energy,
     xp = xp,
     lastUpdated = lastUpdated,
+    moves = moveList(moves),
+    seenMoves = moveList(seenMoves).toSet(),
 )
+
+/** Unknown names (removed moves) are dropped. */
+private fun moveList(csv: String): List<Move> =
+    csv.split(',').mapNotNull { n -> Move.entries.firstOrNull { it.name == n } }
 
 fun Pet.toEntity() = PetEntity(
     id = id,
@@ -22,17 +26,24 @@ fun Pet.toEntity() = PetEntity(
     stage = stage.name,
     path = path.name,
     species = species.name,
-    hunger = hunger,
-    happiness = happiness,
-    energy = energy,
+    hunger = 100.0, // needs were removed; columns kept to avoid a destructive migration
+    happiness = 100.0,
+    energy = 100.0,
     xp = xp,
     lastUpdated = lastUpdated,
+    moves = moves.joinToString(",") { it.name },
+    seenMoves = seenMoves.joinToString(",") { it.name },
 )
 
-fun HabitLogEntity.toDomain() = HabitLog(
+/** Null for habit types that no longer exist (water, sleep, treat). */
+fun HabitLogEntity.toDomain(): HabitLog? =
+    HabitType.entries.firstOrNull { it.name == type }?.let { HabitLog(id, it, value, timestamp) }
+
+fun BattleLogEntity.toDomain() = BattleRecord(
     id = id,
-    type = enumValueOrDefault(type, HabitType.CUSTOM),
-    value = value,
+    opponent = opponent.ifEmpty { "Unknown" },
+    outcome = enumValueOrDefault(outcome, BattleOutcome.DRAW),
+    xp = xp,
     timestamp = timestamp,
 )
 

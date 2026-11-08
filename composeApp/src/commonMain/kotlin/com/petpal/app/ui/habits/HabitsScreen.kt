@@ -15,26 +15,25 @@ import com.petpal.app.data.repository.HabitRepository
 import com.petpal.app.data.repository.PetRepository
 import com.petpal.app.domain.model.*
 import com.petpal.app.ui.home.label
-import com.petpal.app.ui.components.NeuButton
-import com.petpal.app.ui.components.NeuShape
 import com.petpal.app.ui.theme.PetPalIcons
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import kotlinx.datetime.*
 import org.koin.compose.viewmodel.koinViewModel
 
-data class HabitsState(val logs: List<HabitLog> = emptyList(), val streak: Int = 0) {
+data class HabitsState(
+    val logs: List<HabitLog> = emptyList(),
+    val streak: Int = 0,
+    val battles: List<BattleRecord> = emptyList(),
+) {
     fun count(type: HabitType) = logs.count { it.type == type }
 }
 
 class HabitsViewModel(
-    private val petRepository: PetRepository,
+    petRepository: PetRepository,
     habitRepository: HabitRepository,
 ) : ViewModel() {
-    val state = combine(habitRepository.todayLogs(), habitRepository.streak(), ::HabitsState)
+    val state = combine(habitRepository.todayLogs(), habitRepository.streak(), petRepository.battles, ::HabitsState)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HabitsState())
-
-    fun log(type: HabitType) = viewModelScope.launch { petRepository.logHabit(type) }
 }
 
 @Composable
@@ -55,29 +54,40 @@ fun HabitsScreen(vm: HabitsViewModel = koinViewModel()) {
             }
         }
         items(HabitType.entries.toList()) { type ->
-            HabitCard(type, s.count(type), onLog = if (type.isManual()) ({ vm.log(type) }) else null)
+            HabitCard(type, s.count(type))
         }
-        if (s.logs.isNotEmpty()) {
-            item { Text("Log", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp)) }
-            items(s.logs, key = { it.id }) { log ->
-                val t = Instant.fromEpochMilliseconds(log.timestamp).toLocalDateTime(tz)
-                ListItem(
-                    leadingContent = { Icon(PetPalIcons.forHabit(log.type), null) },
-                    headlineContent = { Text(log.type.label()) },
-                    supportingContent = { Text(log.detail()) },
-                    trailingContent = { Text("${t.hour.pad()}:${t.minute.pad()}") },
-                )
+        item {
+            Text("Battle log", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
+        }
+        if (s.battles.isEmpty()) item {
+            Text(
+                "No battles with friends yet. Practice battles aren't logged.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        items(s.battles, key = { it.id }) { b ->
+            val t = Instant.fromEpochMilliseconds(b.timestamp).toLocalDateTime(tz)
+            val (label, color) = when (b.outcome) {
+                BattleOutcome.WIN -> "Won" to MaterialTheme.colorScheme.primary
+                BattleOutcome.LOSS -> "Lost" to MaterialTheme.colorScheme.error
+                BattleOutcome.DRAW -> "Draw" to MaterialTheme.colorScheme.onSurfaceVariant
             }
+            ListItem(
+                leadingContent = { Icon(PetPalIcons.Battle, null, tint = color) },
+                headlineContent = { Text("$label vs ${b.opponent}") },
+                supportingContent = { Text(if (b.xp > 0) "+${b.xp} XP" else "No XP (daily limit)") },
+                trailingContent = { Text("${t.month.name.take(3).lowercase().replaceFirstChar { it.uppercase() }} ${t.dayOfMonth}, ${t.hour.pad()}:${t.minute.pad()}") },
+            )
         }
     }
 }
 
 @Composable
-private fun HabitCard(type: HabitType, count: Int, onLog: (() -> Unit)?) {
+private fun HabitCard(type: HabitType, count: Int) {
     val container = when (type) {
-        HabitType.WATER, HabitType.FOCUS -> MaterialTheme.colorScheme.secondaryContainer
-        HabitType.CUSTOM -> MaterialTheme.colorScheme.tertiaryContainer
-        else -> MaterialTheme.colorScheme.primaryContainer
+        HabitType.FOCUS -> MaterialTheme.colorScheme.secondaryContainer
+        HabitType.STEPS -> MaterialTheme.colorScheme.primaryContainer
     }
     Card(colors = CardDefaults.cardColors(containerColor = container)) {
         Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -88,36 +98,13 @@ private fun HabitCard(type: HabitType, count: Int, onLog: (() -> Unit)?) {
                 Text(type.hint(), style = MaterialTheme.typography.bodySmall)
             }
             Text("x$count", style = MaterialTheme.typography.titleMedium)
-            if (onLog != null) {
-                Spacer(Modifier.width(8.dp))
-                NeuButton(
-                    onClick = onLog,
-                    icon = PetPalIcons.Add,
-                    contentDescription = "Log ${type.label()}",
-                    shape = NeuShape.Circle,
-                    surface = container,
-                    accent = MaterialTheme.colorScheme.onSurface,
-                    contentPadding = PaddingValues(10.dp),
-                )
-            }
         }
     }
 }
 
-private fun HabitType.isManual() = this == HabitType.WATER || this == HabitType.SLEEP || this == HabitType.CUSTOM
-
 private fun HabitType.hint() = when (this) {
     HabitType.STEPS -> "Auto: +20 XP per 1,000 steps (max 20k/day)"
-    HabitType.WATER -> "Feeds your pet (stats only, no XP)"
-    HabitType.FOCUS -> "Finish a Focus session for happiness"
-    HabitType.SLEEP -> "Refills energy (no XP)"
-    HabitType.CUSTOM -> "Cheers your pet up (no XP)"
-}
-
-private fun HabitLog.detail() = when (type) {
-    HabitType.STEPS -> "$value steps"
-    HabitType.FOCUS -> "$value min"
-    else -> "+stats"
+    HabitType.FOCUS -> "Finish a Focus session to log it"
 }
 
 private fun Int.pad() = toString().padStart(2, '0')

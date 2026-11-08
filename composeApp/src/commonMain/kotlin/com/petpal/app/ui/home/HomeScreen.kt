@@ -10,6 +10,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.ui.draw.alpha
+import com.petpal.app.domain.battle.BattleRules
+import com.petpal.app.domain.battle.Move
 import com.petpal.app.domain.battle.SpeciesKit
 import com.petpal.app.domain.logic.PetEngine
 import com.petpal.app.domain.model.*
@@ -28,7 +33,6 @@ fun HomeScreen(
     var renaming by remember { mutableStateOf(false) }
 
     LaunchedEffect(stepPermissionGranted) { if (stepPermissionGranted) vm.startStepTracking() }
-    LaunchedEffect(Unit) { vm.rewards.collect { snackbar.showSnackbar(it) } }
 
     Column(Modifier.fillMaxSize()) {
         CenterAlignedTopAppBar(
@@ -59,15 +63,6 @@ fun HomeScreen(
             PetHeader(pet, state.mood, state.streak)
             PassiveCard(pet.species)
 
-            ElevatedCard(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    val c = MaterialTheme.colorScheme
-                    StatBar("Hunger", PetPalIcons.Hunger, pet.hunger, c.tertiary)
-                    StatBar("Happiness", PetPalIcons.Happiness, pet.happiness, c.primary)
-                    StatBar("Energy", PetPalIcons.Energy, pet.energy, c.secondary)
-                }
-            }
-
             if (state.stepsAvailable) {
                 Text(
                     "${state.todaySteps} steps today, +${PetEngine.STEP_XP} XP every 1,000 (max 20k/day)",
@@ -76,21 +71,7 @@ fun HomeScreen(
                 )
             }
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                modifier = Modifier.padding(vertical = 8.dp),
-            ) {
-                listOf(HabitType.WATER, HabitType.SLEEP, HabitType.CUSTOM).forEach { type ->
-                    NeuButton(
-                        onClick = { vm.log(type) },
-                        icon = PetPalIcons.forHabit(type),
-                        text = type.label(),
-                        accent = type.accent(),
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 14.dp),
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-            }
+            MovesCard(pet)
             Spacer(Modifier.height(8.dp))
         }
     }
@@ -104,24 +85,17 @@ fun HomeScreen(
 }
 
 @Composable
-private fun HabitType.accent() = when (this) {
-    HabitType.WATER, HabitType.FOCUS -> MaterialTheme.colorScheme.secondary
-    HabitType.CUSTOM -> MaterialTheme.colorScheme.tertiary
-    else -> MaterialTheme.colorScheme.primary
-}
-
-@Composable
 private fun PetHeader(pet: Pet, mood: Mood, streak: Int) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Column(Modifier.weight(1f)) {
             Text(pet.name, style = MaterialTheme.typography.titleLarge)
             Text(
-                "${pet.species.label}, ${pet.stage.label()}, ${mood.name.lowercase()}",
+                "Lv ${PetEngine.levelFor(pet.xp)} ${pet.species.label}, ${pet.stage.label()}, ${mood.name.lowercase()}",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        val next = PetEngine.nextStageXp(pet.xp)
+        val next = PetEngine.nextLevelXp(pet.xp)
         AssistChip(
             onClick = {},
             label = { Text(if (next != null) "${pet.xp}/$next XP" else "${pet.xp} XP") },
@@ -162,5 +136,53 @@ private fun PassiveCard(species: Species) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
+    }
+}
+
+@Composable
+private fun MovesCard(pet: Pet) {
+    val level = PetEngine.levelFor(pet.xp)
+    val dim = MaterialTheme.colorScheme.onSurfaceVariant
+    val (kidUnique, adultUnique) = SpeciesKit.uniques(pet.species)
+    val learnset = SpeciesKit.learnset(pet.species)
+    var showAll by remember { mutableStateOf(false) }
+    ElevatedCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            val unique = SpeciesKit.unique(pet.species, pet.stage)
+            val used = pet.moves.size + if (unique != null) 1 else 0
+            Text("Moves ($used/${SpeciesKit.SLOTS})", style = MaterialTheme.typography.titleSmall)
+            pet.moves.forEach { MoveRow(it, it.category.label) }
+            repeat(SpeciesKit.MAX_MOVES - pet.moves.size) { LockedRow("Empty slot", "") }
+            when (unique) {
+                null -> LockedRow("Slot 5: ${kidUnique.label}", "at Kid")
+                else -> MoveRow(unique, if (unique == kidUnique) "Unique, upgrades at Adult" else "Unique, max")
+            }
+
+            val upcoming = learnset.filter { it.level > level }.take(3)
+            if (upcoming.isNotEmpty()) {
+                Text("Coming up", style = MaterialTheme.typography.titleSmall)
+                upcoming.forEach { (m, lv) -> LockedRow(m.label, "Lv $lv") }
+            }
+            Text(
+                "Can learn ${learnset.size} of ${Move.entries.size} moves. Slot 5 is always the unique: " +
+                    "${kidUnique.label} at Kid, ${adultUnique.label} at Adult (${BattleRules.UNIQUE_USES}x per battle). " +
+                    "Special moves need a full energy bar.",
+                style = MaterialTheme.typography.labelSmall,
+                color = dim,
+            )
+            TextButton(onClick = { showAll = true }) { Text("All moves") }
+        }
+    }
+    if (showAll) MoveListDialog(pet, onDismiss = { showAll = false })
+}
+
+@Composable
+private fun LockedRow(label: String, unlock: String) {
+    val dim = MaterialTheme.colorScheme.onSurfaceVariant
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.alpha(0.45f)) {
+        Icon(Icons.Rounded.Lock, null, Modifier.size(20.dp), tint = dim)
+        Spacer(Modifier.width(10.dp))
+        Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+        Text(unlock, style = MaterialTheme.typography.labelSmall, color = dim)
     }
 }

@@ -1,22 +1,66 @@
 package com.petpal.app.domain.battle
 
 import com.petpal.app.domain.model.Species
+import com.petpal.app.domain.model.Stage
 
-enum class Effect {
-    NONE,
-    LUNGE,     // dashes at the target during wind-up
-    DRAIN,     // heals for half the damage dealt
-    BURN,      // damage over time
-    SLOW,      // halves target speed
-    STUN,      // target can't move or act briefly
-    KNOCKBACK, // big push away
-    HEAL,      // self: restore HP
-    RAGE,      // self: +30% damage for a while
-    GUARD,     // self: take 60% less damage for a while
+enum class Effect(val label: String, val self: Boolean = false) {
+    NONE(""),
+    LUNGE("lunge"),            // dashes at the target during wind-up
+    DRAIN("drain"),            // heals for half the damage dealt
+    BURN("burn"),              // damage over time
+    SLOW("slow"),              // halves target speed
+    STUN("stun"),              // target can't move or act briefly
+    FREEZE("freeze"),          // long stun
+    KNOCKBACK("knockback"),    // big push away
+    PULL("pull"),              // drags the target closer
+    VANISH("vanish"),          // disappears (can't be hit) during wind-up, reappears next to the target
+    RECOIL("recoil"),          // user takes a quarter of the damage dealt
+    MULTI("hits 2-4x"),        // damage is per hit
+    LEECH("leech"),            // target slowly loses HP to the user
+    PARALYZE("paralyze"),      // target moves slower and its cooldowns run 50% longer
+    WEAKEN("weaken"),          // target deals 30% less damage
+    ROOT("root"),              // target can't move (can still act)
+    SIPHON("steal energy"),    // takes energy from the target
+    EXECUTE("execute"),        // double damage on targets below 30% HP
+    RECHARGE("recharge"),      // user is stunned after using it
+    // Self buffs
+    HEAL("heal", true),         // restore 18% HP
+    RAGE("rage", true),         // +30% damage for 4s
+    GUARD("guard", true),       // take 60% less damage for 1.2s
+    HASTE("haste", true),       // +50% speed and 30% shorter cooldowns for 5s
+    HARDEN("harden", true),     // take 40% less damage for 5s
+    COUNTER("counter", true),   // next hit within 1.5s is reflected
+    BLINK("teleport", true),    // jumps to the far side of the arena
+    CLEANSE("cleanse", true),   // clears debuffs, heals 10%
+    ENERGIZE("energy +50", true),
+    BATTLE_CRY("rage + haste", true),
+    PACK_CALL("rage + heal", true),
+    FORTRESS("guard + heal", true),
+    ALPHA("rage + haste + heal", true),
+    CITADEL("guard + harden + heal", true),
 }
 
+/**
+ * NORMAL: cooldown only. SPECIAL: needs a full energy bar (and empties it).
+ * UNIQUE: species signature in slot 5, shares [BattleRules.UNIQUE_USES] uses per battle.
+ */
+enum class MoveCategory(val label: String) { NORMAL("Normal"), SPECIAL("Special"), UNIQUE("Unique") }
+
+enum class Element(val label: String) {
+    NORMAL("Normal"), FIRE("Fire"), WATER("Water"), GRASS("Grass"),
+    ICE("Ice"), ELECTRIC("Electric"), FLYING("Flying"), GROUND("Ground"),
+}
+
+private val N = MoveCategory.NORMAL
+private val S = MoveCategory.SPECIAL
+private val U = MoveCategory.UNIQUE
+
+/** [level] is when a species that can learn it gets it (uniques come from the pet's stage instead). */
 enum class Move(
     val label: String,
+    val category: MoveCategory,
+    val element: Element,
+    val level: Int,
     val damage: Int,
     val range: Float,
     val cooldownMs: Long,
@@ -24,29 +68,202 @@ enum class Move(
     val recoverMs: Long,
     val effect: Effect = Effect.NONE,
 ) {
-    PUNCH("Punch", 6, 0.16f, 700, 150, 150),
-    CLAW("Claw Swipe", 7, 0.18f, 850, 150, 150),
-    BITE("Bite", 8, 0.15f, 1200, 200, 200, Effect.DRAIN),
-    TACKLE("Tackle", 10, 0.26f, 1600, 300, 250, Effect.LUNGE),
-    ROCK_SLAM("Rock Slam", 14, 0.20f, 3600, 500, 300, Effect.STUN),
-    FIRE_BREATH("Fire Breath", 12, 0.50f, 3200, 450, 350, Effect.BURN),
-    WATER_JET("Water Jet", 9, 0.55f, 2600, 350, 250, Effect.KNOCKBACK),
-    VINE_WHIP("Vine Whip", 8, 0.40f, 2200, 300, 200, Effect.SLOW),
-    ICE_SHARD("Ice Shard", 9, 0.50f, 2600, 350, 200, Effect.SLOW),
-    THUNDER("Thunder", 13, 0.60f, 3800, 550, 300, Effect.STUN),
-    GUST("Gust", 8, 0.50f, 2200, 300, 200, Effect.KNOCKBACK),
-    HEAL("Heal", 0, 0f, 7000, 400, 200, Effect.HEAL),
-    HOWL("Howl", 0, 0f, 8000, 300, 200, Effect.RAGE),
-    GUARD("Guard", 0, 0f, 3500, 0, 0, Effect.GUARD),
+    // Normal
+    TACKLE("Tackle", N, Element.NORMAL, 1, 8, 0.24f, 1300, 250, 200, Effect.LUNGE),
+    GUARD("Guard", N, Element.NORMAL, 1, 0, 0f, 3500, 0, 0, Effect.GUARD),
+    GROWL("Growl", N, Element.NORMAL, 2, 0, 0.45f, 6000, 250, 200, Effect.WEAKEN),
+    PUNCH("Punch", N, Element.NORMAL, 3, 6, 0.16f, 700, 150, 150),
+    CLAW("Claw Swipe", N, Element.NORMAL, 4, 7, 0.18f, 850, 150, 150),
+    QUICK_ATTACK("Quick Attack", N, Element.NORMAL, 5, 6, 0.30f, 1000, 100, 100, Effect.LUNGE),
+    BITE("Bite", N, Element.NORMAL, 6, 8, 0.15f, 1200, 200, 200, Effect.DRAIN),
+    HOWL("Howl", N, Element.NORMAL, 8, 0, 0f, 9000, 300, 200, Effect.RAGE),
+    FURY_SWIPES("Fury Swipes", N, Element.NORMAL, 9, 4, 0.20f, 1600, 150, 150, Effect.MULTI),
+    POUNCE("Pounce", N, Element.NORMAL, 11, 9, 0.32f, 1800, 300, 250, Effect.LUNGE),
+    QUICK_JAB("Quick Jab", N, Element.NORMAL, 12, 5, 0.17f, 500, 100, 100),
+    HEADBUTT("Headbutt", N, Element.NORMAL, 14, 9, 0.18f, 2400, 300, 250, Effect.STUN),
+    GLARE("Glare", N, Element.NORMAL, 15, 0, 0.50f, 7000, 250, 200, Effect.PARALYZE),
+    ZOOMIES("Zoomies", N, Element.NORMAL, 17, 0, 0f, 9000, 200, 100, Effect.HASTE),
+    COUNTER("Counter", N, Element.NORMAL, 18, 0, 0f, 7000, 100, 200, Effect.COUNTER),
+    HEAL("Heal", N, Element.NORMAL, 20, 0, 0f, 8000, 400, 200, Effect.HEAL),
+    DOUBLE_EDGE("Double-Edge", N, Element.NORMAL, 22, 15, 0.22f, 2400, 300, 250, Effect.RECOIL),
+    BODY_SLAM("Body Slam", N, Element.NORMAL, 23, 12, 0.20f, 2600, 350, 250, Effect.KNOCKBACK),
+    HARDEN("Harden", N, Element.NORMAL, 25, 0, 0f, 9000, 300, 200, Effect.HARDEN),
+    TELEPORT("Teleport", N, Element.NORMAL, 27, 0, 0f, 6000, 150, 100, Effect.BLINK),
+    DOUBLE_KICK("Double Kick", N, Element.NORMAL, 28, 5, 0.22f, 1600, 200, 200, Effect.MULTI),
+    FOCUS_ENERGY("Focus Energy", N, Element.NORMAL, 30, 0, 0f, 12000, 400, 200, Effect.ENERGIZE),
+    FINISHING_BLOW("Finishing Blow", N, Element.NORMAL, 31, 10, 0.20f, 2600, 250, 250, Effect.EXECUTE),
+    REFRESH("Refresh", N, Element.NORMAL, 33, 0, 0f, 9000, 300, 200, Effect.CLEANSE),
+    BATTLE_CRY("Battle Cry", S, Element.NORMAL, 35, 0, 0f, 6000, 300, 200, Effect.BATTLE_CRY),
+    HYPER_FANG("Hyper Fang", S, Element.NORMAL, 38, 16, 0.20f, 3500, 300, 250, Effect.DRAIN),
+    SECOND_WIND("Second Wind", N, Element.NORMAL, 42, 0, 0f, 6500, 300, 200, Effect.HEAL),
+    GIGA_IMPACT("Giga Impact", S, Element.NORMAL, 45, 22, 0.25f, 4500, 600, 400, Effect.KNOCKBACK),
+    LAST_STAND("Last Stand", S, Element.NORMAL, 50, 0, 0f, 6000, 200, 200, Effect.FORTRESS),
+    HYPER_BEAM("Hyper Beam", S, Element.NORMAL, 52, 30, 0.60f, 4500, 700, 300, Effect.RECHARGE),
+    MEGA_PUNCH("Mega Punch", S, Element.NORMAL, 55, 20, 0.18f, 4000, 450, 300, Effect.STUN),
+
+    // Fire
+    EMBER("Ember", N, Element.FIRE, 1, 6, 0.40f, 1800, 250, 200, Effect.BURN),
+    SMOKESCREEN("Smokescreen", N, Element.FIRE, 5, 0, 0.45f, 6000, 250, 200, Effect.SLOW),
+    FIRE_FANG("Fire Fang", N, Element.FIRE, 8, 9, 0.16f, 1300, 200, 200, Effect.BURN),
+    FLAME_DASH("Flame Dash", N, Element.FIRE, 11, 9, 0.30f, 1800, 300, 250, Effect.LUNGE),
+    INCINERATE("Incinerate", N, Element.FIRE, 14, 8, 0.35f, 2000, 250, 200, Effect.SIPHON),
+    HEAT_UP("Heat Up", N, Element.FIRE, 17, 0, 0f, 8000, 300, 200, Effect.RAGE),
+    FIRE_SPIN("Fire Spin", N, Element.FIRE, 20, 6, 0.35f, 2600, 300, 250, Effect.ROOT),
+    FLAME_WHEEL("Flame Wheel", N, Element.FIRE, 24, 11, 0.24f, 2000, 300, 250, Effect.BURN),
+    WILL_O_WISP("Will-o-Wisp", N, Element.FIRE, 28, 0, 0.45f, 7000, 300, 200, Effect.WEAKEN),
+    FIRE_BREATH("Fire Breath", S, Element.FIRE, 32, 16, 0.50f, 4000, 450, 350, Effect.BURN),
+    FIREBALL("Fireball", N, Element.FIRE, 36, 10, 0.50f, 2200, 350, 250, Effect.BURN),
+    FLARE_BLITZ("Flare Blitz", N, Element.FIRE, 40, 18, 0.25f, 2800, 350, 300, Effect.RECOIL),
+    MAGMA_BURST("Magma Burst", S, Element.FIRE, 46, 19, 0.40f, 4200, 500, 300, Effect.KNOCKBACK),
+    OVERHEAT("Overheat", S, Element.FIRE, 52, 28, 0.50f, 4500, 600, 350, Effect.RECHARGE),
+    BLAST_FLAME("Blast Flame", S, Element.FIRE, 57, 22, 0.55f, 4500, 550, 350, Effect.BURN),
+
+    // Water
+    BUBBLE("Bubble", N, Element.WATER, 1, 6, 0.45f, 1600, 250, 200, Effect.SLOW),
+    WATER_GUN("Water Gun", N, Element.WATER, 5, 7, 0.45f, 1400, 200, 200),
+    WITHDRAW("Withdraw", N, Element.WATER, 8, 0, 0f, 9000, 300, 200, Effect.HARDEN),
+    AQUA_JET("Aqua Jet", N, Element.WATER, 11, 7, 0.32f, 1100, 100, 100, Effect.LUNGE),
+    AQUA_TAIL("Aqua Tail", N, Element.WATER, 14, 10, 0.20f, 1800, 250, 250, Effect.KNOCKBACK),
+    RAIN_DANCE("Rain Dance", N, Element.WATER, 17, 0, 0f, 9000, 300, 200, Effect.HASTE),
+    WHIRLPOOL("Whirlpool", N, Element.WATER, 20, 6, 0.35f, 2800, 300, 250, Effect.ROOT),
+    BRINE("Brine", N, Element.WATER, 24, 10, 0.40f, 2000, 300, 200, Effect.EXECUTE),
+    DIVE("Dive", N, Element.WATER, 28, 14, 0.30f, 3500, 900, 300, Effect.VANISH),
+    WATER_JET("Water Jet", S, Element.WATER, 32, 14, 0.55f, 3500, 350, 250, Effect.KNOCKBACK),
+    AQUA_RING("Aqua Ring", N, Element.WATER, 36, 0, 0f, 9000, 300, 200, Effect.CLEANSE),
+    WATERFALL("Waterfall", N, Element.WATER, 40, 12, 0.22f, 2400, 300, 250, Effect.STUN),
+    HYDRO_PUMP("Hydro Pump", S, Element.WATER, 46, 20, 0.60f, 4500, 550, 350, Effect.SLOW),
+    HYDRO_CANNON("Hydro Cannon", S, Element.WATER, 52, 28, 0.55f, 4500, 600, 350, Effect.RECHARGE),
+    UNDERTOW("Undertow", S, Element.WATER, 57, 22, 0.60f, 4500, 550, 350, Effect.PULL),
+
+    // Grass
+    LEAF_TOSS("Leaf Toss", N, Element.GRASS, 1, 7, 0.42f, 1500, 250, 200),
+    ABSORB("Absorb", N, Element.GRASS, 5, 6, 0.35f, 1400, 200, 200, Effect.DRAIN),
+    LEECH_SEED("Leech Seed", N, Element.GRASS, 8, 2, 0.45f, 7000, 300, 200, Effect.LEECH),
+    RAZOR_LEAF("Razor Leaf", N, Element.GRASS, 11, 9, 0.45f, 1800, 250, 200),
+    STUN_SPORE("Stun Spore", N, Element.GRASS, 14, 0, 0.40f, 7000, 300, 200, Effect.PARALYZE),
+    GROWTH("Growth", N, Element.GRASS, 17, 0, 0f, 9000, 300, 200, Effect.RAGE),
+    BULLET_SEED("Bullet Seed", N, Element.GRASS, 20, 4, 0.40f, 1900, 250, 200, Effect.MULTI),
+    SEED_BOMB("Seed Bomb", N, Element.GRASS, 24, 11, 0.40f, 2200, 300, 250, Effect.KNOCKBACK),
+    VINE_WHIP("Vine Whip", N, Element.GRASS, 28, 10, 0.45f, 2000, 300, 200, Effect.PULL),
+    SYNTHESIS("Synthesis", N, Element.GRASS, 32, 0, 0f, 7500, 400, 200, Effect.HEAL),
+    GIGA_DRAIN("Giga Drain", N, Element.GRASS, 36, 10, 0.40f, 2600, 350, 250, Effect.DRAIN),
+    SLEEP_POWDER("Sleep Powder", N, Element.GRASS, 40, 0, 0.40f, 9000, 400, 200, Effect.FREEZE),
+    PETAL_STORM("Petal Storm", S, Element.GRASS, 46, 18, 0.50f, 4200, 450, 300, Effect.SLOW),
+    FRENZY_PLANT("Frenzy Plant", S, Element.GRASS, 52, 28, 0.50f, 4500, 600, 350, Effect.RECHARGE),
+    LEAF_BLADE("Leaf Blade", S, Element.GRASS, 57, 22, 0.25f, 4000, 350, 300, Effect.LUNGE),
+
+    // Ice
+    POWDER_SNOW("Powder Snow", N, Element.ICE, 1, 6, 0.40f, 1600, 250, 200, Effect.SLOW),
+    ICE_FANG("Ice Fang", N, Element.ICE, 5, 9, 0.16f, 1300, 200, 200, Effect.SLOW),
+    MIST("Mist", N, Element.ICE, 8, 0, 0f, 9000, 300, 200, Effect.CLEANSE),
+    ICY_WIND("Icy Wind", N, Element.ICE, 11, 8, 0.50f, 1900, 300, 200, Effect.SLOW),
+    ICICLE_SPEAR("Icicle Spear", N, Element.ICE, 14, 3, 0.40f, 1800, 250, 200, Effect.MULTI),
+    FROST_ARMOR("Frost Armor", N, Element.ICE, 17, 0, 0f, 9000, 300, 200, Effect.HARDEN),
+    ICE_PUNCH("Ice Punch", N, Element.ICE, 20, 11, 0.18f, 2300, 200, 200, Effect.STUN),
+    FROST_BREATH("Frost Breath", N, Element.ICE, 24, 10, 0.45f, 2400, 300, 250),
+    ICE_SHARD("Ice Shard", S, Element.ICE, 28, 14, 0.50f, 3500, 350, 200, Effect.SLOW),
+    AVALANCHE("Avalanche", N, Element.ICE, 32, 12, 0.30f, 2600, 400, 300, Effect.KNOCKBACK),
+    MIRROR_ICE("Mirror Ice", N, Element.ICE, 36, 0, 0f, 8000, 100, 200, Effect.COUNTER),
+    FREEZE_RAY("Freeze Ray", N, Element.ICE, 40, 8, 0.55f, 5000, 400, 250, Effect.FREEZE),
+    BLIZZARD("Blizzard", S, Element.ICE, 46, 19, 0.60f, 4500, 550, 350, Effect.SLOW),
+    GLACIER_CRASH("Glacier Crash", S, Element.ICE, 52, 22, 0.25f, 4500, 500, 350, Effect.STUN),
+    ABSOLUTE_ZERO("Absolute Zero", S, Element.ICE, 57, 18, 0.50f, 5000, 700, 300, Effect.FREEZE),
+
+    // Electric
+    SPARK("Spark", N, Element.ELECTRIC, 1, 7, 0.20f, 1000, 150, 150),
+    THUNDER_WAVE("Thunder Wave", N, Element.ELECTRIC, 5, 0, 0.50f, 7000, 250, 200, Effect.PARALYZE),
+    THUNDER_FANG("Thunder Fang", N, Element.ELECTRIC, 8, 9, 0.16f, 2300, 200, 200, Effect.STUN),
+    SHOCK_WAVE("Shock Wave", N, Element.ELECTRIC, 11, 8, 0.50f, 1800, 250, 200),
+    VOLT_SAP("Volt Sap", N, Element.ELECTRIC, 14, 6, 0.30f, 1800, 200, 200, Effect.SIPHON),
+    CHARGE("Charge", N, Element.ELECTRIC, 17, 0, 0f, 12000, 300, 200, Effect.ENERGIZE),
+    NUZZLE("Nuzzle", N, Element.ELECTRIC, 20, 5, 0.20f, 1800, 150, 150, Effect.PARALYZE),
+    WILD_CHARGE("Wild Charge", N, Element.ELECTRIC, 24, 12, 0.30f, 2200, 300, 250, Effect.LUNGE),
+    MAGNET_PULL("Magnet Pull", N, Element.ELECTRIC, 28, 7, 0.55f, 2600, 300, 200, Effect.PULL),
+    THUNDER("Thunder", S, Element.ELECTRIC, 32, 18, 0.60f, 4500, 550, 300, Effect.STUN),
+    DISCHARGE("Discharge", N, Element.ELECTRIC, 36, 10, 0.35f, 2800, 300, 250, Effect.STUN),
+    VOLT_TACKLE("Volt Tackle", N, Element.ELECTRIC, 40, 18, 0.30f, 2800, 300, 250, Effect.RECOIL),
+    ZAP_CANNON("Zap Cannon", S, Element.ELECTRIC, 46, 20, 0.55f, 4500, 600, 350, Effect.PARALYZE),
+    THUNDERBOLT("Thunderbolt", S, Element.ELECTRIC, 52, 22, 0.60f, 4500, 500, 300, Effect.KNOCKBACK),
+    GIGAVOLT("Gigavolt", S, Element.ELECTRIC, 57, 30, 0.65f, 4500, 700, 300, Effect.RECHARGE),
+
+    // Flying
+    PECK("Peck", N, Element.FLYING, 1, 6, 0.22f, 800, 150, 150),
+    AIR_CUTTER("Air Cutter", N, Element.FLYING, 5, 6, 0.42f, 1600, 250, 200),
+    WING_ATTACK("Wing Attack", N, Element.FLYING, 8, 9, 0.25f, 1600, 200, 200),
+    AERIAL_ACE("Aerial Ace", N, Element.FLYING, 11, 8, 0.30f, 1500, 200, 200, Effect.LUNGE),
+    FEATHER_DANCE("Feather Dance", N, Element.FLYING, 14, 0, 0.45f, 7000, 300, 200, Effect.WEAKEN),
+    TAILWIND("Tailwind", N, Element.FLYING, 17, 0, 0f, 9000, 200, 100, Effect.HASTE),
+    ROOST("Roost", N, Element.FLYING, 20, 0, 0f, 7000, 300, 200, Effect.HEAL),
+    TWISTER("Twister", N, Element.FLYING, 24, 8, 0.45f, 2000, 300, 200, Effect.KNOCKBACK),
+    FLY("Fly", N, Element.FLYING, 28, 16, 0.30f, 4000, 1200, 300, Effect.VANISH),
+    BOUNCE("Bounce", N, Element.FLYING, 30, 13, 0.30f, 3600, 1000, 300, Effect.VANISH),
+    GUST("Gust", S, Element.FLYING, 32, 13, 0.55f, 3500, 300, 200, Effect.KNOCKBACK),
+    DRILL_PECK("Drill Peck", N, Element.FLYING, 36, 4, 0.22f, 1800, 200, 200, Effect.MULTI),
+    BRAVE_BIRD("Brave Bird", N, Element.FLYING, 40, 20, 0.30f, 3000, 400, 300, Effect.RECOIL),
+    HURRICANE("Hurricane", S, Element.FLYING, 46, 20, 0.60f, 4500, 550, 350, Effect.KNOCKBACK),
+    SKY_DROP("Sky Drop", S, Element.FLYING, 52, 22, 0.30f, 4500, 1000, 350, Effect.VANISH),
+    SKY_ATTACK("Sky Attack", S, Element.FLYING, 57, 32, 0.40f, 5000, 700, 300, Effect.RECHARGE),
+
+    // Ground
+    MUD_SLAP("Mud Slap", N, Element.GROUND, 1, 6, 0.38f, 1600, 250, 200, Effect.SLOW),
+    SAND_ATTACK("Sand Attack", N, Element.GROUND, 5, 0, 0.45f, 6000, 250, 200, Effect.WEAKEN),
+    ROCK_THROW("Rock Throw", N, Element.GROUND, 8, 8, 0.42f, 1700, 250, 200),
+    SAND_TOMB("Sand Tomb", N, Element.GROUND, 11, 6, 0.40f, 2600, 300, 250, Effect.ROOT),
+    STOMP("Stomp", N, Element.GROUND, 14, 10, 0.20f, 2400, 300, 250, Effect.STUN),
+    STONE_SKIN("Stone Skin", N, Element.GROUND, 17, 0, 0f, 9000, 300, 200, Effect.HARDEN),
+    BONE_RUSH("Bone Rush", N, Element.GROUND, 20, 4, 0.25f, 1800, 200, 200, Effect.MULTI),
+    DIG("Dig", N, Element.GROUND, 24, 15, 0.30f, 3500, 900, 300, Effect.VANISH),
+    BULLDOZE("Bulldoze", N, Element.GROUND, 28, 9, 0.45f, 2400, 300, 250, Effect.SLOW),
+    ROCK_SLAM("Rock Slam", S, Element.GROUND, 32, 18, 0.22f, 4000, 500, 300, Effect.STUN),
+    SANDSTORM("Sandstorm", N, Element.GROUND, 36, 9, 0.60f, 2400, 350, 250),
+    HEAD_SMASH("Head Smash", N, Element.GROUND, 40, 20, 0.20f, 3000, 350, 300, Effect.RECOIL),
+    EARTHQUAKE("Earthquake", S, Element.GROUND, 46, 20, 0.90f, 4500, 600, 350, Effect.STUN),
+    FISSURE("Fissure", S, Element.GROUND, 52, 26, 0.40f, 4500, 600, 350, Effect.EXECUTE),
+    STONE_EDGE("Stone Edge", S, Element.GROUND, 57, 22, 0.40f, 4200, 500, 300, Effect.KNOCKBACK),
+
+    // Uniques: Kid form, then the Adult upgrade (slot 5)
+    SOLAR_BEAM("Solar Beam", U, Element.GRASS, 0, 26, 0.75f, 15_000, 700, 300),
+    SOLAR_FLARE("Solar Flare", U, Element.GRASS, 0, 34, 0.80f, 15_000, 700, 300, Effect.STUN),
+    SHADOW_CLAW("Shadow Claw", U, Element.NORMAL, 0, 24, 0.35f, 15_000, 300, 250, Effect.LUNGE),
+    NIGHT_TERROR("Night Terror", U, Element.NORMAL, 0, 32, 0.40f, 15_000, 300, 250, Effect.LUNGE),
+    INFERNO("Inferno", U, Element.FIRE, 0, 28, 0.55f, 15_000, 600, 300, Effect.BURN),
+    DRAGON_FURY("Dragon Fury", U, Element.FIRE, 0, 36, 0.60f, 15_000, 600, 300, Effect.BURN),
+    MOON_KICK("Moon Kick", U, Element.NORMAL, 0, 22, 0.40f, 15_000, 350, 250, Effect.STUN),
+    LUNAR_STRIKE("Lunar Strike", U, Element.NORMAL, 0, 30, 0.45f, 15_000, 350, 250, Effect.STUN),
+    PACK_CALL("Pack Call", U, Element.NORMAL, 0, 0, 0f, 15_000, 400, 200, Effect.PACK_CALL),
+    ALPHA_HOWL("Alpha Howl", U, Element.NORMAL, 0, 0, 0f, 15_000, 400, 200, Effect.ALPHA),
+    STORM_EYE("Storm Eye", U, Element.ELECTRIC, 0, 25, 0.85f, 15_000, 650, 300, Effect.STUN),
+    TEMPEST_EYE("Tempest Eye", U, Element.ELECTRIC, 0, 32, 0.90f, 15_000, 650, 300, Effect.PARALYZE),
+    FORTRESS("Fortress", U, Element.GROUND, 0, 0, 0f, 15_000, 200, 200, Effect.FORTRESS),
+    CITADEL("Citadel", U, Element.GROUND, 0, 0, 0f, 15_000, 200, 200, Effect.CITADEL),
+    FOXFIRE("Foxfire", U, Element.FIRE, 0, 22, 0.60f, 15_000, 450, 250, Effect.BURN),
+    NINE_TAILS("Nine Tails", U, Element.FIRE, 0, 30, 0.65f, 15_000, 450, 250, Effect.BURN),
+    TIDAL_WAVE("Tidal Wave", U, Element.WATER, 0, 22, 0.70f, 15_000, 550, 300, Effect.KNOCKBACK),
+    TSUNAMI("Tsunami", U, Element.WATER, 0, 30, 0.75f, 15_000, 550, 300, Effect.PULL),
+    MAUL("Maul", U, Element.NORMAL, 0, 30, 0.22f, 15_000, 450, 300, Effect.STUN),
+    GRIZZLY_RAMPAGE("Grizzly Rampage", U, Element.NORMAL, 0, 38, 0.24f, 15_000, 450, 300, Effect.STUN),
     ;
 
-    val isSelf get() = damage == 0
+    /** Buffs target the user; everything else (including 0-damage debuffs) targets the opponent. */
+    val isBuff get() = effect.self
+    val isFire get() = element == Element.FIRE
+
+    fun describe(): String = buildString {
+        append(element.label).append(" · ")
+        append(when { isBuff -> "Buff"; damage == 0 -> "Debuff"; else -> "$damage dmg" })
+        if (effect != Effect.NONE && effect != Effect.GUARD) append(", ").append(effect.label)
+        append(", ${cooldownMs / 1000.0}s cd")
+    }
 }
 
+object BattleRules {
+    const val MAX_ENERGY = 100
+    const val UNIQUE_USES = 2
+}
 enum class Passive(val label: String, val description: String) {
     PHOTOSYNTHESIS("Photosynthesis", "Regenerates 0.6 HP every second."),
     NINE_LIVES("Nine Lives", "Survives the first knockout blow with 1 HP."),
-    BLAZE("Blaze", "Fire Breath deals 25% more damage and burns twice as long."),
+    BLAZE("Blaze", "Fire moves deal 25% more damage and burn twice as long."),
     QUICK_FEET("Quick Feet", "Moves 25% faster and all cooldowns are 10% shorter."),
     LOYAL_HEART("Loyal Heart", "Deals 25% more damage while below half HP."),
     KEEN_EYE("Keen Eye", "All moves reach 20% further."),
@@ -56,8 +273,18 @@ enum class Passive(val label: String, val description: String) {
     THICK_FUR("Thick Fur", "20% more max HP."),
 }
 
-/** Each species' passive and its five moves (Guard is shared by everyone). */
+data class MoveUnlock(val move: Move, val level: Int)
+
+/**
+ * Each species' passive, learnset and unique. A pet keeps [MAX_MOVES] learned moves;
+ * slot 5 is its unique, which unlocks at Kid and upgrades at Adult.
+ *
+ * Learnable = Normal + own types + a few off-type picks, minus moves the species can't do.
+ */
 object SpeciesKit {
+    const val MAX_MOVES = 4
+    const val SLOTS = MAX_MOVES + 1
+
     fun passive(s: Species) = when (s) {
         Species.SPROUT -> Passive.PHOTOSYNTHESIS
         Species.KITTY -> Passive.NINE_LIVES
@@ -71,19 +298,77 @@ object SpeciesKit {
         Species.BEAR -> Passive.THICK_FUR
     }
 
-    fun moves(s: Species): List<Move> = when (s) {
-        Species.SPROUT -> listOf(Move.TACKLE, Move.PUNCH, Move.VINE_WHIP, Move.WATER_JET, Move.HEAL)
-        Species.KITTY -> listOf(Move.PUNCH, Move.CLAW, Move.BITE, Move.TACKLE, Move.HOWL)
-        Species.DRAKE -> listOf(Move.PUNCH, Move.TACKLE, Move.BITE, Move.FIRE_BREATH, Move.ROCK_SLAM)
-        Species.BUNNY -> listOf(Move.PUNCH, Move.TACKLE, Move.ICE_SHARD, Move.HEAL, Move.HOWL)
-        Species.PUP -> listOf(Move.BITE, Move.TACKLE, Move.PUNCH, Move.ROCK_SLAM, Move.HOWL)
-        Species.OWL -> listOf(Move.CLAW, Move.GUST, Move.ICE_SHARD, Move.THUNDER, Move.HEAL)
-        Species.TURTLE -> listOf(Move.TACKLE, Move.BITE, Move.WATER_JET, Move.ROCK_SLAM, Move.HEAL)
-        Species.FOX -> listOf(Move.BITE, Move.CLAW, Move.PUNCH, Move.FIRE_BREATH, Move.HOWL)
-        Species.FROG -> listOf(Move.PUNCH, Move.TACKLE, Move.WATER_JET, Move.VINE_WHIP, Move.ICE_SHARD)
-        Species.BEAR -> listOf(Move.PUNCH, Move.CLAW, Move.TACKLE, Move.ROCK_SLAM, Move.HOWL)
+    /** The species' own types (besides Normal). */
+    fun affinity(s: Species): Set<Element> = when (s) {
+        Species.SPROUT -> setOf(Element.GRASS, Element.GROUND)
+        Species.KITTY -> setOf(Element.ELECTRIC, Element.ICE)
+        Species.DRAKE -> setOf(Element.FIRE, Element.FLYING)
+        Species.BUNNY -> setOf(Element.ICE, Element.GROUND)
+        Species.PUP -> setOf(Element.GROUND, Element.FIRE)
+        Species.OWL -> setOf(Element.FLYING, Element.ELECTRIC)
+        Species.TURTLE -> setOf(Element.WATER, Element.GROUND)
+        Species.FOX -> setOf(Element.FIRE, Element.ICE)
+        Species.FROG -> setOf(Element.WATER, Element.GRASS)
+        Species.BEAR -> setOf(Element.GROUND, Element.WATER)
     }
 
-    /** All buttons shown in battle. */
-    fun loadout(s: Species) = moves(s) + Move.GUARD
+    /** Off-type moves the species can still learn. */
+    fun extras(s: Species): Set<Move> = when (s) {
+        Species.SPROUT -> setOf(Move.WATER_GUN, Move.RAIN_DANCE, Move.AQUA_RING, Move.TWISTER)
+        Species.KITTY -> setOf(Move.FIRE_FANG, Move.AERIAL_ACE, Move.BOUNCE, Move.DIG, Move.SAND_ATTACK)
+        Species.DRAKE -> setOf(Move.ROCK_THROW, Move.DIG, Move.EARTHQUAKE, Move.THUNDER_FANG, Move.STONE_EDGE)
+        Species.BUNNY -> setOf(Move.BOUNCE, Move.AERIAL_ACE, Move.NUZZLE, Move.BULLET_SEED, Move.SYNTHESIS)
+        Species.PUP -> setOf(Move.THUNDER_FANG, Move.ICE_FANG, Move.WILD_CHARGE, Move.AQUA_JET)
+        Species.OWL -> setOf(Move.ICY_WIND, Move.MIST, Move.FREEZE_RAY, Move.RAZOR_LEAF, Move.SANDSTORM)
+        Species.TURTLE -> setOf(Move.ICY_WIND, Move.ICE_SHARD, Move.BLIZZARD, Move.SEED_BOMB, Move.MIRROR_ICE)
+        Species.FOX -> setOf(Move.THUNDER_WAVE, Move.DIG, Move.BOUNCE, Move.AERIAL_ACE, Move.SHOCK_WAVE)
+        Species.FROG -> setOf(Move.BOUNCE, Move.SAND_TOMB, Move.ICY_WIND, Move.ICE_FANG, Move.THUNDER_WAVE)
+        Species.BEAR -> setOf(Move.ICE_PUNCH, Move.ICE_FANG, Move.FIRE_FANG, Move.THUNDER_FANG, Move.AVALANCHE)
+    }
+
+    /** Normal or own-type moves this species can't do (no fists, no wings, too slow...). */
+    fun banned(s: Species): Set<Move> = when (s) {
+        Species.SPROUT -> setOf(Move.BITE, Move.HYPER_FANG, Move.HOWL, Move.CLAW, Move.FURY_SWIPES, Move.BONE_RUSH)
+        Species.KITTY -> setOf(Move.HOWL, Move.BODY_SLAM, Move.GIGA_IMPACT, Move.MEGA_PUNCH)
+        Species.DRAKE -> setOf(Move.ZOOMIES, Move.TELEPORT, Move.QUICK_JAB)
+        Species.BUNNY -> setOf(Move.BITE, Move.HYPER_FANG, Move.HOWL, Move.BODY_SLAM, Move.HEAD_SMASH, Move.BONE_RUSH)
+        Species.PUP -> setOf(Move.TELEPORT, Move.PUNCH, Move.QUICK_JAB, Move.MEGA_PUNCH, Move.FISSURE)
+        Species.OWL -> setOf(Move.PUNCH, Move.QUICK_JAB, Move.MEGA_PUNCH, Move.DOUBLE_KICK, Move.BODY_SLAM, Move.ZOOMIES)
+        Species.TURTLE -> setOf(Move.ZOOMIES, Move.POUNCE, Move.QUICK_ATTACK, Move.TELEPORT, Move.DOUBLE_KICK, Move.AQUA_JET)
+        Species.FOX -> setOf(Move.PUNCH, Move.MEGA_PUNCH, Move.BODY_SLAM, Move.GIGA_IMPACT, Move.ABSOLUTE_ZERO)
+        Species.FROG -> setOf(Move.CLAW, Move.FURY_SWIPES, Move.BITE, Move.HYPER_FANG, Move.HOWL)
+        Species.BEAR -> setOf(Move.ZOOMIES, Move.TELEPORT, Move.QUICK_ATTACK, Move.AQUA_JET, Move.DIVE)
+    }
+
+    /** Kid unique and its Adult upgrade. */
+    fun uniques(s: Species): Pair<Move, Move> = when (s) {
+        Species.SPROUT -> Move.SOLAR_BEAM to Move.SOLAR_FLARE
+        Species.KITTY -> Move.SHADOW_CLAW to Move.NIGHT_TERROR
+        Species.DRAKE -> Move.INFERNO to Move.DRAGON_FURY
+        Species.BUNNY -> Move.MOON_KICK to Move.LUNAR_STRIKE
+        Species.PUP -> Move.PACK_CALL to Move.ALPHA_HOWL
+        Species.OWL -> Move.STORM_EYE to Move.TEMPEST_EYE
+        Species.TURTLE -> Move.FORTRESS to Move.CITADEL
+        Species.FOX -> Move.FOXFIRE to Move.NINE_TAILS
+        Species.FROG -> Move.TIDAL_WAVE to Move.TSUNAMI
+        Species.BEAR -> Move.MAUL to Move.GRIZZLY_RAMPAGE
+    }
+
+    fun unique(s: Species, stage: Stage): Move? = when (stage) {
+        Stage.EGG, Stage.BABY -> null
+        Stage.KID -> uniques(s).first
+        Stage.ADULT -> uniques(s).second
+    }
+
+    fun canLearn(s: Species, m: Move) =
+        m.category != MoveCategory.UNIQUE && m !in banned(s) &&
+            (m.element == Element.NORMAL || m.element in affinity(s) || m in extras(s))
+
+    /** Every move the species can ever learn, in unlock order. */
+    fun learnset(s: Species): List<MoveUnlock> =
+        Move.entries.filter { canLearn(s, it) }.sortedBy { it.level }.map { MoveUnlock(it, it.level) }
+
+    /** Battle buttons: up to [MAX_MOVES] valid learned moves, then the unique in slot 5. */
+    fun loadout(s: Species, stage: Stage, level: Int, moves: List<Move>): List<Move> =
+        moves.distinct().filter { canLearn(s, it) && it.level <= level }.take(MAX_MOVES) + listOfNotNull(unique(s, stage))
 }

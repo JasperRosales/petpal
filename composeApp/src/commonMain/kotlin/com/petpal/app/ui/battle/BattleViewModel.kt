@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.petpal.app.data.repository.PetRepository
 import com.petpal.app.domain.battle.*
+import com.petpal.app.domain.logic.PetEngine
 import com.petpal.app.domain.model.BattleOutcome
 import com.petpal.app.domain.platform.*
 import kotlinx.coroutines.*
@@ -45,7 +46,7 @@ class BattleViewModel(
     fun isAvailable(kind: LinkKind) = links[kind].isAvailable
 
     private suspend fun myInfo(): FighterInfo =
-        petRepository.refresh()?.let { FighterInfo(it.name, it.species, it.stage) } ?: error("No pet yet")
+        petRepository.refresh()?.let { FighterInfo(it.name, it.species, it.stage, PetEngine.levelFor(it.xp), it.moves) } ?: error("No pet yet")
 
     private fun start(block: suspend CoroutineScope.() -> Unit) {
         stop()
@@ -64,7 +65,7 @@ class BattleViewModel(
 
     fun practice() = start {
         val me = myInfo()
-        val cpu = FighterInfo("Wild ${me.species.label}", me.species, me.stage)
+        val cpu = me.copy(name = "Wild ${me.species.label}")
         runHost(listOf(me, cpu), remote = null)
     }
 
@@ -208,7 +209,7 @@ class BattleViewModel(
             BattleOutcome.DRAW -> "Draw"
         }
         val detail = if (practice) "Practice battles don't give XP." else {
-            val xp = petRepository.recordBattle(outcome)
+            val xp = petRepository.recordBattle(outcome, _state.value.fight?.fighters?.getOrNull(1 - me)?.name ?: "")
             if (xp > 0) "+$xp XP" else "Daily battle XP limit reached"
         }
         _state.update { s -> s.copy(fight = s.fight?.copy(snap = snap, result = "$title  $detail")) }

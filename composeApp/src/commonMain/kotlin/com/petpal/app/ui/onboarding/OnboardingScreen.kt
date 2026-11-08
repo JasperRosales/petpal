@@ -17,6 +17,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.petpal.app.data.repository.PetRepository
 import com.petpal.app.domain.battle.SpeciesKit
+import com.petpal.app.domain.logic.PetEngine
 import com.petpal.app.domain.logic.PersonalityQuiz
 import com.petpal.app.domain.model.*
 import com.petpal.app.ui.battle.icon
@@ -132,13 +133,28 @@ private fun Result(species: Species, onAdopt: (String) -> Unit) {
                 }
                 Text(passive.description, style = MaterialTheme.typography.bodySmall)
                 Text("Moves", style = MaterialTheme.typography.titleSmall)
-                SpeciesKit.loadout(species).forEach { m ->
+                val learnset = SpeciesKit.learnset(species)
+                val (kidUnique, adultUnique) = SpeciesKit.uniques(species)
+                learnset.filter { it.level <= 1 }.forEach { (m, _) ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(m.icon(), null, Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text(m.label, style = MaterialTheme.typography.bodyMedium)
+                        Text(m.label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                        Text("Starter", style = MaterialTheme.typography.labelSmall)
                     }
                 }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(kidUnique.icon(), null, Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("${kidUnique.label} → ${adultUnique.label}", style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f))
+                    Text("Unique", style = MaterialTheme.typography.labelSmall)
+                }
+                Text(
+                    "Learns ${learnset.size} moves up to Lv ${PetEngine.MAX_LEVEL} " +
+                        "(types: ${SpeciesKit.affinity(species).joinToString { it.label }}). Keeps ${SpeciesKit.MAX_MOVES} plus its unique in slot 5.",
+                    style = MaterialTheme.typography.labelSmall,
+                )
             }
         }
         OutlinedTextField(

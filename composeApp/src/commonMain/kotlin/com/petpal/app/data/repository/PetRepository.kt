@@ -1,6 +1,7 @@
 package com.petpal.app.data.repository
 
 import com.petpal.app.data.local.*
+import com.petpal.app.domain.battle.Move
 import com.petpal.app.domain.logic.DayMath
 import com.petpal.app.domain.logic.PetEngine
 import com.petpal.app.domain.model.*
@@ -19,24 +20,29 @@ class PetRepository(
 ) {
     private val mutex = Mutex()
 
-    val pet: Flow<Pet> = petDao.observePet().filterNotNull().map { it.toDomain() }
+    val pet: Flow<Pet> = petDao.observePet().filterNotNull().map { PetEngine.syncMoves(it.toDomain()) }
 
     /** False until the personality quiz has given this device its one partner pet. */
     val hasPet: Flow<Boolean> = petDao.observePet().map { it != null }.distinctUntilChanged()
 
-    /** Apply decay since the last save. Null before the pet is adopted. */
-    suspend fun refresh(): Pet? = mutex.withLock {
-        val now = time.nowMillis()
-        val current = petDao.getPet()?.toDomain() ?: return@withLock null
-        val decayed = PetEngine.applyDecay(current, now)
-        petDao.upsert(decayed.toEntity())
-        decayed
+    /** Online battles, newest first. Practice battles are never recorded. */
+    val battles: Flow<List<BattleRecord>> = battleLogDao.observeRecent().map { list -> list.map { it.toDomain() } }
+
+    /** Current pet, or null before it's adopted. */
+    suspend fun refresh(): Pet? = mutex.withLock { load() }
+
+    private suspend fun load(): Pet? = petDao.getPet()?.toDomain()?.let(PetEngine::syncMoves)
+
+    /** Resolves the learn prompt: swap out [forget], or skip the new move when [forget] is null. */
+    suspend fun learnMove(move: Move, forget: Move?) = mutex.withLock {
+        val pet = load() ?: return@withLock
+        petDao.upsert(PetEngine.learn(pet, move, forget).toEntity())
     }
 
     /** One pet per device: does nothing if a pet already exists. */
     suspend fun adopt(name: String, species: Species) = mutex.withLock {
         if (petDao.getPet() != null) return@withLock
-        val pet = Pet(name = name.trim().ifEmpty { species.label }, species = species, lastUpdated = time.nowMillis())
+        val pet = PetEngine.syncMoves(Pet(name = name.trim().ifEmpty { species.label }, species = species, lastUpdated = time.nowMillis()))
         petDao.upsert(pet.toEntity())
     }
 
@@ -46,7 +52,7 @@ class PetRepository(
     }
 
     /** Saves a finished online battle. Returns XP gained (0 once today's cap is used up). */
-    suspend fun recordBattle(outcome: BattleOutcome): Int {
+    suspend fun recordBattle(outcome: BattleOutcome, opponent: String): Int {
         refresh() ?: return 0
         return mutex.withLock {
             val now = time.nowMillis()
@@ -56,12 +62,12 @@ class PetRepository(
             val xp = if (capped) 0 else PetEngine.battleXp(outcome)
             val pet = PetEngine.addXp(petDao.getPet()!!.toDomain(), xp)
             petDao.upsert(pet.toEntity())
-            battleLogDao.insert(BattleLogEntity(outcome = outcome.name, xp = xp, timestamp = now))
+            battleLogDao.insert(BattleLogEntity(outcome = outcome.name, xp = xp, timestamp = now, opponent = opponent))
             xp
         }
     }
 
-    /** Decay, reward, save, and record the habit in one step. */
+    /** Reward, save, and record the habit in one step. */
     suspend fun logHabit(type: HabitType, value: Int = 1): Pet? {
         refresh() ?: return null
         return mutex.withLock {

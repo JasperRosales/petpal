@@ -21,7 +21,7 @@ class HabitRepository(
     /** Logs from the start of the day [days] ago until now. */
     fun logsSinceDaysAgo(days: Int): Flow<List<HabitLog>> {
         val from = DayMath.startOfDay(today().minus(days, DateTimeUnit.DAY), zone())
-        return habitLogDao.observeSince(from).map { list -> list.map { it.toDomain() } }
+        return habitLogDao.observeSince(from).map { list -> list.mapNotNull { it.toDomain() } }
     }
 
     fun streak(): Flow<Int> = habitLogDao.observeAllTimestamps().map { stamps ->

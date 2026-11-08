@@ -76,7 +76,7 @@ fun FocusScreen(vm: FocusViewModel = koinViewModel()) {
         }
 
         Text(
-            "Finish a session to make your pet happier. Sessions completed: ${s.completedToday}",
+            "Finish a session to keep your streak going. Sessions completed: ${s.completedToday}",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

@@ -1,14 +1,15 @@
 # PetPal
 
-An offline-first habit pet app. Your pixel pet grows from your real habits: steps, water, focus sessions, and sleep.
+An offline-first habit pet app. Your pixel pet grows from your real habits: steps, focus sessions, and battles with friends.
 
 Built with **Kotlin Multiplatform** + **Compose Multiplatform** (Android first, iOS-ready).
 
 ## Features
 - Personality quiz on first launch picks your one partner pet (one pet per device)
-- 10 species, each with 4 stages (Egg, Baby, Kid, Adult), a passive ability and 5 moves + Guard
-- Hunger / happiness / energy that decay over time
-- Habits: water, sleep, treats and focus refill stats; auto step tracking gives XP
+- 10 species, each with 4 stages (Egg, Baby, Kid, Adult) and a passive ability
+- 157 moves across 8 types (Normal, Fire, Water, Grass, Ice, Electric, Flying, Ground) with effects like Fly/Dig (vanish), counter, leech, paralyze, freeze, recoil, multi-hit
+- Each species learns its own types plus a few off-type moves; some moves it can never learn
+- Levels 1-60 unlock moves; pets keep 4 and pick one to forget when full. Slot 5 is the unique: unlocks at Kid, upgrades at Adult
 - Daily streaks and a 7-day stats chart
 - "Grassy Field" Material 3 theme (light meadow / dark night field) with neumorphic buttons
 - Local battles over Bluetooth or a phone hotspot (or vs CPU): pets roam, you time moves like Punch, Tackle, Fire Breath, Thunder, Heal (burn, slow, stun, drain effects)

@@ -10,6 +10,11 @@ import androidx.lifecycle.viewModelScope
 import com.petpal.app.data.repository.PetRepository
 import com.petpal.app.ui.onboarding.OnboardingScreen
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import com.petpal.app.domain.battle.Move
+import com.petpal.app.domain.logic.PetEngine
+import com.petpal.app.ui.home.LearnMoveDialog
 import kotlinx.coroutines.flow.stateIn
 import org.koin.compose.viewmodel.koinViewModel
 import androidx.compose.material3.*
@@ -20,6 +25,7 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
 import com.petpal.app.ui.battle.BattleScreen
+import com.petpal.app.ui.battle.LocalBattleFullscreen
 import com.petpal.app.ui.focus.FocusScreen
 import com.petpal.app.ui.habits.HabitsScreen
 import com.petpal.app.ui.home.HomeScreen
@@ -34,8 +40,15 @@ private enum class Tab(val route: String, val label: String, val icon: ImageVect
     Stats("stats", "Stats", PetPalIcons.Stats),
 }
 
-class RootViewModel(petRepository: PetRepository) : ViewModel() {
+class RootViewModel(private val petRepository: PetRepository) : ViewModel() {
     val hasPet = petRepository.hasPet.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    /** Pet plus the move it wants to learn while its moveset is full. */
+    val learnPrompt = petRepository.pet
+        .map { pet -> PetEngine.pendingMove(pet)?.let { pet to it } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    fun learn(move: Move, forget: Move?) = viewModelScope.launch { petRepository.learnMove(move, forget) }
 }
 
 @Composable
@@ -43,7 +56,14 @@ fun PetPalNavHost(stepPermissionGranted: Boolean, root: RootViewModel = koinView
     when (root.hasPet.collectAsStateWithLifecycle().value) {
         null -> Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
         false -> OnboardingScreen()
-        true -> MainTabs(stepPermissionGranted)
+        true -> {
+            MainTabs(stepPermissionGranted)
+            val prompt = root.learnPrompt.collectAsStateWithLifecycle().value
+            if (prompt != null) {
+                val (pet, move) = prompt
+                LearnMoveDialog(pet, move) { forget -> root.learn(move, forget) }
+            }
+        }
     }
 }
 
@@ -52,11 +72,12 @@ private fun MainTabs(stepPermissionGranted: Boolean) {
     val nav = rememberNavController()
     val snackbar = remember { SnackbarHostState() }
     val entry by nav.currentBackStackEntryAsState()
+    val battleFullscreen = remember { mutableStateOf(false) }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
-            NavigationBar {
+            if (!battleFullscreen.value) NavigationBar {
                 Tab.entries.forEach { tab ->
                     NavigationBarItem(
                         selected = entry?.destination?.hierarchy?.any { it.route == tab.route } == true,
@@ -74,12 +95,14 @@ private fun MainTabs(stepPermissionGranted: Boolean) {
             }
         },
     ) { padding ->
+        CompositionLocalProvider(LocalBattleFullscreen provides battleFullscreen) {
         NavHost(nav, startDestination = Tab.Home.route, modifier = Modifier.padding(padding)) {
             composable(Tab.Home.route) { HomeScreen(snackbar, stepPermissionGranted) }
             composable(Tab.Habits.route) { HabitsScreen() }
             composable(Tab.Focus.route) { FocusScreen() }
             composable(Tab.Battle.route) { BattleScreen() }
             composable(Tab.Stats.route) { StatsScreen() }
+        }
         }
     }
 }

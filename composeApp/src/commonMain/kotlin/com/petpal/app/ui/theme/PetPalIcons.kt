@@ -17,14 +17,8 @@ object PetPalIcons {
 
     // Habits
     val Steps = Icons.AutoMirrored.Rounded.DirectionsWalk
-    val Water = Icons.Rounded.WaterDrop
-    val Sleep = Icons.Rounded.Bedtime
-    val Custom = Icons.Rounded.Star
 
     // Stats
-    val Hunger = Icons.Rounded.Restaurant
-    val Happiness = Icons.Rounded.Favorite
-    val Energy = Icons.Rounded.Bolt
     val Xp = Icons.Rounded.AutoAwesome
     val Streak = Icons.Rounded.LocalFireDepartment
 
@@ -41,9 +35,6 @@ object PetPalIcons {
 
     fun forHabit(type: HabitType) = when (type) {
         HabitType.STEPS -> Steps
-        HabitType.WATER -> Water
         HabitType.FOCUS -> Focus
-        HabitType.SLEEP -> Sleep
-        HabitType.CUSTOM -> Custom
     }
 }

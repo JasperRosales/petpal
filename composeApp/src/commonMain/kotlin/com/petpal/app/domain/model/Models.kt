@@ -1,9 +1,11 @@
 package com.petpal.app.domain.model
 
+import com.petpal.app.domain.battle.Move
+
 enum class Stage { EGG, BABY, KID, ADULT }
 enum class EvolutionPath { NONE, ATHLETIC, SCHOLAR, CHILL }
 enum class Mood { HAPPY, OKAY, SAD, SLEEPY }
-enum class HabitType { STEPS, WATER, FOCUS, SLEEP, CUSTOM }
+enum class HabitType { STEPS, FOCUS }
 
 /** Partner pet species, assigned once by the personality quiz. Battle kit lives in SpeciesKit. */
 enum class Species(val label: String, val trait: String) {
@@ -26,11 +28,18 @@ data class Pet(
     val stage: Stage = Stage.EGG,
     val path: EvolutionPath = EvolutionPath.NONE,
     val species: Species = Species.SPROUT,
-    val hunger: Double = 80.0,
-    val happiness: Double = 80.0,
-    val energy: Double = 80.0,
     val xp: Int = 0,
     val lastUpdated: Long, // epoch millis
+    val moves: List<Move> = emptyList(), // learned moves, at most SpeciesKit.MAX_MOVES
+    val seenMoves: Set<Move> = emptySet(), // moves already offered (learned or declined)
+)
+
+data class BattleRecord(
+    val id: Long,
+    val opponent: String,
+    val outcome: BattleOutcome,
+    val xp: Int,
+    val timestamp: Long,
 )
 
 data class HabitLog(

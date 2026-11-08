@@ -31,8 +31,6 @@ class HomeViewModel(
 ) : ViewModel() {
 
     private val isNight = MutableStateFlow(computeNight())
-    private val _rewards = MutableSharedFlow<String>(extraBufferCapacity = 4)
-    val rewards: SharedFlow<String> = _rewards
     private var stepJob: Job? = null
 
     val state: StateFlow<HomeState> = combine(
@@ -43,7 +41,7 @@ class HomeViewModel(
     ) { pet, streak, steps, night ->
         HomeState(
             pet = pet,
-            mood = PetEngine.moodOf(pet),
+            mood = PetEngine.mood(night, activeToday = steps > 0 || streak > 0),
             streak = streak,
             todaySteps = steps,
             stepsAvailable = stepRepository.isAvailable,
@@ -53,21 +51,11 @@ class HomeViewModel(
 
     init {
         viewModelScope.launch {
-            while (isActive) { // keep decay and day/night current while open
-                petRepository.refresh()
+            while (isActive) { // keep day/night current while open
                 isNight.value = computeNight()
                 delay(60_000)
             }
         }
-    }
-
-    fun log(type: HabitType) = viewModelScope.launch {
-        val before = state.value.pet?.stage
-        val pet = petRepository.logHabit(type) ?: return@launch
-        _rewards.tryEmit(
-            if (before != null && pet.stage != before) "${pet.name} grew into a ${pet.stage.label()}!"
-            else "${pet.name} enjoyed that! (${type.label().lowercase()})",
-        )
     }
 
     fun rename(name: String) = viewModelScope.launch { petRepository.rename(name) }
@@ -87,8 +75,5 @@ class HomeViewModel(
 fun Stage.label() = name.lowercase().replaceFirstChar { it.uppercase() }
 fun HabitType.label() = when (this) {
     HabitType.STEPS -> "Steps"
-    HabitType.WATER -> "Water"
     HabitType.FOCUS -> "Focus"
-    HabitType.SLEEP -> "Sleep"
-    HabitType.CUSTOM -> "Treat"
 }

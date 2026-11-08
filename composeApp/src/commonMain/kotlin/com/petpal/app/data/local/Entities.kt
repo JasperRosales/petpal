@@ -15,6 +15,8 @@ data class PetEntity(
     val energy: Double,
     val xp: Int,
     val lastUpdated: Long,
+    @ColumnInfo(defaultValue = "") val moves: String = "", // comma-separated Move names
+    @ColumnInfo(defaultValue = "") val seenMoves: String = "",
 )
 
 @Entity(tableName = "habit_log")
@@ -32,6 +34,7 @@ data class BattleLogEntity(
     val outcome: String,
     val xp: Int,
     val timestamp: Long,
+    @ColumnInfo(defaultValue = "") val opponent: String = "",
 )
 
 /** One row per day; see StepMath. */
@@ -84,6 +87,9 @@ interface StepDayDao {
 interface BattleLogDao {
     @Insert
     suspend fun insert(log: BattleLogEntity)
+
+    @Query("SELECT * FROM battle_log ORDER BY timestamp DESC LIMIT 50")
+    fun observeRecent(): Flow<List<BattleLogEntity>>
 
     @Query("SELECT COUNT(*) FROM battle_log WHERE timestamp >= :from AND xp > 0")
     suspend fun rewardedSince(from: Long): Int
