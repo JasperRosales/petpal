@@ -2,7 +2,7 @@ package com.petpal.app.domain.model
 
 import com.petpal.app.domain.battle.Move
 
-enum class Stage { EGG, BABY, KID, ADULT }
+enum class Stage { EGG, BABY, KID, TEEN, ADULT }
 enum class EvolutionPath { NONE, ATHLETIC, SCHOLAR, CHILL }
 enum class Mood { HAPPY, OKAY, SAD, SLEEPY }
 enum class HabitType { STEPS }
@@ -35,6 +35,10 @@ enum class Species(val label: String, val trait: String) {
     SHARK("Shark", "Focused and fearless. Once you set a goal, you never let it go."),
     CHAMELEON("Chameleon", "Adaptable and observant. You fit in anywhere and surprise everyone."),
     BEAVER("Beaver", "Industrious and protective. You build things that keep others safe."),
+    MONKEY("Monkey", "Playful and quick-witted. You swing into every adventure with a grin."),
+    KANGAROO("Kangaroo", "Strong and spirited. You leap at challenges and never back down."),
+    EAGLE("Eagle", "Proud and sharp-eyed. You see the big picture and strike when it counts."),
+    SEAL("Seal", "Friendly and easygoing. You bring smiles wherever you go, even on cold days."),
 }
 enum class BattleOutcome { WIN, LOSS, DRAW }
 

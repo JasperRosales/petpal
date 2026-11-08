@@ -1,5 +1,6 @@
 package com.petpal.app.ui.habits
 
+import com.petpal.app.domain.logic.PetEngine
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -138,7 +139,7 @@ private fun HabitCard(type: HabitType, count: Int) {
 }
 
 private fun HabitType.hint() = when (this) {
-    HabitType.STEPS -> "Auto: +20 XP per 1,000 steps (max 20k/day)"
+    HabitType.STEPS -> "Auto: +${PetEngine.STEP_XP} XP per 1,000 steps (max 20k/day)"
 }
 
 private fun Int.pad() = toString().padStart(2, '0')

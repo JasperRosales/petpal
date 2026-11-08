@@ -57,7 +57,7 @@ enum class MoveCategory(val label: String) { NORMAL("Normal"), SPECIAL("Special"
 
 enum class Element(val label: String) {
     NORMAL("Normal"), FIRE("Fire"), WATER("Water"), GRASS("Grass"),
-    ICE("Ice"), ELECTRIC("Electric"), FLYING("Flying"), GROUND("Ground"),
+    ICE("Ice"), ELECTRIC("Electric"), FLYING("Flying"), GROUND("Ground"), FIGHTING("Fighting"),
 }
 
 private val N = MoveCategory.NORMAL
@@ -78,6 +78,8 @@ enum class Move(
     val effect: Effect = Effect.NONE,
     /** Also dashes at the target during the wind-up, on top of [effect] (slams). */
     private val alsoLunges: Boolean = false,
+    /** Second type for combo moves (Thunder Punch = Electric + Fighting). */
+    val element2: Element? = null,
 ) {
     // Normal
     TACKLE("Tackle", N, Element.NORMAL, 1, 8, 0.24f, 1300, 250, 200, Effect.LUNGE),
@@ -116,6 +118,36 @@ enum class Move(
     SWITCHEROO("Switcheroo", N, Element.NORMAL, 19, 5, 0.45f, 6000, 200, 200, Effect.SWAP),
     CHEER("Cheer", N, Element.NORMAL, 21, 0, 0f, 9000, 300, 200, Effect.AID),
     BARRIER("Barrier", N, Element.NORMAL, 26, 0, 0f, 10_000, 250, 200, Effect.SHIELD),
+
+    // Fighting
+    KARATE_CHOP("Karate Chop", N, Element.FIGHTING, 1, 7, 0.17f, 1000, 150, 150),
+    LOW_KICK("Low Kick", N, Element.FIGHTING, 6, 8, 0.19f, 1600, 200, 200, Effect.SLOW),
+    BULK_UP("Bulk Up", N, Element.FIGHTING, 10, 0, 0f, 9000, 300, 200, Effect.RAGE),
+    BRICK_BREAK("Brick Break", N, Element.FIGHTING, 15, 11, 0.17f, 2000, 250, 200, Effect.DISRUPT),
+    DRAIN_PUNCH("Drain Punch", N, Element.FIGHTING, 22, 10, 0.17f, 2200, 250, 200, Effect.DRAIN),
+    CROSS_CHOP("Cross Chop", N, Element.FIGHTING, 30, 14, 0.18f, 2600, 300, 250, Effect.STUN),
+    DYNAMIC_PUNCH("Dynamic Punch", S, Element.FIGHTING, 38, 18, 0.18f, 4000, 450, 300, Effect.PARALYZE, alsoLunges = true),
+    CLOSE_COMBAT("Close Combat", S, Element.FIGHTING, 48, 26, 0.20f, 4200, 400, 300, Effect.RECOIL),
+    FOCUS_BLAST("Focus Blast", S, Element.FIGHTING, 56, 24, 0.55f, 4500, 550, 300, Effect.KNOCKBACK),
+    // Combo types: learnable by pets of either type
+    THUNDER_PUNCH("Thunder Punch", N, Element.ELECTRIC, 18, 11, 0.18f, 2300, 200, 200, Effect.PARALYZE, element2 = Element.FIGHTING),
+    FIRE_PUNCH("Fire Punch", N, Element.FIRE, 18, 11, 0.18f, 2300, 200, 200, Effect.BURN, element2 = Element.FIGHTING),
+    ROCK_SMASH("Rock Smash", N, Element.GROUND, 12, 9, 0.17f, 1800, 200, 200, Effect.KNOCKBACK, element2 = Element.FIGHTING),
+    SKY_UPPERCUT("Sky Uppercut", N, Element.FLYING, 26, 12, 0.18f, 2400, 250, 200, Effect.KNOCKBACK, element2 = Element.FIGHTING),
+    AQUA_FIST("Aqua Fist", N, Element.WATER, 20, 11, 0.18f, 2300, 200, 200, Effect.SLOW, element2 = Element.FIGHTING),
+
+    // More moves
+    RAPID_SPIN("Rapid Spin", N, Element.NORMAL, 7, 6, 0.20f, 2500, 200, 200, Effect.KNOCKBACK),
+    SUCKER_PUNCH("Sucker Punch", N, Element.NORMAL, 24, 10, 0.25f, 2200, 100, 200, Effect.LUNGE),
+    HEAT_WAVE("Heat Wave", S, Element.FIRE, 42, 17, 0.60f, 4200, 500, 300, Effect.BURN),
+    SCALD("Scald", N, Element.WATER, 26, 10, 0.45f, 2200, 250, 200, Effect.BURN),
+    SPORE_CLOUD("Spore Cloud", N, Element.GRASS, 18, 0, 0.45f, 8000, 300, 200, Effect.WEAKEN),
+    HAIL_STORM("Hail Storm", S, Element.ICE, 36, 15, 0.60f, 4000, 500, 300, Effect.SLOW),
+    VOLT_SWITCH("Volt Switch", N, Element.ELECTRIC, 22, 8, 0.45f, 2600, 200, 200, Effect.SWAP),
+    MUD_BOMB("Mud Bomb", N, Element.GROUND, 16, 9, 0.45f, 2000, 300, 200, Effect.WEAKEN),
+    COMET_PUNCH("Comet Punch", N, Element.FIGHTING, 4, 4, 0.18f, 1600, 150, 200, Effect.MULTI),
+    VACUUM_WAVE("Vacuum Wave", N, Element.FIGHTING, 12, 7, 0.45f, 1600, 100, 150),
+    SEISMIC_TOSS("Seismic Toss", S, Element.FIGHTING, 44, 20, 0.20f, 4200, 400, 300, Effect.KNOCKBACK, element2 = Element.GROUND),
 
     // Fire
     EMBER("Ember", N, Element.FIRE, 1, 6, 0.40f, 1800, 250, 200, Effect.BURN),
@@ -179,7 +211,7 @@ enum class Move(
     ICY_WIND("Icy Wind", N, Element.ICE, 11, 8, 0.50f, 1900, 300, 200, Effect.SLOW),
     ICICLE_SPEAR("Icicle Spear", N, Element.ICE, 14, 3, 0.40f, 1800, 250, 200, Effect.MULTI),
     FROST_ARMOR("Frost Armor", N, Element.ICE, 17, 0, 0f, 9000, 300, 200, Effect.HARDEN),
-    ICE_PUNCH("Ice Punch", N, Element.ICE, 20, 11, 0.18f, 2300, 200, 200, Effect.STUN),
+    ICE_PUNCH("Ice Punch", N, Element.ICE, 20, 11, 0.18f, 2300, 200, 200, Effect.STUN, element2 = Element.FIGHTING),
     FROST_BREATH("Frost Breath", N, Element.ICE, 24, 10, 0.45f, 2400, 300, 250),
     ICE_SHARD("Ice Shard", S, Element.ICE, 28, 14, 0.50f, 3500, 350, 200, Effect.SLOW),
     AVALANCHE("Avalanche", N, Element.ICE, 32, 12, 0.30f, 2600, 400, 300, Effect.KNOCKBACK),
@@ -328,11 +360,27 @@ enum class Move(
     LOG_TOSS("Log Toss", U, Element.GROUND, 0, 17, 0.45f, 15_000, 300, 250, Effect.KNOCKBACK),
     TIMBER_TRAP("Timber Trap", U, Element.GROUND, 0, 25, 0.65f, 15_000, 300, 250, Effect.TRAP),
     GREAT_DAM("Great Dam", U, Element.WATER, 0, 0, 0f, 15_000, 250, 200, Effect.SHIELD),
+    BANANA_TOSS("Banana Toss", U, Element.GRASS, 0, 16, 0.50f, 15_000, 300, 250, Effect.SLOW),
+    VINE_SWING("Vine Swing", U, Element.FIGHTING, 0, 24, 0.35f, 15_000, 350, 250, Effect.TWIN_SLASH),
+    CANOPY_FURY("Canopy Fury", U, Element.FIGHTING, 0, 32, 0.30f, 15_000, 400, 300, Effect.STUN, alsoLunges = true, element2 = Element.GRASS),
+    POUCH_JAB("Pouch Jab", U, Element.FIGHTING, 0, 17, 0.22f, 15_000, 250, 250, Effect.KNOCKBACK),
+    BOXING_FLURRY("Boxing Flurry", U, Element.FIGHTING, 0, 8, 0.22f, 15_000, 300, 250, Effect.MULTI),
+    OUTBACK_STOMP("Outback Stomp", U, Element.GROUND, 0, 32, 0.45f, 15_000, 500, 300, Effect.STUN, element2 = Element.FIGHTING),
+    TALON_GRAB("Talon Grab", U, Element.FLYING, 0, 16, 0.40f, 15_000, 300, 250, Effect.PULL),
+    SKY_DIVE("Sky Dive", U, Element.FLYING, 0, 25, 0.50f, 15_000, 500, 250, Effect.VANISH),
+    STORM_TALON("Storm Talon", U, Element.FLYING, 0, 33, 0.55f, 15_000, 450, 300, Effect.KNOCKBACK, element2 = Element.FIGHTING),
+    FLIPPER_SLAP("Flipper Slap", U, Element.WATER, 0, 16, 0.22f, 15_000, 250, 250, Effect.SLOW),
+    ICE_FLOE("Ice Floe", U, Element.ICE, 0, 24, 0.40f, 15_000, 300, 250, Effect.LUNGE),
+    ARCTIC_TIDE("Arctic Tide", U, Element.WATER, 0, 32, 0.65f, 15_000, 600, 300, Effect.FREEZE, element2 = Element.ICE),
     ;
 
     /** Buffs target the user; everything else (including 0-damage debuffs) targets the opponent. */
     val isBuff get() = effect.self
-    val isFire get() = element == Element.FIRE
+    val elements: Set<Element> get() = setOfNotNull(element, element2)
+    val isFire get() = Element.FIRE in elements
+    /** "Electric/Fighting" for combo moves. */
+    val typeLabel get() = elements.joinToString("/") { it.label }
+    val isPunch get() = this in PUNCHES
     val lunges get() = effect == Effect.LUNGE || alsoLunges
 
     /** e.g. "knockback", or "lunge + knockback" for slams. */
@@ -347,12 +395,19 @@ enum class Move(
         get() = if (category == MoveCategory.NORMAL && element != Element.NORMAL) (10 + damage).coerceIn(15, 35) else 0
 
     fun describe(): String = buildString {
-        append(element.label).append(" · ")
+        append(typeLabel).append(" · ")
         append(when { damage > 0 -> "$damage dmg"; isBuff -> "Buff"; else -> "Debuff" })
         if (effect != Effect.NONE && effect != Effect.GUARD) append(", ").append(effectLabel)
         append(", ${cooldownMs / 1000.0}s cd")
         if (energyCost > 0) append(", $energyCost energy")
     }
+}
+
+/** Fist moves: species that can't Punch can't learn these either. */
+private val PUNCHES by lazy {
+    setOf(Move.ICE_PUNCH, Move.THUNDER_PUNCH, Move.FIRE_PUNCH, Move.DRAIN_PUNCH, Move.DYNAMIC_PUNCH,
+        Move.SKY_UPPERCUT, Move.AQUA_FIST, Move.KARATE_CHOP, Move.BRICK_BREAK, Move.CROSS_CHOP,
+        Move.SUCKER_PUNCH, Move.COMET_PUNCH, Move.MEGA_PUNCH, Move.PUNCH, Move.QUICK_JAB)
 }
 
 object BattleRules {
@@ -384,6 +439,10 @@ enum class Passive(val label: String, val description: String) {
     BURROWER("Burrower", "Vanishing moves (Dig, Bounce...) recharge 30% faster."),
     SNOOZE("Snooze", "Regenerates 2 HP every second after 4s without getting hit."),
     BLOOD_SCENT("Blood Scent", "Deals 30% more damage to targets below half HP."),
+    IRON_FIST("Iron Fist", "Punching moves deal 25% more damage."),
+    STEADFAST("Steadfast", "Can't be knocked back or pulled."),
+    FIRST_STRIKE("First Strike", "Deals 25% more damage to targets above 70% HP."),
+    BLUBBER("Blubber", "Takes 30% less damage from Water and Ice moves."),
     COLOR_SHIFT("Color Shift", "Takes 30% less damage from the type it was last hit by."),
     DAM_BUILDER("Dam Builder", "Starts every battle with a shield, and its shields are 50% stronger."),
 }
@@ -417,6 +476,10 @@ object SpeciesKit {
         Species.DEER -> Passive.FLEET
         Species.OTTER -> Passive.PLAYFUL
         Species.PANDA -> Passive.BAMBOO_SNACK
+        Species.MONKEY -> Passive.IRON_FIST
+        Species.KANGAROO -> Passive.STEADFAST
+        Species.EAGLE -> Passive.FIRST_STRIKE
+        Species.SEAL -> Passive.BLUBBER
         Species.LIZARD -> Passive.SUN_SCALES
         Species.RACCOON -> Passive.STICKY_PAWS
         Species.HAMSTER -> Passive.CHEEK_POUCH
@@ -434,19 +497,23 @@ object SpeciesKit {
         Species.SPROUT -> setOf(Element.GRASS, Element.GROUND)
         Species.KITTY -> setOf(Element.ELECTRIC, Element.ICE)
         Species.DRAKE -> setOf(Element.FIRE, Element.FLYING)
-        Species.BUNNY -> setOf(Element.ICE, Element.GROUND)
+        Species.BUNNY -> setOf(Element.ICE, Element.GROUND, Element.FIGHTING)
         Species.PUP -> setOf(Element.GROUND, Element.FIRE)
         Species.OWL -> setOf(Element.FLYING, Element.ELECTRIC)
         Species.TURTLE -> setOf(Element.WATER, Element.GROUND)
         Species.FOX -> setOf(Element.FIRE, Element.ICE)
         Species.FROG -> setOf(Element.WATER, Element.GRASS)
-        Species.BEAR -> setOf(Element.GROUND, Element.WATER)
+        Species.BEAR -> setOf(Element.GROUND, Element.WATER, Element.FIGHTING)
         Species.PENGUIN -> setOf(Element.ICE, Element.WATER)
         Species.HEDGEHOG -> setOf(Element.GROUND, Element.GRASS)
         Species.BAT -> setOf(Element.FLYING, Element.GROUND)
         Species.DEER -> setOf(Element.GRASS, Element.ICE)
         Species.OTTER -> setOf(Element.WATER, Element.ELECTRIC)
-        Species.PANDA -> setOf(Element.GRASS, Element.GROUND)
+        Species.PANDA -> setOf(Element.GRASS, Element.GROUND, Element.FIGHTING)
+        Species.MONKEY -> setOf(Element.FIGHTING, Element.GRASS)
+        Species.KANGAROO -> setOf(Element.FIGHTING, Element.GROUND)
+        Species.EAGLE -> setOf(Element.FLYING, Element.FIGHTING)
+        Species.SEAL -> setOf(Element.WATER, Element.ICE)
         Species.LIZARD -> setOf(Element.FIRE, Element.GROUND)
         Species.RACCOON -> setOf(Element.ELECTRIC, Element.ICE)
         Species.HAMSTER -> setOf(Element.ELECTRIC, Element.GRASS)
@@ -477,6 +544,10 @@ object SpeciesKit {
         Species.DEER -> setOf(Move.WATER_GUN, Move.RAIN_DANCE, Move.BOUNCE, Move.SAND_ATTACK)
         Species.OTTER -> setOf(Move.ICY_WIND, Move.ICE_FANG, Move.ROCK_THROW, Move.DIG)
         Species.PANDA -> setOf(Move.ICE_PUNCH, Move.FIRE_FANG, Move.WATERFALL, Move.AVALANCHE)
+        Species.MONKEY -> setOf(Move.THUNDER_WAVE, Move.SHOCK_WAVE, Move.AERIAL_ACE, Move.DIG)
+        Species.KANGAROO -> setOf(Move.BOUNCE, Move.AERIAL_ACE, Move.WATER_GUN)
+        Species.EAGLE -> setOf(Move.ROCK_THROW, Move.SHOCK_WAVE, Move.ICY_WIND)
+        Species.SEAL -> setOf(Move.MUD_SLAP, Move.SHOCK_WAVE, Move.BULLDOZE)
         Species.LIZARD -> setOf(Move.THUNDER_FANG, Move.LEECH_SEED, Move.WATER_GUN, Move.AERIAL_ACE)
         Species.RACCOON -> setOf(Move.DIG, Move.MUD_SLAP, Move.FIRE_FANG, Move.SMOKESCREEN, Move.BOUNCE)
         Species.HAMSTER -> setOf(Move.DIG, Move.MUD_SLAP, Move.SAND_ATTACK, Move.ROCK_THROW)
@@ -509,6 +580,10 @@ object SpeciesKit {
             Move.FURY_SWIPES, Move.HOWL)
         Species.OTTER -> setOf(Move.HOWL, Move.TELEPORT, Move.GIGA_IMPACT, Move.HEAD_SMASH)
         Species.PANDA -> setOf(Move.ZOOMIES, Move.QUICK_ATTACK, Move.TELEPORT, Move.QUICK_JAB, Move.HOWL)
+        Species.MONKEY -> setOf(Move.BITE, Move.HYPER_FANG, Move.BODY_SLAM, Move.HOWL)
+        Species.KANGAROO -> setOf(Move.TELEPORT, Move.HOWL, Move.BITE, Move.HYPER_FANG)
+        Species.EAGLE -> setOf(Move.PUNCH, Move.MEGA_PUNCH, Move.QUICK_JAB, Move.BODY_SLAM, Move.ZOOMIES, Move.HOWL)
+        Species.SEAL -> setOf(Move.PUNCH, Move.MEGA_PUNCH, Move.QUICK_JAB, Move.DOUBLE_KICK, Move.POUNCE, Move.CLAW, Move.FURY_SWIPES)
         Species.LIZARD -> setOf(Move.PUNCH, Move.MEGA_PUNCH, Move.HOWL, Move.BODY_SLAM, Move.QUICK_JAB)
         Species.RACCOON -> setOf(Move.HOWL, Move.BODY_SLAM, Move.GIGA_IMPACT, Move.ABSOLUTE_ZERO)
         Species.HAMSTER -> setOf(Move.HOWL, Move.BODY_SLAM, Move.GIGA_IMPACT, Move.MEGA_PUNCH, Move.HEAD_SMASH)
@@ -522,7 +597,7 @@ object SpeciesKit {
         Species.BEAVER -> setOf(Move.HOWL, Move.ZOOMIES, Move.TELEPORT, Move.POUNCE, Move.DIVE)
     }
 
-    /** Baby unique, its Kid upgrade, and its Adult upgrade. */
+    /** Baby unique, its Kid upgrade (kept through Teen), and its Adult upgrade. */
     fun uniques(s: Species): Triple<Move, Move, Move> = when (s) {
         Species.SPROUT -> Triple(Move.SUN_RAY, Move.SOLAR_BEAM, Move.SOLAR_FLARE)
         Species.KITTY -> Triple(Move.SHADOW_SWIPE, Move.SHADOW_CLAW, Move.NIGHT_TERROR)
@@ -540,6 +615,10 @@ object SpeciesKit {
         Species.DEER -> Triple(Move.ANTLER_JAB, Move.VERDANT_CHARGE, Move.SPIRIT_STAMPEDE)
         Species.OTTER -> Triple(Move.PEBBLE_TOSS, Move.RIVER_RUSH, Move.RAPID_CURRENT)
         Species.PANDA -> Triple(Move.BAMBOO_SMACK, Move.BAMBOO_STORM, Move.PANDA_QUAKE)
+        Species.MONKEY -> Triple(Move.BANANA_TOSS, Move.VINE_SWING, Move.CANOPY_FURY)
+        Species.KANGAROO -> Triple(Move.POUCH_JAB, Move.BOXING_FLURRY, Move.OUTBACK_STOMP)
+        Species.EAGLE -> Triple(Move.TALON_GRAB, Move.SKY_DIVE, Move.STORM_TALON)
+        Species.SEAL -> Triple(Move.FLIPPER_SLAP, Move.ICE_FLOE, Move.ARCTIC_TIDE)
         Species.LIZARD -> Triple(Move.TAIL_LASH, Move.MAGMA_TAIL, Move.VOLCANO_ROAR)
         Species.RACCOON -> Triple(Move.SNATCH, Move.TRASH_TOSS, Move.MIDNIGHT_HEIST)
         Species.HAMSTER -> Triple(Move.SEED_SPIT, Move.WHEEL_DASH, Move.THUNDER_WHEEL)
@@ -555,7 +634,7 @@ object SpeciesKit {
     fun unique(s: Species, stage: Stage): Move? = when (stage) {
         Stage.EGG -> null
         Stage.BABY -> uniques(s).first
-        Stage.KID -> uniques(s).second
+        Stage.KID, Stage.TEEN -> uniques(s).second
         Stage.ADULT -> uniques(s).third
     }
 
@@ -564,13 +643,14 @@ object SpeciesKit {
     /** A new pet knows exactly [STARTERS] moves: Tackle and its first own-type attack. */
     fun starters(s: Species): List<Move> {
         val pool = Move.entries.filter { canLearn(s, it) && it.level <= 1 }
-        val typed = affinity(s).firstNotNullOfOrNull { e -> pool.firstOrNull { it.element == e && it.damage > 0 } }
+        val typed = affinity(s).firstNotNullOfOrNull { e -> pool.firstOrNull { e in it.elements && it.damage > 0 } }
         return (listOfNotNull(Move.TACKLE.takeIf { it in pool }, typed) + pool).distinct().take(STARTERS)
     }
 
     fun canLearn(s: Species, m: Move) =
         m.category != MoveCategory.UNIQUE && m !in banned(s) &&
-            (m.element == Element.NORMAL || m.element in affinity(s) || m in extras(s))
+            !(m.isPunch && Move.PUNCH in banned(s)) &&
+            (m.element == Element.NORMAL || m.elements.any { it in affinity(s) } || m in extras(s))
 
     /**
      * Every move the species can ever learn, in unlock order. Level-1 moves beyond the

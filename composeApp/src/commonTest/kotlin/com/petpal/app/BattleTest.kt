@@ -307,27 +307,40 @@ class HitboxTest {
         assertTrue(xs.last() > 0.3f + TWIN_STEP * 1.5f, xs.toString()) // two steps forward
     }
 
-    @Test fun terrainRotatesAndBoostsItsElement() {
+    @Test fun terrainRotatesAndHasItsOwnRule() {
         val maps = (0 until Terrain.entries.size).map(Terrain::rotation)
         assertEquals(Terrain.entries.toSet(), maps.toSet())
         assertEquals(Terrain.ARENA, Terrain.rotation(Terrain.entries.size))
-        // every element except Normal has its own terrain
+        // every element except Normal has its own terrain, each with its own named effect
         assertEquals(Element.entries.toSet() - Element.NORMAL, Terrain.entries.mapNotNull { it.element }.toSet())
-        assertTrue(Terrain.VOLCANO.boosts(Move.EMBER) && !Terrain.VOLCANO.boosts(Move.PUNCH))
+        assertEquals(Terrain.entries.size - 1, Terrain.entries.filter { it.effectName.isNotEmpty() }.map { it.effectName }.toSet().size)
         assertTrue(Terrain.VOLCANO.isHomeTurf(a)) // Drake is Fire type
         assertFalse(Terrain.ARENA.isHomeTurf(a))
 
-        fun avgDamage(t: Terrain): Double = (0 until 40).map { seed ->
-            val e = BattleEngine(listOf(a, b), Random(seed), demo = true, terrain = t)
+        // Forest heals everyone over time, Canyon chips everyone down
+        fun hpAfter(t: Terrain): Int {
+            val e = BattleEngine(listOf(a, b), Random(1), demo = true, terrain = t)
             e.place(0, 0.4f, ARENA_H / 2); e.place(1, 0.6f, ARENA_H / 2)
-            e.command(0, Move.EMBER, 0)
-            (0..40).forEach { e.tick(it * 50L) }
-            e.snapshot(2000).fighters[1].let { it.maxHp - it.hp }
-        }.average()
-        assertTrue(avgDamage(Terrain.VOLCANO) > avgDamage(Terrain.TUNDRA))
+            e.command(0, Move.TACKLE, 0)
+            (0..200).forEach { e.tick(it * 50L) }
+            return e.snapshot(10_000).fighters[1].hp
+        }
+        assertTrue(hpAfter(Terrain.FOREST) > hpAfter(Terrain.ARENA))
+        assertTrue(hpAfter(Terrain.CANYON) < hpAfter(Terrain.ARENA))
+        assertTrue(BattleStats.cooldown(a, Move.EMBER, Terrain.THUNDER_PLAINS) < BattleStats.cooldown(a, Move.EMBER))
 
-        val setup = Protocol.parse(Protocol.setup(1, listOf(a, b), Terrain.WINDY_CLIFFS)) as Protocol.Setup
-        assertEquals(Terrain.WINDY_CLIFFS, setup.terrain)
+        val setup = Protocol.parse(Protocol.setup(1, listOf(a, b), Terrain.DOJO)) as Protocol.Setup
+        assertEquals(Terrain.DOJO, setup.terrain)
+    }
+
+    @Test fun comboMovesHaveTwoTypes() {
+        assertEquals(setOf(Element.ELECTRIC, Element.FIGHTING), Move.THUNDER_PUNCH.elements)
+        assertEquals("Electric/Fighting", Move.THUNDER_PUNCH.typeLabel)
+        assertTrue(SpeciesKit.canLearn(Species.KITTY, Move.THUNDER_PUNCH)) // Electric
+        assertTrue(SpeciesKit.canLearn(Species.BEAR, Move.THUNDER_PUNCH)) // Fighting
+        assertFalse(SpeciesKit.canLearn(Species.OWL, Move.THUNDER_PUNCH)) // Electric, but no fists
+        assertFalse(SpeciesKit.canLearn(Species.SPROUT, Move.THUNDER_PUNCH))
+        assertTrue(SpeciesKit.canLearn(Species.BUNNY, Move.KARATE_CHOP))
     }
 
     @Test fun homeTurfChargesEnergyFaster() {

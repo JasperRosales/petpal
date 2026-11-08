@@ -15,11 +15,13 @@ object PetEngine {
 
     const val HATCH_LEVEL = 3
     const val KID_LEVEL = 20
+    const val TEEN_LEVEL = 35
     const val ADULT_LEVEL = 50 // every species is fully evolved by here
 
     fun stageFor(xp: Int): Stage = levelFor(xp).let {
         when {
             it >= ADULT_LEVEL -> Stage.ADULT
+            it >= TEEN_LEVEL -> Stage.TEEN
             it >= KID_LEVEL -> Stage.KID
             it >= HATCH_LEVEL -> Stage.BABY
             else -> Stage.EGG
@@ -27,6 +29,30 @@ object PetEngine {
     }
 
     const val MAX_LEVEL = 100
+
+    /** Level a pet reaches [stage] at. */
+    fun stageLevel(stage: Stage): Int = when (stage) {
+        Stage.EGG -> 1
+        Stage.BABY -> HATCH_LEVEL
+        Stage.KID -> KID_LEVEL
+        Stage.TEEN -> TEEN_LEVEL
+        Stage.ADULT -> ADULT_LEVEL
+    }
+
+    /** The stage after [stage], or null when fully evolved. */
+    fun nextStage(stage: Stage): Stage? = Stage.entries.getOrNull(stage.ordinal + 1)
+
+    /** 0..1 progress from the pet's current stage to the next (1 when fully evolved). */
+    fun stageProgress(pet: Pet): Float {
+        val next = nextStage(pet.stage) ?: return 1f
+        val from = xpForLevel(stageLevel(pet.stage))
+        val to = xpForLevel(stageLevel(next))
+        return ((pet.xp - from).toFloat() / (to - from)).coerceIn(0f, 1f)
+    }
+
+    /** XP still needed to reach the next stage, or 0 when fully evolved. */
+    fun xpToNextStage(pet: Pet): Int =
+        nextStage(pet.stage)?.let { (xpForLevel(stageLevel(it)) - pet.xp).coerceAtLeast(0) } ?: 0
 
     /** Level n needs 10 * (n-1)^2 XP: 10, 40, 90, 160 ... */
     fun levelFor(xp: Int): Int = (1 + sqrt(xp.coerceAtLeast(0) / 10.0).toInt()).coerceAtMost(MAX_LEVEL)
@@ -135,5 +161,5 @@ object PetEngine {
     fun reset(old: Pet, species: Species, now: Long, lifetimeSteps: Long): Pet =
         syncMoves(Pet(name = old.name, species = species, lastUpdated = now, stepsAtReset = lifetimeSteps))
 
-    const val STEP_XP = 20 // per 1,000 steps
+    const val STEP_XP = 120 // per 1,000 steps
 }

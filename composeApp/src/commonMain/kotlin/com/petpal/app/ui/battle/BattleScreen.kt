@@ -309,7 +309,7 @@ private fun Fight(f: FightState, vm: BattleViewModel) {
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         row.forEach { (i, m) ->
                             if (m == null) EvadeButton(me, Modifier.weight(1f), vm::evade)
-                            else MoveButton(m, me.cooldowns.getOrElse(i) { 0 }, info, me, Modifier.weight(1f)) { vm.use(m) }
+                            else MoveButton(m, me.cooldowns.getOrElse(i) { 0 }, info, me, f.terrain, Modifier.weight(1f)) { vm.use(m) }
                         }
                         repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
                     }
@@ -324,13 +324,17 @@ private fun Fight(f: FightState, vm: BattleViewModel) {
 private fun TerrainBadge(f: FightState) {
     val t = f.terrain
     val home = t.isHomeTurf(f.fighters[f.me])
-    Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-        Icon(Icons.Rounded.Terrain, null, Modifier.size(14.dp), tint = t.accent())
-        Spacer(Modifier.width(4.dp))
-        Text(
-            t.label + (t.element?.let { " · ${it.label} moves +${((Terrain.MOVE_BOOST - 1) * 100).toInt()}%" } ?: "") +
-                if (home) " · Home turf!" else "",
-            style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.9f), maxLines = 1,
+    Column(Modifier.padding(top = 4.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Rounded.Terrain, null, Modifier.size(14.dp), tint = t.accent())
+            Spacer(Modifier.width(4.dp))
+            Text(
+                t.label + (if (t.effectName.isNotEmpty()) " · ${t.effectName}" else "") + if (home) " · Home turf!" else "",
+                style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.9f), maxLines = 1,
+            )
+        }
+        if (t != Terrain.ARENA) Text(
+            t.effect, style = MaterialTheme.typography.labelSmall, color = t.accent().copy(alpha = 0.9f), maxLines = 1,
         )
     }
 }
@@ -391,12 +395,12 @@ private fun EvadeButton(me: FighterSnap, modifier: Modifier, onClick: () -> Unit
 }
 
 @Composable
-private fun MoveButton(m: Move, cd: Long, info: FighterInfo, me: FighterSnap, modifier: Modifier, onClick: () -> Unit) {
+private fun MoveButton(m: Move, cd: Long, info: FighterInfo, me: FighterSnap, terrain: Terrain, modifier: Modifier, onClick: () -> Unit) {
     val needsEnergy = (m.category == MoveCategory.SPECIAL && me.energy < BattleRules.MAX_ENERGY) || me.energy < m.energyCost
     val usedUp = m.category == MoveCategory.UNIQUE && me.uniqueLeft <= 0
     val enabled = cd == 0L && !needsEnergy && !usedUp && !me.has(Status.STUN)
     val accent = m.tint()
-    val total = BattleStats.cooldown(info, m).coerceAtLeast(1)
+    val total = BattleStats.cooldown(info, m, terrain).coerceAtLeast(1)
     Box(
         modifier.height(64.dp).clip(MaterialTheme.shapes.medium)
             .background(MaterialTheme.colorScheme.surfaceVariant)
@@ -896,6 +900,7 @@ fun Move.icon(): ImageVector = when (this) {
             Element.ELECTRIC -> Icons.Rounded.Bolt
             Element.FLYING -> Icons.Rounded.Air
             Element.GROUND -> Icons.Rounded.Landscape
+            Element.FIGHTING -> Icons.Rounded.SportsMma
         }
     }
 }
@@ -926,6 +931,7 @@ fun Element.tint(): Color = when (this) {
     Element.ELECTRIC -> Color(0xFFE8B500)
     Element.FLYING -> Color(0xFF8FB3E0)
     Element.GROUND -> Color(0xFF8B6B4A)
+    Element.FIGHTING -> Color(0xFFC0503A)
 }
 
 @Composable

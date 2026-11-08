@@ -113,7 +113,7 @@ fun MoveListDialog(pet: Pet, onDismiss: () -> Unit) {
                             val label = when {
                                 m in pet.moves -> "Known"
                                 !can -> "Can't learn"
-                                m.element != Element.NORMAL && m.element !in types -> "Lv ${m.level} ★"
+                                m.element != Element.NORMAL && m.elements.none { it in types } -> "Lv ${m.level} ★"
                                 else -> "Lv ${m.level}"
                             }
                             MoveRow(m, label, Modifier.alpha(if (can) 1f else 0.4f), onView = { preview = m })

@@ -6,7 +6,7 @@ import kotlin.math.roundToInt
 
 /** Line-based wire format shared by the Bluetooth and Wi-Fi links. */
 object Protocol {
-    const val VERSION = 14
+    const val VERSION = 15
 
     sealed interface Msg
     data class Hello(val version: Int, val info: FighterInfo) : Msg

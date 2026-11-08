@@ -21,6 +21,7 @@ private fun Terrain.palette(): Triple<Color, Color, Color> = when (this) {
     Terrain.TUNDRA -> Triple(Color(0xFF8AA4B6), Color(0xFF566E80), Color(0xFFDDF3FF))
     Terrain.THUNDER_PLAINS -> Triple(Color(0xFF39432A), Color(0xFF1C2114), Color(0xFFFFD54F))
     Terrain.CANYON -> Triple(Color(0xFF8A4D2E), Color(0xFF4A2716), Color(0xFFF0B278))
+    Terrain.DOJO -> Triple(Color(0xFF6B4A2E), Color(0xFF3A2716), Color(0xFFE8604A))
     Terrain.WINDY_CLIFFS -> Triple(Color(0xFF5C7058), Color(0xFF34443A), Color(0xFFBFE3FF))
 }
 
@@ -54,6 +55,7 @@ internal fun DrawScope.drawTerrainFloor(t: Terrain) {
         Terrain.THUNDER_PLAINS -> thunder(rng, accent, ::p, ::d, ::rnd)
         Terrain.CANYON -> canyon(rng, accent, ::p, ::d, ::rnd)
         Terrain.WINDY_CLIFFS -> cliffs(rng, accent, ::p, ::d, ::rnd)
+        Terrain.DOJO -> dojo(accent, ::p, ::d)
         Terrain.ARENA -> Unit
     }
 
@@ -83,6 +85,30 @@ private fun DrawScope.tuft(c: Offset, color: Color, d: D, height: Float = 8f) {
 
 private fun DrawScope.glow(c: Offset, r: Float, color: Color) =
     drawCircle(Brush.radialGradient(listOf(color, Color.Transparent), c, r), r, c)
+
+private fun DrawScope.dojo(accent: Color, p: P, d: D) {
+    val w = size.width; val h = size.height
+    // wooden floor boards
+    var y = 0f
+    while (y < h) {
+        drawLine(Color.Black.copy(alpha = 0.22f), Offset(0f, y), Offset(w, y), d(1.5))
+        y += d(22)
+    }
+    // tatami mats in the corners
+    for ((x0, y0) in listOf(0.04f to 0.04f, 0.74f to 0.04f, 0.04f to 0.86f, 0.74f to 0.86f)) {
+        val tl = p(x0, y0); val sz = Size(w * 0.22f, h * 0.1f)
+        drawRect(Color(0xFFB9A86A), tl, sz)
+        drawRect(Color(0xFF2E3B2A), tl, sz, style = Stroke(d(3)))
+    }
+    // red training circle on the floor
+    drawCircle(accent.copy(alpha = 0.18f), w * 0.36f, center, style = Stroke(d(8)))
+    // hanging banners along the top
+    for (x in listOf(0.2f, 0.5f, 0.8f)) {
+        val c = p(x, 0f)
+        drawRect(accent.copy(alpha = 0.8f), Offset(c.x - d(9), 0f), Size(d(18), d(40)))
+        drawCircle(Color(0xFFFFE8C2).copy(alpha = 0.8f), d(5), Offset(c.x, d(22)))
+    }
+}
 
 private fun DrawScope.volcano(rng: Random, accent: Color, p: P, d: D, rnd: R) {
     val w = size.width; val h = size.height

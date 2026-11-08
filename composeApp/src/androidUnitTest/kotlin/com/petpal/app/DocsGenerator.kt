@@ -29,7 +29,7 @@ class DocsGenerator {
 
     private fun owner(m: Move): String {
         val s = Species.entries.first { SpeciesKit.uniques(it).toList().contains(m) }
-        val tier = when (m) { SpeciesKit.uniques(s).first -> "Baby"; SpeciesKit.uniques(s).second -> "Kid"; else -> "Adult" }
+        val tier = when (m) { SpeciesKit.uniques(s).first -> "Baby"; SpeciesKit.uniques(s).second -> "Kid/Teen"; else -> "Adult" }
         return "${s.label} $tier"
     }
 
@@ -58,7 +58,7 @@ class DocsGenerator {
         appendLine()
         appendLine("## Uniques")
         appendLine()
-        appendLine("Each species gets a Baby unique that upgrades at Kid (Lv ${com.petpal.app.domain.logic.PetEngine.KID_LEVEL}) and Adult (Lv ${com.petpal.app.domain.logic.PetEngine.ADULT_LEVEL}).")
+        appendLine("Each species gets a Baby unique that upgrades at Kid (Lv ${com.petpal.app.domain.logic.PetEngine.KID_LEVEL}, kept through Teen at Lv ${com.petpal.app.domain.logic.PetEngine.TEEN_LEVEL}) and Adult (Lv ${com.petpal.app.domain.logic.PetEngine.ADULT_LEVEL}).")
         appendLine()
         appendLine(header.replace("| Lv |", "| Owner |"))
         Species.entries.flatMap { SpeciesKit.uniques(it).toList() }.forEach { appendLine(it.row(owner(it))) }
@@ -70,7 +70,7 @@ class DocsGenerator {
         appendLine("_Generated from the game data by `DocsGenerator`. Don't edit by hand._")
         appendLine()
         appendLine("${Species.entries.size} species. Every pet starts with ${SpeciesKit.STARTERS} moves, keeps up to ${SpeciesKit.MAX_MOVES}, and has its unique in slot 5.")
-        appendLine("Base HP: Egg 85, Baby 100, Kid 115, Adult 130 (the same multiplier scales damage).")
+        appendLine("Base HP: Egg 85, Baby 100, Kid 115, Teen 122, Adult 130 (the same multiplier scales damage).")
         appendLine()
         appendLine("| Pet | Types | Passive | Uniques (Baby / Kid / Adult) |")
         appendLine("|---|---|---|---|")

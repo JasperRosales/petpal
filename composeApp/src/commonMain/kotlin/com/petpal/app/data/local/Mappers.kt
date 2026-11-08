@@ -1,13 +1,15 @@
 package com.petpal.app.data.local
 
 import com.petpal.app.domain.battle.Move
+import com.petpal.app.domain.logic.PetEngine
 import com.petpal.app.domain.logic.StepDay
 import com.petpal.app.domain.model.*
 
 fun PetEntity.toDomain() = Pet(
     id = id,
     name = name,
-    stage = if (stage == "TEEN") Stage.KID else enumValueOrDefault(stage, Stage.EGG), // TEEN was renamed
+    // Old saves used TEEN for what is now KID: only keep TEEN if the XP backs it up.
+    stage = if (stage == "TEEN") maxOf(Stage.KID, PetEngine.stageFor(xp)) else enumValueOrDefault(stage, Stage.EGG),
     path = enumValueOrDefault(path, EvolutionPath.NONE),
     species = enumValueOrDefault(species, Species.SPROUT),
     xp = xp,

@@ -12,8 +12,24 @@ class PetEngineTest {
 
     @Test fun stepsGiveXpAndEvolve() {
         val pet = PetEngine.reward(base.copy(xp = 25), HabitType.STEPS)
-        assertEquals(45, pet.xp)
+        assertEquals(145, pet.xp)
         assertEquals(Stage.BABY, pet.stage) // Lv 3
+    }
+
+    @Test fun stageProgressTracksTheNextEvolution() {
+        val kid = base.copy(xp = PetEngine.xpForLevel(PetEngine.KID_LEVEL), stage = Stage.KID)
+        assertEquals(0f, PetEngine.stageProgress(kid))
+        assertEquals(Stage.TEEN, PetEngine.nextStage(kid.stage))
+        assertEquals(PetEngine.xpForLevel(PetEngine.TEEN_LEVEL) - kid.xp, PetEngine.xpToNextStage(kid))
+        val adult = base.copy(xp = PetEngine.xpForLevel(60), stage = Stage.ADULT)
+        assertEquals(1f, PetEngine.stageProgress(adult))
+        assertEquals(0, PetEngine.xpToNextStage(adult))
+    }
+
+    @Test fun teenStageSitsBetweenKidAndAdult() {
+        assertEquals(Stage.KID, PetEngine.stageFor(PetEngine.xpForLevel(PetEngine.TEEN_LEVEL - 1)))
+        assertEquals(Stage.TEEN, PetEngine.stageFor(PetEngine.xpForLevel(PetEngine.TEEN_LEVEL)))
+        assertEquals(Stage.ADULT, PetEngine.stageFor(PetEngine.xpForLevel(PetEngine.ADULT_LEVEL)))
     }
 
     @Test fun relearnPointBringsBackAForgottenMove() {
@@ -52,7 +68,7 @@ class PetEngineTest {
 
     @Test fun evolvesByLevelFifty() {
         assertEquals(Stage.KID, PetEngine.stageFor(PetEngine.xpForLevel(20)))
-        assertEquals(Stage.KID, PetEngine.stageFor(PetEngine.xpForLevel(50) - 1))
+        assertEquals(Stage.TEEN, PetEngine.stageFor(PetEngine.xpForLevel(50) - 1))
         assertEquals(Stage.ADULT, PetEngine.stageFor(PetEngine.xpForLevel(50)))
         assertEquals(100, PetEngine.MAX_LEVEL)
         assertEquals(100, PetEngine.levelFor(10_000_000))

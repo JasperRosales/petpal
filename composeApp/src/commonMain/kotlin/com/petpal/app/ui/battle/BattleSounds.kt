@@ -21,6 +21,7 @@ internal fun Move.sound(): Pair<Sfx, Float> {
         element == Element.ICE -> Sfx.ICE
         element == Element.ELECTRIC -> Sfx.ZAP
         element == Element.FLYING -> Sfx.WIND
+        element == Element.FIGHTING -> if (category != MoveCategory.NORMAL) Sfx.BOOM else Sfx.PUNCH
         element == Element.GROUND -> if (effect == Effect.STUN || category != MoveCategory.NORMAL) Sfx.BOOM else Sfx.ROCK
         damage == 0 -> Sfx.WHOOSH
         effect == Effect.DRAIN || label.contains("Fang") || label.contains("Bite") -> Sfx.BITE
@@ -58,7 +59,7 @@ internal fun BattleSounds(f: FightState, sound: SoundPlayer) {
                 sound.play(if (big) Sfx.HIT_BIG else Sfx.HIT, 1f, 0.9f)
                 // the pet's own little cry: smaller pets squeak higher, each species a bit different
                 val info = f.fighters[i]
-                val size = when (info.stage) { Stage.EGG, Stage.BABY -> 1.3f; Stage.KID -> 1.1f; Stage.ADULT -> 0.9f }
+                val size = when (info.stage) { Stage.EGG, Stage.BABY -> 1.3f; Stage.KID -> 1.1f; Stage.TEEN -> 1.0f; Stage.ADULT -> 0.9f }
                 sound.play(Sfx.CRY, size * (0.85f + info.species.ordinal % 6 * 0.06f), 0.6f * near)
             }
             if (p.hp > 0 && s.hp <= 0) sound.play(Sfx.KO, 1f, 1f)

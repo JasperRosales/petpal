@@ -1,6 +1,8 @@
 package com.petpal.app.ui.home
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -65,6 +67,7 @@ fun HomeScreen(
 
             PetHeader(pet, state.mood, state.streak)
             PassiveCard(pet.species)
+            EvolutionCard(pet, state.mood)
 
             if (state.stepsAvailable) {
                 Text(
@@ -226,6 +229,66 @@ private fun ChoosePetDialog(current: Species, onDismiss: () -> Unit, onPick: (Sp
 
 private fun Long.withCommas() = toString().reversed().chunked(3).joinToString(",").reversed()
 
+/** Every stage of the pet's line, the current one highlighted, and progress to the next evolution. */
+@Composable
+private fun EvolutionCard(pet: Pet, mood: Mood) {
+    val dim = MaterialTheme.colorScheme.onSurfaceVariant
+    val accent = MaterialTheme.colorScheme.primary
+    var selected by remember(pet.stage) { mutableStateOf(pet.stage) }
+    ElevatedCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("Evolution", style = MaterialTheme.typography.titleSmall)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Stage.entries.forEach { st ->
+                    val reached = st <= pet.stage
+                    val isSel = st == selected
+                    Column(
+                        Modifier.weight(1f).clip(MaterialTheme.shapes.small)
+                            .border(2.dp, if (isSel) accent else Color.Transparent, MaterialTheme.shapes.small)
+                            .clickable { selected = st }.padding(vertical = 6.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Box(Modifier.height(56.dp), contentAlignment = Alignment.BottomCenter) {
+                            PetSprite(st, if (st == pet.stage) mood else Mood.HAPPY, pet.species,
+                                Modifier.alpha(if (reached) 1f else 0.35f), size = (36 + st.ordinal * 5).dp)
+                        }
+                        Text(st.label(), style = MaterialTheme.typography.labelSmall,
+                            color = if (st == pet.stage) accent else dim)
+                        Text("Lv ${PetEngine.stageLevel(st)}", style = MaterialTheme.typography.labelSmall, color = dim)
+                    }
+                }
+            }
+
+            val next = PetEngine.nextStage(pet.stage)
+            LinearProgressIndicator(
+                progress = { PetEngine.stageProgress(pet) },
+                modifier = Modifier.fillMaxWidth().height(8.dp).clip(MaterialTheme.shapes.small),
+            )
+            Text(
+                if (next == null) "Fully evolved!"
+                else PetEngine.xpToNextStage(pet).let { xp ->
+                    val k = (xp + PetEngine.STEP_XP - 1) / PetEngine.STEP_XP
+                    "${next.label()} at Lv ${PetEngine.stageLevel(next)}: $xp XP to go (about ${k.toLong().times(1000).withCommas()} steps)"
+                },
+                style = MaterialTheme.typography.bodySmall, color = dim,
+            )
+
+            // Details for the tapped stage
+            val unique = SpeciesKit.unique(pet.species, selected)
+            val power = com.petpal.app.domain.battle.BattleStats.power(selected)
+            Text(
+                buildString {
+                    append(selected.label())
+                    append(if (selected <= pet.stage) " (reached)" else " (locked)")
+                    append(" · HP & damage ×").append((power * 100).toInt() / 100.0)
+                    append(" · Unique: ").append(unique?.label ?: "none")
+                },
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+    }
+}
+
 @Composable
 private fun PassiveCard(species: Species) {
     val passive = SpeciesKit.passive(species)
@@ -262,7 +325,7 @@ private fun MovesCard(pet: Pet, onRelearn: (Move, Move?) -> Unit) {
             when (unique) {
                 null -> LockedRow("Slot 5: ${babyUnique.label}", "on hatch")
                 babyUnique -> MoveRow(unique, "Unique, upgrades at Kid", onView = { preview = unique })
-                kidUnique -> MoveRow(unique, "Unique, upgrades at Adult", onView = { preview = unique })
+                kidUnique -> MoveRow(unique, "Unique, upgrades at Adult (Lv ${PetEngine.ADULT_LEVEL})", onView = { preview = unique })
                 else -> MoveRow(unique, "Unique, max", onView = { preview = unique })
             }
 
@@ -273,7 +336,7 @@ private fun MovesCard(pet: Pet, onRelearn: (Move, Move?) -> Unit) {
             }
             Text(
                 "Can learn ${learnset.size} of ${Move.entries.size} moves. Slot 5 is always the unique: " +
-                    "${babyUnique.label} at Baby, ${kidUnique.label} at Kid (Lv ${PetEngine.KID_LEVEL}), " +
+                    "${babyUnique.label} at Baby, ${kidUnique.label} at Kid (Lv ${PetEngine.KID_LEVEL}) and Teen, " +
                     "${adultUnique.label} at Adult (Lv ${PetEngine.ADULT_LEVEL}) (${BattleRules.UNIQUE_USES}x per battle). " +
                     "Special moves need a full energy bar; elemental moves cost energy. Tap ▶ to see a move in action.",
                 style = MaterialTheme.typography.labelSmall,

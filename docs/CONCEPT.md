@@ -7,7 +7,7 @@ PetPal is an offline habit pet. You raise one pixel pet, and it only grows from 
 - **One pet per device.** A short personality quiz picks its species the first time you open the app. See [PETS.md](PETS.md) for all 22 species.
 - **New partner.** Walk 10,000 steps with your pet to swap it for a random new species, or 50,000 to pick one yourself. The new pet starts over as a Lv 1 egg (keeps the name; battle history and step stats stay), and the step counter restarts.
 - **Relearning moves.** Every 10 levels your pet earns a relearn point. Spend it on the Home tab to bring back a move it forgot or skipped.
-- **Stages.** Egg → Baby (Lv 3) → Kid (Lv 20) → Adult (Lv 50). The stage sets max HP and damage (×0.85 / ×1.0 / ×1.15 / ×1.3). Pets never devolve.
+- **Stages.** Egg → Baby (Lv 3) → Kid (Lv 20) → Teen (Lv 35) → Adult (Lv 50). The stage sets max HP and damage (×0.85 / ×1.0 / ×1.15 / ×1.22 / ×1.3). Pets never devolve.
 - **Levels.** Level *n* needs 10·(n−1)² XP, up to Lv 100.
 - **Mood** follows your day: happy when you've been active, sleepy at night.
 
@@ -25,8 +25,9 @@ Only verifiable activity pays, so shaking the phone or farming the CPU won't get
 
 - A new pet knows 2 moves: Tackle and its first own-type attack.
 - Leveling up unlocks more of its learnset. A pet keeps 4 moves. When a new one unlocks with all 4 slots full, you pick which one to forget.
-- **Slot 5 is the unique**, the species' signature move. It unlocks at Baby, upgrades at Kid and again at Adult, and can be used twice per battle.
-- Each species learns Normal moves, its own two types, and a few off-type moves. Some moves are banned for the body type (no punches without fists, no flying without wings).
+- **Slot 5 is the unique**, the species' signature move. It unlocks at Baby, upgrades at Kid (kept through Teen) and again at Adult, and can be used twice per battle.
+- Each species learns Normal moves, its own types (Bunny, Bear and Panda also have Fighting), and a few off-type moves. Some moves are banned for the body type (no punches without fists, no flying without wings).
+- Combo moves have two types (Thunder Punch is Electric/Fighting, also Fire Punch, Ice Punch, Aqua Fist, Rock Smash, Sky Uppercut) and can be learned by a pet of either type.
 - **Categories:** Normal moves just have a cooldown. Specials also need a full energy bar, which they empty. Uniques are slot 5.
 
 The full list with stats is in [MOVES.md](MOVES.md).
@@ -50,18 +51,19 @@ Battles are real-time and last 90 seconds.
 
 ### Maps (terrain rotation)
 
-Each match moves on to the next map: the standard Ember Arena, then one terrain per element. On a terrain, that element's moves deal +20% damage, and pets of that type are on **home turf** (energy charges 25% faster, 10% faster movement). Every map is solid ground, so any pet can fight anywhere.
+Each match moves on to the next map: the standard Ember Arena, then one terrain per element. Each terrain has its own rule that applies to **every** pet, and pets of the terrain's type are on **home turf** (energy charges 25% faster, 10% faster movement). Every map is solid ground, so any pet can fight anywhere.
 
-| Map | Element |
-|---|---|
-| Ember Arena | none |
-| Volcano Rim | Fire |
-| Lakeshore | Water |
-| Deep Forest | Grass |
-| Frozen Tundra | Ice |
-| Thunder Plains | Electric |
-| Dusty Canyon | Ground |
-| Windy Cliffs (a clifftop above the clouds) | Flying |
+| Map | Element | Effect (all pets) |
+|---|---|---|
+| Ember Arena | none | none |
+| Volcano Rim | Fire | Scorching Heat: hits have a 20% chance to burn |
+| Lakeshore | Water | Cool Breeze: energy charges 40% faster |
+| Deep Forest | Grass | Life Regen: +1 HP per second |
+| Frozen Tundra | Ice | Slick Ice: 20% slower movement, slows/freezes last 50% longer |
+| Thunder Plains | Electric | Static Charge: cooldowns 20% shorter |
+| Dusty Canyon | Ground | Sandstorm: -0.6 HP per second (never knocks out) |
+| Windy Cliffs | Flying | Tailwind: 25% faster movement, knockbacks push twice as far |
+| Mountain Dojo | Fighting | Fighting Spirit: hits have a 15% chance to crit for 1.5× |
 
 After a match, **Battle again** starts a rematch on the next map. Linked: both players tap it; the host re-hosts and the guest reconnects automatically.
 

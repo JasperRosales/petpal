@@ -31,6 +31,7 @@ fun PetSprite(
         Stage.EGG -> 120.dp
         Stage.BABY -> 136.dp
         Stage.KID -> 168.dp
+        Stage.TEEN -> 184.dp
         Stage.ADULT -> 200.dp
     },
 ) {
@@ -98,6 +99,10 @@ fun Species.colors(): Triple<Color, Color, Color> = when (this) {
     Species.SHARK -> Triple(Color(0xFF6E8FB0), Color(0xFF3F5C7A), Color(0xFFF2F5F8))
     Species.CHAMELEON -> Triple(Color(0xFF7ACB5E), Color(0xFF3F8A3A), Color(0xFFE8F2A0))
     Species.BEAVER -> Triple(Color(0xFFA0703F), Color(0xFF5E3F22), Color(0xFFE2C49A))
+    Species.MONKEY -> Triple(Color(0xFF9A6A44), Color(0xFF5E3D24), Color(0xFFF0D2AE))
+    Species.KANGAROO -> Triple(Color(0xFFD08A52), Color(0xFF8E5530), Color(0xFFF6DDBF))
+    Species.EAGLE -> Triple(Color(0xFF7A5434), Color(0xFF4A3220), Color(0xFFFAF7F0))
+    Species.SEAL -> Triple(Color(0xFFB8C2CC), Color(0xFF6E7C8A), Color(0xFFEEF2F5))
 }
 
 internal object PetArt {
@@ -157,6 +162,7 @@ internal object PetArt {
     private fun bodyFor(stage: Stage) = when (stage) {
         Stage.BABY -> Body(cy = 12.5f, rx = 5f, ry = 4.6f)
         Stage.KID -> Body(cy = 11.5f, rx = 6f, ry = 5.4f)
+        Stage.TEEN -> Body(cy = 11.2f, rx = 6.5f, ry = 5.8f)
         else -> Body(cy = 11f, rx = 7f, ry = 6.2f)
     }
 
@@ -166,7 +172,7 @@ internal object PetArt {
         val b0 = bodyFor(stage)
         // Turtles: smaller body tucked under a shell dome
         val b = if (species == Species.TURTLE) b0.copy(cy = b0.cy + 1f, rx = b0.rx - 0.5f, ry = b0.ry - 1f) else b0
-        val big = stage == Stage.ADULT
+        val big = stage >= Stage.TEEN
         val grown = stage != Stage.BABY
 
         // 1. Behind the body
@@ -232,6 +238,30 @@ internal object PetArt {
                 g.ellipse(tx + 1.5f + r * 0.5f, ty - r * 0.6f, r, r, 'b')
                 g.ellipse(tx + 1.5f + r * 0.5f, ty - r * 0.6f, r * 0.45f, r * 0.45f, 'd', onlyOver = 'b')
             }
+            Species.MONKEY -> { // curly tail
+                val tx = b.left + 2 * b.rx.toInt()
+                val ty = b.cy.toInt() + 2
+                val r = if (big) 1.8f else 1.4f
+                g.rect(tx - 1, ty, tx + 1, ty, 'd')
+                g.ellipse(tx + 1.5f + r * 0.5f, ty - r, r, r, 'd')
+                g.ellipse(tx + 1.5f + r * 0.5f, ty - r, r * 0.45f, r * 0.45f, '.', onlyOver = 'd')
+            }
+            Species.KANGAROO -> { // thick tail resting on the ground
+                val tx = b.left + 2 * b.rx.toInt()
+                val ty = b.bottom - 1
+                g.rect(tx - 1, ty - 1, tx + (if (big) 3 else if (grown) 2 else 1), ty, 'b')
+            }
+            Species.EAGLE -> { // broad wings
+                val wy = b.cy.toInt() - 2
+                val span = if (big) 3 else if (grown) 2 else 1
+                for (i in 0..span) for (y in wy - i..wy + 3) for (x in b.left - 1 - i..b.left) g.mirror(x, y, 'd')
+            }
+            Species.SEAL -> { // tail flippers
+                val y = b.bottom
+                val w = if (big) 3 else 2
+                g.rect(b.cx.toInt() - w, y - 1, b.cx.toInt() - 1, y, 'd')
+                g.rect(b.cx.toInt(), y - 1, b.cx.toInt() + w - 1, y, 'd')
+            }
             Species.BEAVER -> { // flat paddle tail
                 val r = if (big) 2.4f else if (grown) 2f else 1.6f
                 g.ellipse(b.cx + b.rx + r * 0.5f, b.bottom - r * 0.6f, r, r * 0.8f, 'd')
@@ -290,6 +320,16 @@ internal object PetArt {
             }
             Species.SHARK -> g.spike(b.cx.toInt() - 1, b.top + 1, if (big) 5 else if (grown) 4 else 3, 2, 'd') // dorsal fin
             Species.CHAMELEON -> g.spike(b.cx.toInt() - 1, b.top + 1, if (big) 3 else 2, 3, 'd') // head crest
+            Species.MONKEY -> { // big round ears out to the sides
+                val r = if (big) 2f else 1.6f
+                listOf(-1, 1).forEach { s ->
+                    g.ellipse(b.cx + s * (b.rx + 0.2f), b.cy - b.ry * 0.3f, r, r, 'b')
+                    g.ellipse(b.cx + s * (b.rx + 0.2f), b.cy - b.ry * 0.3f, r * 0.5f, r * 0.5f, 'l')
+                }
+            }
+            Species.KANGAROO -> g.spike(b.left + 2, b.top + 1, if (big) 5 else if (grown) 4 else 3, 3, 'b', 'l')
+            Species.EAGLE -> g.ellipse(b.cx, b.top + 2f, b.rx * 0.7f, 2.4f, 'l') // white head
+            Species.SEAL -> Unit
             Species.OTTER, Species.RACCOON, Species.HAMSTER, Species.BEAVER -> {
                 val r = if (big) 1.6f else 1.3f
                 g.ellipse(b.cx - b.rx * 0.65f, b.top + 1f, r, r, 'b'); g.ellipse(b.cx + b.rx * 0.65f, b.top + 1f, r, r, 'b')
@@ -326,6 +366,9 @@ internal object PetArt {
                 g.ellipse(b.cx + s * b.rx * 0.62f, b.cy + b.ry * 0.2f, 1.8f, 1.5f, 'l', 'b')
             }
             Species.PARROT -> g.ellipse(b.cx, b.cy + b.ry * 0.2f, b.rx * 0.6f, b.ry * 0.7f, 'l', 'b')
+            Species.MONKEY -> g.ellipse(b.cx, b.cy + b.ry * 0.05f, b.rx * 0.6f, b.ry * 0.55f, 'l', 'b') // face
+            Species.EAGLE -> g.ellipse(b.cx, b.top + 2.2f, b.rx * 0.75f, 2.4f, 'l', 'b') // white head
+            Species.SEAL -> g.ellipse(b.cx, b.cy + b.ry * 0.25f, b.rx * 0.6f, b.ry * 0.6f, 'l', 'b')
             else -> Unit
         }
         if (species == Species.PUP) {
@@ -360,9 +403,9 @@ internal object PetArt {
         }
         val my = (b.cy + b.ry * 0.25f).roundToInt()
         val c = N / 2
-        if (species == Species.OWL || species == Species.PENGUIN || species == Species.PARROT) {
+        if (species == Species.OWL || species == Species.PENGUIN || species == Species.PARROT || species == Species.EAGLE) {
             g.set(c - 1, my - 1, 'y'); g.set(c, my - 1, 'y'); g.set(c - 1, my, 'y'); g.set(c, my, 'y')
-            if (species == Species.PARROT) { g.set(c - 1, my + 1, 'y'); g.set(c, my + 1, 'e') } // hooked beak
+            if (species == Species.PARROT || species == Species.EAGLE) { g.set(c - 1, my + 1, 'y'); g.set(c, my + 1, 'e') } // hooked beak
         } else {
             if (species == Species.MOLE) { // big pink snout
                 g.set(c - 1, my - 1, 'p'); g.set(c, my - 1, 'p'); g.set(c - 2, my - 1, 'p'); g.set(c + 1, my - 1, 'p')
@@ -372,7 +415,8 @@ internal object PetArt {
                 g.set(c - 1, my - 2, 'e'); g.set(c, my - 2, 'e'); g.set(c - 2, my - 1, 'e'); g.set(c + 1, my - 1, 'e')
             }
             if (species in setOf(Species.PUP, Species.BEAR, Species.FOX, Species.KITTY, Species.HEDGEHOG, Species.DEER,
-                    Species.OTTER, Species.PANDA, Species.RACCOON, Species.HAMSTER, Species.KOALA, Species.BEAVER)) {
+                    Species.OTTER, Species.PANDA, Species.RACCOON, Species.HAMSTER, Species.KOALA, Species.BEAVER,
+                    Species.MONKEY, Species.KANGAROO, Species.SEAL)) {
                 g.set(c - 1, my - 1, 'e'); g.set(c, my - 1, 'e') // nose
             }
             when (mood) {
@@ -382,7 +426,7 @@ internal object PetArt {
                 Mood.SLEEPY -> g.set(c, my + 1, 'm')
             }
         }
-        if (mood != Mood.SAD && species != Species.OWL && species != Species.PENGUIN && species != Species.PARROT) {
+        if (mood != Mood.SAD && species != Species.OWL && species != Species.PENGUIN && species != Species.PARROT && species != Species.EAGLE) {
             g.mirror(ex - 1, ey + 2, 'c')
         }
 
@@ -415,6 +459,17 @@ internal object PetArt {
             }
             Species.AXOLOTL -> if (grown) listOf(-2, 1).forEach { dx -> g.set(c + dx, b.cy.toInt() + 2, 'd') } // freckles
             Species.BEAVER -> { g.set(c - 1, my + 2, 'h'); g.set(c, my + 2, 'h') } // buck teeth
+            Species.SEAL -> { // whiskers and front flippers
+                g.mirror(c - 3, my, 'd'); g.mirror(c - 4, my - 1, 'd')
+                g.mirror(b.left, b.cy.toInt() + 2, 'd'); g.mirror(b.left - 1, b.cy.toInt() + 3, 'd')
+            }
+            Species.KANGAROO -> if (grown) { // pouch
+                val py = b.cy.toInt() + 2
+                for (x in c - 2..c + 1) g.set(x, py, 'd')
+                g.set(c - 2, py + 1, 'd'); g.set(c + 1, py + 1, 'd')
+            }
+            Species.EAGLE -> if (big) { g.mirror(b.left + 1, b.bottom, 'y'); g.mirror(b.left + 2, b.bottom, 'y') } // talons
+            Species.MONKEY -> if (big) g.mirror(c - 3, b.top + 1, 'd') // brow tufts
             Species.SHARK -> listOf(0, 1).forEach { dy -> g.mirror(b.left + 1, b.cy.toInt() + dy, 'd') } // gills
             Species.CHAMELEON -> if (grown) listOf(-3, 0, 3).forEach { dx -> // stripes
                 for (dy in 0..1) if (g[c + dx, b.cy.toInt() + dy] == 'b') g.set(c + dx, b.cy.toInt() + dy, 'd')

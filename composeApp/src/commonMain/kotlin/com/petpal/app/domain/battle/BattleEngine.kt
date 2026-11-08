@@ -29,6 +29,7 @@ object BattleStats {
         Stage.EGG -> 0.85f
         Stage.BABY -> 1.0f
         Stage.KID -> 1.15f
+        Stage.TEEN -> 1.22f
         Stage.ADULT -> 1.3f
     }
 
@@ -40,7 +41,8 @@ object BattleStats {
     fun baseDamage(f: FighterInfo, m: Move): Float {
         val boost = when {
             f.passive == Passive.BLAZE && m.isFire -> 1.25f
-            f.passive == Passive.ICE_BODY && m.element == Element.ICE -> 1.15f
+            f.passive == Passive.ICE_BODY && Element.ICE in m.elements -> 1.15f
+            f.passive == Passive.IRON_FIST && m.isPunch -> 1.25f
             else -> 1f
         }
         return m.damage * power(f.stage) * boost
@@ -48,11 +50,11 @@ object BattleStats {
 
     fun range(f: FighterInfo, m: Move) = m.range * if (f.passive == Passive.KEEN_EYE) 1.2f else 1f
 
-    fun cooldown(f: FighterInfo, m: Move) = when {
-        f.passive == Passive.QUICK_FEET -> (m.cooldownMs * 0.9f).toLong()
-        f.passive == Passive.BURROWER && m.effect == Effect.VANISH -> (m.cooldownMs * 0.7f).toLong()
-        else -> m.cooldownMs
-    }
+    fun cooldown(f: FighterInfo, m: Move, terrain: Terrain = Terrain.ARENA) = (terrain.cooldownScale * when {
+        f.passive == Passive.QUICK_FEET -> m.cooldownMs * 0.9f
+        f.passive == Passive.BURROWER && m.effect == Effect.VANISH -> m.cooldownMs * 0.7f
+        else -> m.cooldownMs.toFloat()
+    }).toLong()
 
     fun speed(f: FighterInfo) = if (f.passive == Passive.QUICK_FEET) 0.25f else 0.2f
 }
@@ -337,7 +339,7 @@ class BattleEngine(
         me.originX = me.x; me.originY = me.y
         var cdScale = if (now < me.hasteUntil) 0.7f else 1f
         if (now < me.paralyzeUntil) cdScale *= 1.5f
-        me.readyAt[m.ordinal] = now + (BattleStats.cooldown(me.info, m) * cdScale).toLong()
+        me.readyAt[m.ordinal] = now + (BattleStats.cooldown(me.info, m, terrain) * cdScale).toLong()
         if (m.effect == Effect.VANISH) me.vanishUntil = now + m.windupMs
         if (m.category == MoveCategory.SPECIAL) me.energy = 0f
         me.energy -= m.energyCost
@@ -387,6 +389,9 @@ class BattleEngine(
             }
             var charge = if (me.passive == Passive.PLAYFUL) ENERGY_PER_SEC * 1.3f else ENERGY_PER_SEC
             if (me.homeTurf) charge *= Terrain.HOME_ENERGY
+            charge *= terrain.energyScale
+            if (terrain.hpPerSec > 0 && me.hp > 0) me.hp = minOf(me.maxHp.toFloat(), me.hp + terrain.hpPerSec * dt)
+            if (terrain.hpPerSec < 0 && me.hp > 1) me.hp = maxOf(1f, me.hp + terrain.hpPerSec * dt)
             me.energy = minOf(BattleRules.MAX_ENERGY.toFloat(), me.energy + charge * dt)
             if (me.passive == Passive.PHOTOSYNTHESIS && me.hp > 0) me.hp = minOf(me.maxHp.toFloat(), me.hp + 0.6f * dt)
             if (me.passive == Passive.REGROW && me.hp > 0 && me.hp < me.maxHp / 2f) me.hp += 1.2f * dt
@@ -496,6 +501,7 @@ class BattleEngine(
             if (now < me.slowUntil) speed *= 0.5f
             if (now < me.paralyzeUntil) speed *= 0.7f
             if (me.homeTurf) speed *= Terrain.HOME_SPEED
+            speed *= terrain.speedScale
         }
         val dx = me.tx - me.x
         val dy = me.ty - me.y
@@ -625,19 +631,22 @@ class BattleEngine(
         val hits = if (m.effect == Effect.MULTI) 2 + rng.nextInt(3) else 1
         var dmg = BattleStats.baseDamage(me.info, m) * hits * (0.85f + rng.nextFloat() * 0.3f)
         if (now < me.rageUntil) dmg *= 1.3f
-        if (terrain.boosts(m)) dmg *= Terrain.MOVE_BOOST
+        val crit = terrain.critChance > 0 && rng.nextFloat() < terrain.critChance
+        if (crit) dmg *= Terrain.CRIT
         if (now < me.weakenUntil) dmg *= 0.7f
         if (me.passive == Passive.LOYAL_HEART && me.hp < me.maxHp / 2f) dmg *= 1.25f
         if (m.effect == Effect.EXECUTE && opp.hp < opp.maxHp * 0.3f) dmg *= 2f
         if (now < opp.markUntil) dmg *= Mechanics.MARK_BONUS
         if (me.passive == Passive.BLOOD_SCENT && opp.hp < opp.maxHp / 2f) dmg *= 1.3f
-        if (opp.passive == Passive.COLOR_SHIFT && opp.lastHitElement == m.element) dmg *= 0.7f
+        if (me.passive == Passive.FIRST_STRIKE && opp.hp > opp.maxHp * 0.7f) dmg *= 1.25f
+        if (opp.passive == Passive.BLUBBER && (Element.WATER in m.elements || Element.ICE in m.elements)) dmg *= 0.7f
+        if (opp.passive == Passive.COLOR_SHIFT && opp.lastHitElement in m.elements) dmg *= 0.7f
         opp.lastHitElement = m.element
         val guarded = now < opp.guardUntil
         if (guarded) dmg *= 0.4f
         if (now < opp.hardenUntil) dmg *= 0.6f
         if (opp.passive == Passive.HARD_SHELL) dmg *= 0.8f
-        if (opp.passive == Passive.SUN_SCALES && (m.element == Element.FIRE || m.element == Element.ICE)) dmg *= 0.7f
+        if (opp.passive == Passive.SUN_SCALES && (m.isFire || Element.ICE in m.elements)) dmg *= 0.7f
         val dealt = dmg.roundToInt().coerceAtLeast(1)
 
         if (now < opp.counterUntil) {
@@ -660,7 +669,7 @@ class BattleEngine(
         me.energy = minOf(BattleRules.MAX_ENERGY.toFloat(), me.energy + dealt * 1.5f)
         opp.energy = minOf(BattleRules.MAX_ENERGY.toFloat(), opp.energy + dealt * 0.8f)
         val times = if (hits > 1) " ($hits hits)" else ""
-        val notes = listOfNotNull("guarded".takeIf { guarded }, "shielded".takeIf { toHp < dealt })
+        val notes = listOfNotNull("critical".takeIf { crit }, "guarded".takeIf { guarded }, "shielded".takeIf { toHp < dealt })
         events += "${m.label} hits $target for $dealt$times" + if (notes.isEmpty()) "" else notes.joinToString(", ", " (", ")")
 
         when (m.effect) {
@@ -679,6 +688,10 @@ class BattleEngine(
             Effect.CHAIN -> chain(me, opp, m, dealt, now, events)
             else -> debuff(opp, m, now, events, quiet = true)
         }
+        if (m.effect != Effect.BURN && terrain.burnChance > 0 && opp.passive != Passive.ICE_BODY && rng.nextFloat() < terrain.burnChance) {
+            opp.burnUntil = maxOf(opp.burnUntil, now + 2000)
+            events += "$target is scorched by the heat!"
+        }
         when (m.effect) {
             Effect.SWAP -> {
                 val x = me.x; val y = me.y
@@ -686,7 +699,7 @@ class BattleEngine(
                 me.tx = me.x; me.ty = me.y; opp.tx = opp.x; opp.ty = opp.y
                 events += "$name swaps places with $target!"
             }
-            Effect.KNOCKBACK -> knockback(me, opp, 0.15f)
+            Effect.KNOCKBACK -> knockback(me, opp, 0.15f * terrain.knockbackScale)
             Effect.PULL -> knockback(me, opp, -minOf(0.15f, (hypot(me.x - opp.x, me.y - opp.y) - 0.1f).coerceAtLeast(0f)))
             else -> knockback(me, opp, 0.05f)
         }
@@ -703,9 +716,9 @@ class BattleEngine(
             opp.vanishUntil = 0
         }
         val text = when (m.effect) {
-            Effect.SLOW -> if (immune) null else { opp.slowUntil = now + 3000; "$target is slowed" }
+            Effect.SLOW -> if (immune) null else { opp.slowUntil = now + (3000 * terrain.chillScale).toLong(); "$target is slowed" }
             Effect.STUN -> if (immune) null else { stun(800); null }
-            Effect.FREEZE -> if (immune) null else { stun(1500); "$target is frozen!" }
+            Effect.FREEZE -> if (immune) null else { stun((1500 * terrain.chillScale).toLong()); "$target is frozen!" }
             Effect.ROOT -> if (immune) null else { opp.rootUntil = now + 2500; "$target is trapped!" }
             Effect.PARALYZE -> if (immune) null else { opp.paralyzeUntil = now + 4000; "$target is paralyzed!" }
             Effect.WEAKEN -> { opp.weakenUntil = now + 5000; "$target is weakened" }
@@ -751,7 +764,6 @@ class BattleEngine(
                 now >= e.vanishUntil && now >= e.evadeUntil && hypot(e.x - s.x, e.y - s.y) <= Trap.RADIUS + PET_RADIUS
             } ?: return@mapNotNull null
             var dmg = BattleStats.baseDamage(owner.info, s.move)
-            if (terrain.boosts(s.move)) dmg *= Terrain.MOVE_BOOST
             if (now < victim.markUntil) dmg *= Mechanics.MARK_BONUS
             if (now < victim.hardenUntil) dmg *= 0.6f
             if (victim.passive == Passive.HARD_SHELL) dmg *= 0.8f
@@ -785,6 +797,7 @@ class BattleEngine(
     }
 
     private fun knockback(me: Fighter, opp: Fighter, dist: Float) {
+        if (opp.passive == Passive.STEADFAST) return
         val kx = opp.x - me.x
         val ky = opp.y - me.y
         val kd = hypot(kx, ky).coerceAtLeast(0.001f)

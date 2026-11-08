@@ -118,11 +118,11 @@ private fun Result(result: PersonalityQuiz.Result, onAdopt: (String) -> Unit) {
         Text("Your partner is a", style = MaterialTheme.typography.titleMedium)
         Text(species.label, style = MaterialTheme.typography.displaySmall, color = MaterialTheme.colorScheme.primary)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Bottom) {
-            listOf(Stage.EGG, Stage.BABY, Stage.KID, Stage.ADULT).forEachIndexed { i, st ->
-                PetSprite(st, Mood.HAPPY, species, size = (52 + i * 10).dp)
+            Stage.entries.forEachIndexed { i, st ->
+                PetSprite(st, Mood.HAPPY, species, size = (44 + i * 9).dp)
             }
         }
-        Text("Egg, Baby, Kid, Adult", style = MaterialTheme.typography.labelMedium,
+        Text("Egg, Baby, Kid, Teen, Adult", style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(species.trait, textAlign = TextAlign.Center)
         Card(Modifier.fillMaxWidth()) {
@@ -197,8 +197,9 @@ private fun Result(result: PersonalityQuiz.Result, onAdopt: (String) -> Unit) {
             modifier = Modifier.fillMaxWidth(),
         )
         Text(
-            "Walk to hatch it: your egg hatches at Lv ${PetEngine.HATCH_LEVEL} (about 2,000 steps). " +
-                "Evolves at Lv ${PetEngine.KID_LEVEL} and Lv ${PetEngine.ADULT_LEVEL}.",
+            "Walk to hatch it: your egg hatches at Lv ${PetEngine.HATCH_LEVEL} (about " +
+                "${(PetEngine.xpForLevel(PetEngine.HATCH_LEVEL) + PetEngine.STEP_XP - 1) / PetEngine.STEP_XP},000 steps). " +
+                "Evolves at Lv ${PetEngine.KID_LEVEL}, Lv ${PetEngine.TEEN_LEVEL} and Lv ${PetEngine.ADULT_LEVEL}.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
