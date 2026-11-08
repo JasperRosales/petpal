@@ -31,7 +31,7 @@
         android:label="PetPal"
         android:icon="@drawable/ic_launcher"
         android:roundIcon="@drawable/ic_launcher"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        android:theme="@android:style/Theme.Material.NoActionBar">
         <activity
             android:name=".MainActivity"
             android:exported="true">

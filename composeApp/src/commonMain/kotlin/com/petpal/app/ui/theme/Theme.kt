@@ -7,50 +7,35 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
-private val MeadowColors = lightColorScheme(
-    primary = MeadowGreen,
-    onPrimary = Color.White,
-    primaryContainer = FreshLeaf,
-    onPrimaryContainer = Color(0xFF0B3912),
-    secondary = ClearSky,
-    onSecondary = Color.White,
-    secondaryContainer = LightSky,
-    onSecondaryContainer = Color(0xFF0C3448),
-    tertiary = Sunflower,
-    onTertiary = Color.White,
-    tertiaryContainer = MorningSun,
-    onTertiaryContainer = Color(0xFF4A2F00),
-    background = MorningDew,
-    onBackground = Color(0xFF1A2219),
-    surface = Color.White,
-    onSurface = Color(0xFF1A2219),
-    surfaceVariant = PaleGrass,
-    onSurfaceVariant = Color(0xFF424D40),
-    outline = Color(0xFFB7C4B0),
-    error = Clay,
-)
-
-private val NightFieldColors = darkColorScheme(
-    primary = MoonlitGrass,
-    onPrimary = Color(0xFF0B3912),
-    primaryContainer = DeepLeaf,
-    onPrimaryContainer = FreshLeaf,
-    secondary = NightSky,
-    onSecondary = Color(0xFF0C3448),
-    secondaryContainer = DeepSky,
-    onSecondaryContainer = LightSky,
-    tertiary = Moon,
-    onTertiary = Color(0xFF4A2F00),
-    tertiaryContainer = DuskSun,
-    onTertiaryContainer = MorningSun,
-    background = NightField,
-    onBackground = Color(0xFFE0E8DC),
-    surface = NightSurface,
-    onSurface = Color(0xFFE0E8DC),
-    surfaceVariant = NightGrass,
-    onSurfaceVariant = Color(0xFFC0CBBB),
-    outline = Color(0xFF4B5B4D),
-    error = SoftClay,
+/** One look everywhere: dark canvas + orange, matching Isha and Zoih. */
+private val EmberColors = darkColorScheme(
+    primary = EmberOrange,
+    onPrimary = EmberCanvas,
+    primaryContainer = EmberOrangeDeep,
+    onPrimaryContainer = Color(0xFFFFD9C2),
+    secondary = EmberOrangeBright,
+    onSecondary = EmberCanvas,
+    secondaryContainer = EmberWell,
+    onSecondaryContainer = EmberCream,
+    tertiary = EmberGold,
+    onTertiary = EmberCanvas,
+    tertiaryContainer = Color(0xFF3A2A16),
+    onTertiaryContainer = EmberCream,
+    background = EmberCanvas,
+    onBackground = EmberCream,
+    surface = EmberSurface,
+    onSurface = EmberCream,
+    surfaceVariant = EmberWell,
+    onSurfaceVariant = EmberCreamDim,
+    surfaceContainerLowest = EmberCanvas,
+    surfaceContainerLow = EmberSurface,
+    surfaceContainer = EmberSurface,
+    surfaceContainerHigh = EmberWell,
+    surfaceContainerHighest = Color(0xFF2C2720),
+    outline = EmberLine,
+    outlineVariant = Color(0xFF2C2720),
+    error = EmberRed,
+    onError = EmberCanvas,
 )
 
 private val PetPalShapes = Shapes(
@@ -59,14 +44,14 @@ private val PetPalShapes = Shapes(
     large = RoundedCornerShape(28.dp),
 )
 
-/** Dynamic color is intentionally off so the grassy field look is consistent. */
+/** Always dark + orange; [darkTheme] is kept for call-site compatibility. */
 @Composable
 fun PetPalTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
     MaterialTheme(
-        colorScheme = if (darkTheme) NightFieldColors else MeadowColors,
+        colorScheme = EmberColors,
         shapes = PetPalShapes,
         typography = Typography(), // swap in a pixel font family later
         content = content,

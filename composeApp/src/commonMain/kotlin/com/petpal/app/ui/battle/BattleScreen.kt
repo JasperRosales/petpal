@@ -36,7 +36,12 @@ import com.petpal.app.ui.components.NeuButton
 import com.petpal.app.ui.components.PetSprite
 import com.petpal.app.ui.theme.*
 import org.koin.compose.viewmodel.koinViewModel
+import androidx.compose.ui.geometry.Rect
+import kotlin.math.PI
+import kotlin.math.atan2
+import kotlin.math.cos
 import kotlin.math.roundToInt
+import kotlin.math.sin
 
 @Composable
 fun BattleScreen(vm: BattleViewModel = koinViewModel()) {
@@ -172,7 +177,7 @@ private fun Fight(f: FightState, vm: BattleViewModel) {
     val me = f.snap.fighters[f.me]
     val opp = f.snap.fighters[1 - f.me]
     val info = f.fighters[f.me]
-    Column(Modifier.fillMaxSize().background(Color(0xFF2E5E33))) {
+    Column(Modifier.fillMaxSize().background(EmberCanvas)) {
         Box(Modifier.weight(1f).fillMaxWidth()) {
             Arena(f, Modifier.fillMaxSize())
             // HUD
@@ -236,7 +241,7 @@ private fun Fight(f: FightState, vm: BattleViewModel) {
 @Composable
 private fun EnergyRow(me: FighterSnap) {
     val full = me.energy >= BattleRules.MAX_ENERGY
-    val energyColor = if (full) Sunflower else ClearSky
+    val energyColor = if (full) EmberGold else EmberOrange
     Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(Icons.Rounded.Bolt, null, Modifier.size(16.dp), tint = energyColor)
         Text(if (full) " FULL" else " ${me.energy}", style = MaterialTheme.typography.labelSmall,
@@ -326,55 +331,205 @@ private fun HpBar(name: String, level: String, f: FighterSnap, color: Color, mod
     }
 }
 
-/** Fixed (seeded) grass decorations in arena units, so both phones and every frame look the same. */
-private class GrassDecor(val tufts: List<Offset>, val flowers: List<Pair<Offset, Color>>, val patches: List<Pair<Offset, Float>>)
-
-private val grassDecor by lazy {
+/** Fixed (seeded) floor specks in arena units, so both phones and every frame look the same. */
+private val floorSpecks by lazy {
     val r = kotlin.random.Random(42)
-    val flowerColors = listOf(Color.White, Color(0xFFFFE066), Color(0xFFF7A1C4), Color(0xFFB4A7F5))
-    GrassDecor(
-        tufts = List(140) { Offset(r.nextFloat(), r.nextFloat()) },
-        flowers = List(28) { Offset(r.nextFloat(), r.nextFloat()) to flowerColors[r.nextInt(flowerColors.size)] },
-        patches = List(10) { Offset(r.nextFloat(), r.nextFloat()) to (0.08f + r.nextFloat() * 0.1f) },
-    )
+    List(90) { Offset(r.nextFloat(), r.nextFloat()) to (0.6f + r.nextFloat() * 1.4f) }
 }
 
-private val GrassLight = Color(0xFF7FCB6E)
-private val GrassMid = Color(0xFF5DAE4F)
-private val GrassDark = Color(0xFF3E8A3A)
-private val GrassBlade = Color(0xFF2F6E2C)
-
-private fun DrawScope.drawGrassField() {
-    drawRect(Brush.verticalGradient(listOf(GrassLight, GrassMid)))
-    // mowed stripes
-    val stripes = 8
-    val sh = size.height / stripes
-    for (k in 0 until stripes step 2) drawRect(Color.White.copy(alpha = 0.05f), Offset(0f, k * sh), Size(size.width, sh))
-    grassDecor.patches.forEach { (p, rad) ->
-        drawOval(GrassDark.copy(alpha = 0.18f), Offset(p.x * size.width - rad * size.width, p.y * size.height - rad * size.width * 0.5f),
-            Size(rad * size.width * 2, rad * size.width))
+private fun DrawScope.drawArenaFloor() {
+    drawRect(Brush.verticalGradient(listOf(EmberWell, EmberCanvas)))
+    val cell = size.width / 8
+    var gx = cell
+    while (gx < size.width) { drawLine(EmberLine.copy(alpha = 0.35f), Offset(gx, 0f), Offset(gx, size.height), 1f); gx += cell }
+    var gy = cell
+    while (gy < size.height) { drawLine(EmberLine.copy(alpha = 0.35f), Offset(0f, gy), Offset(size.width, gy), 1f); gy += cell }
+    floorSpecks.forEach { (p, rad) ->
+        drawCircle(EmberCream.copy(alpha = 0.06f), rad.dp.toPx(), Offset(p.x * size.width, p.y * size.height))
     }
-    val blade = 7.dp.toPx()
-    val stroke = 1.6.dp.toPx()
-    grassDecor.tufts.forEach { t ->
-        val b = Offset(t.x * size.width, t.y * size.height)
-        drawLine(GrassBlade, b, Offset(b.x - blade * 0.5f, b.y - blade), stroke, StrokeCap.Round)
-        drawLine(GrassBlade, b, Offset(b.x, b.y - blade * 1.3f), stroke, StrokeCap.Round)
-        drawLine(GrassBlade, b, Offset(b.x + blade * 0.5f, b.y - blade), stroke, StrokeCap.Round)
-    }
-    val petal = 2.5.dp.toPx()
-    grassDecor.flowers.forEach { (p, c) ->
-        val o = Offset(p.x * size.width, p.y * size.height)
-        for (a in 0 until 4) {
-            val dx = if (a % 2 == 0) petal else 0f
-            val dy = if (a % 2 == 1) petal else 0f
-            drawCircle(c, petal, Offset(o.x + if (a < 2) dx else -dx, o.y + if (a < 2) dy else -dy))
-        }
-        drawCircle(Sunflower, petal * 0.8f, o)
-    }
-    // soft dark edges frame the field
-    drawRect(Brush.radialGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.22f)),
+    val line = EmberOrange.copy(alpha = 0.28f)
+    drawLine(line, Offset(size.width / 2, 0f), Offset(size.width / 2, size.height), 2.dp.toPx())
+    drawCircle(line, size.width * 0.16f, center, style = Stroke(2.dp.toPx()))
+    drawCircle(EmberOrange.copy(alpha = 0.06f), size.width * 0.16f, center)
+    drawRect(EmberOrange.copy(alpha = 0.22f), style = Stroke(3.dp.toPx()))
+    drawRect(Brush.radialGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.45f)),
         center, radius = size.maxDimension * 0.75f))
+}
+
+/** Hit spark on a pet that just took damage. */
+private fun DrawScope.drawImpact(c: Offset, t: Float) {
+    val k = 1f - t
+    drawCircle(EmberCream.copy(alpha = 0.8f * k), (10 + 26 * t).dp.toPx(), c, style = Stroke((4 * k + 1).dp.toPx()))
+    for (a in 0 until 8) {
+        val ang = a * (PI / 4).toFloat() + 0.3f
+        val d0 = (14 + 18 * t).dp.toPx()
+        val d1 = d0 + 10.dp.toPx() * k
+        val ux = cos(ang); val uy = sin(ang)
+        drawLine(EmberGold.copy(alpha = k), Offset(c.x + ux * d0, c.y + uy * d0), Offset(c.x + ux * d1, c.y + uy * d1),
+            2.5.dp.toPx(), StrokeCap.Round)
+    }
+}
+
+/**
+ * Draws a move exactly over its hitbox (see Hitbox.kt), in arena units scaled by [sx]/[sy]:
+ * a dashed telegraph while winding up, then the effect itself, aimed at where the target was.
+ */
+private fun DrawScope.drawMove(s: FighterSnap, info: FighterInfo, sx: Float, sy: Float) {
+    val m = s.action ?: return
+    val shape = m.shape
+    val age = s.actionAgeMs
+    val hitAt = m.windupMs
+    if (shape == HitShape.SELF) {
+        val after = age - hitAt
+        if (m.effect != Effect.GUARD && after in 0..450) {
+            val t = after / 450f
+            val c = Offset(s.x * sx, s.y * sy)
+            for (k in 0..2) drawCircle(m.tint().copy(alpha = (1 - t) * 0.7f), (30 + 40 * t + k * 10).dp.toPx(), c,
+                style = Stroke((3 - k).dp.toPx()))
+        }
+        return
+    }
+    fun p(x: Float, y: Float) = Offset(x * sx, y * sy)
+    fun circle(cx: Float, cy: Float, r: Float) = Rect(p(cx - r, cy - r), p(cx + r, cy + r))
+
+    val range = BattleStats.range(info, m)
+    val hs = m.hitSize(range)
+    val winding = age < hitAt
+    val ox = if (winding) s.x else s.originX
+    val oy = if (winding) s.y else s.originY
+    val (dx, dy) = aimDir(ox, oy, s.aimX, s.aimY, s.facing)
+    val px = -dy
+    val py = dx // perpendicular to the aim
+    val tint = m.tint()
+    val big = m.category != MoveCategory.NORMAL
+
+    fun beamPath(len: Float, half: Float) = Path().apply {
+        moveTo(p(ox + px * half, oy + py * half))
+        lineTo(p(ox + dx * len + px * half, oy + dy * len + py * half))
+        lineTo(p(ox + dx * len - px * half, oy + dy * len - py * half))
+        lineTo(p(ox - px * half, oy - py * half))
+        close()
+    }
+    fun conePath(len: Float) = Path().apply {
+        val half = m.coneHalfAngle()
+        val base = atan2(dy, dx)
+        moveTo(p(ox, oy))
+        val steps = 12
+        for (k in 0..steps) {
+            val a = base - half + 2 * half * k / steps
+            lineTo(p(ox + cos(a) * len, oy + sin(a) * len))
+        }
+        close()
+    }
+    val (cx, cy) = m.hitCenter(ox, oy, dx, dy, s.aimX, s.aimY, range)
+
+    if (winding) { // telegraph: the real hitbox, filling in as the wind-up completes
+        val t = age / hitAt.toFloat().coerceAtLeast(1f)
+        val path = when (shape) {
+            HitShape.MELEE, HitShape.STRIKE -> Path().apply { addOval(circle(cx, cy, hs)) }
+            HitShape.BEAM, HitShape.PROJECTILE -> beamPath(range, hs)
+            else -> conePath(range)
+        }
+        drawPath(path, tint.copy(alpha = 0.08f + 0.14f * t))
+        drawPath(path, tint.copy(alpha = 0.6f), style = Stroke(1.5.dp.toPx(),
+            pathEffect = PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 5.dp.toPx()))))
+        return
+    }
+
+    val after = age - hitAt
+    when (shape) {
+        HitShape.PROJECTILE -> {
+            if (s.projectileAgeMs < 0) return
+            val d = minOf(PROJECTILE_SPEED * s.projectileAgeMs / 1000f, range)
+            val bx = ox + dx * d
+            val by = oy + dy * d
+            val tail = minOf(d, 0.14f)
+            val from = p(bx - dx * tail, by - dy * tail)
+            drawLine(Brush.linearGradient(listOf(Color.Transparent, tint.copy(alpha = 0.8f)), from, p(bx, by)),
+                from, p(bx, by), hs * 1.4f * sx, StrokeCap.Round)
+            val glow = circle(bx, by, hs * 1.6f)
+            drawOval(Brush.radialGradient(listOf(Color.White, m.coreTint(), tint, tint.copy(alpha = 0f)), p(bx, by), hs * 1.6f * sx),
+                glow.topLeft, glow.size)
+        }
+        HitShape.MELEE -> {
+            if (after > 260) return
+            val t = after / 260f
+            val k = 1f - t
+            val slashes = if (m.effect == Effect.MULTI) 3 else if (big) 2 else 1
+            for (n in 0 until slashes) {
+                val shift = (n - (slashes - 1) / 2f) * hs * 0.45f
+                val r = hs * (0.7f + 0.3f * t)
+                val path = Path().apply {
+                    moveTo(p(cx + px * r + dx * shift, cy + py * r + dy * shift))
+                    quadTo(p(cx + dx * (r * 0.9f + shift), cy + dy * (r * 0.9f + shift)),
+                        p(cx - px * r + dx * shift, cy - py * r + dy * shift))
+                }
+                drawPath(path, tint.copy(alpha = 0.55f * k), style = Stroke((if (big) 12 else 8).dp.toPx(), cap = StrokeCap.Round))
+                drawPath(path, Color.White.copy(alpha = k), style = Stroke(2.5.dp.toPx(), cap = StrokeCap.Round))
+            }
+        }
+        HitShape.BEAM -> {
+            if (after > 380) return
+            val k = 1f - after / 380f
+            val grow = minOf(1f, after / 90f)
+            drawPath(beamPath(range * grow, hs), tint.copy(alpha = 0.55f * k))
+            drawPath(beamPath(range * grow, hs * 0.45f), m.coreTint().copy(alpha = 0.9f * k))
+            drawPath(beamPath(range * grow, hs * 0.15f), Color.White.copy(alpha = k))
+            val ring = circle(ox, oy, hs * 1.3f)
+            drawOval(Color.White.copy(alpha = 0.7f * k), ring.topLeft, ring.size)
+        }
+        HitShape.CONE -> {
+            if (after > 420) return
+            val t = after / 420f
+            val k = 1f - t
+            val reach = range * minOf(1f, 0.35f + t * 1.6f)
+            drawPath(conePath(reach), Brush.radialGradient(
+                listOf(m.coreTint().copy(alpha = 0.95f * k), tint.copy(alpha = 0.75f * k), tint.copy(alpha = 0.1f * k)),
+                p(ox, oy), (reach * sx).coerceAtLeast(1f),
+            ))
+            if (m.element == Element.WATER || m.damage == 0) for (w in 1..3) { // wave fronts
+                val f = (t + w * 0.22f) % 1f
+                drawPath(conePath(range * f), Color.White.copy(alpha = 0.35f * k * (1 - f)), style = Stroke(2.dp.toPx()))
+            }
+        }
+        HitShape.STRIKE -> {
+            if (after > 360) return
+            val k = 1f - after / 360f
+            val tgt = p(cx, cy)
+            val r = 7.dp.toPx()
+            val zig = Path().apply {
+                moveTo(tgt.x + r, 0f)
+                var y = 0f
+                var left = true
+                while (y < tgt.y) {
+                    y = minOf(tgt.y, y + tgt.y / 6 + 1f)
+                    left = !left
+                    lineTo(tgt.x + if (y >= tgt.y) 0f else if (left) -r * 1.6f else r * 1.6f, y)
+                }
+            }
+            val join = StrokeJoin.Round
+            drawPath(zig, tint.copy(alpha = 0.6f * k), style = Stroke((if (big) 10 else 6).dp.toPx(), cap = StrokeCap.Round, join = join))
+            drawPath(zig, Color.White.copy(alpha = k), style = Stroke(2.dp.toPx(), cap = StrokeCap.Round, join = join))
+            val c = circle(cx, cy, hs)
+            drawOval(tint.copy(alpha = 0.35f * k), c.topLeft, c.size)
+            drawOval(Color.White.copy(alpha = 0.8f * k), c.topLeft, c.size, style = Stroke(2.dp.toPx()))
+        }
+        HitShape.SELF -> Unit
+    }
+}
+
+private fun Path.moveTo(o: Offset) = moveTo(o.x, o.y)
+private fun Path.lineTo(o: Offset) = lineTo(o.x, o.y)
+private fun Path.quadTo(c: Offset, e: Offset) = quadraticTo(c.x, c.y, e.x, e.y)
+
+/** Hot inner color of a move's effect. */
+private fun Move.coreTint(): Color = when (element) {
+    Element.FIRE -> EmberGold
+    Element.ELECTRIC -> Color(0xFFFFF3A0)
+    Element.WATER -> Color(0xFFBFE6FF)
+    Element.ICE -> Color(0xFFE8F8FF)
+    Element.GRASS -> Color(0xFFD7F5A0)
+    else -> EmberCream
 }
 
 @Composable
@@ -383,7 +538,7 @@ private fun Arena(f: FightState, modifier: Modifier) {
         0f, 1f, infiniteRepeatable(tween(500), RepeatMode.Reverse),
     )
     val meColor = MaterialTheme.colorScheme.primary
-    val oppColor = MaterialTheme.colorScheme.error
+    val oppColor = Color(0xFFE74C3C)
     BoxWithConstraints(modifier.clipToBounds()) {
         val w = constraints.maxWidth.toFloat()
         val h = constraints.maxHeight.toFloat()
@@ -392,15 +547,20 @@ private fun Arena(f: FightState, modifier: Modifier) {
         fun pos(s: FighterSnap) = Offset(s.x * sx, s.y * sy)
         val spriteDp = 72.dp
         Canvas(Modifier.matchParentSize()) {
-            drawGrassField()
+            drawArenaFloor()
             f.snap.fighters.forEachIndexed { i, s ->
                 val c = pos(s)
                 val ring = if (i == f.me) meColor else oppColor
                 drawOval(Color.Black.copy(alpha = 0.2f), Offset(c.x - 26.dp.toPx(), c.y + 24.dp.toPx()),
                     Size(52.dp.toPx(), 12.dp.toPx()))
-                // team ring at the feet: yours is your theme color, theirs is red
-                drawOval(ring, Offset(c.x - 30.dp.toPx(), c.y + 22.dp.toPx()), Size(60.dp.toPx(), 16.dp.toPx()),
-                    style = Stroke(3.dp.toPx()))
+                // hurtbox: exactly the circle moves are tested against (yours orange, theirs red)
+                val hr = Size(PET_RADIUS * sx * 2, PET_RADIUS * sy * 2)
+                val tl = Offset(c.x - hr.width / 2, c.y - hr.height / 2)
+                if (!s.has(Status.VANISH)) {
+                    drawOval(ring.copy(alpha = 0.10f), tl, hr)
+                    drawOval(ring.copy(alpha = 0.55f), tl, hr, style = Stroke(1.5.dp.toPx(),
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx()))))
+                }
             }
             f.snap.fighters.forEachIndexed { i, s ->
                 val c = pos(s)
@@ -427,53 +587,9 @@ private fun Arena(f: FightState, modifier: Modifier) {
                 if (s.has(Status.STUN)) for (k in 0..2) {
                     drawCircle(Sunflower, 3.dp.toPx(), Offset(c.x - 12.dp.toPx() + k * 12.dp.toPx(), c.y - r - 6.dp.toPx()))
                 }
-                val m = s.action ?: return@forEachIndexed
-                val age = s.actionAgeMs
-                val hitAt = m.windupMs
-                if (age !in (hitAt - 120)..(hitAt + 300)) return@forEachIndexed
-                val dir = s.facing.toFloat()
-                val len = BattleStats.range(info, m) * sx
-                val tint = m.tint()
-                when {
-                    m.effect == Effect.GUARD -> Unit
-                    m.isBuff -> for (k in 1..3) drawCircle(tint.copy(alpha = 0.6f / k), r * (0.8f + k * 0.35f), c, style = Stroke(3.dp.toPx()))
-                    m.element == Element.ELECTRIC && m.range >= 0.5f -> {
-                        val t = pos(f.snap.fighters[1 - i])
-                        val zig = Path().apply {
-                            moveTo(t.x, 0f)
-                            lineTo(t.x - 10.dp.toPx(), t.y * 0.4f); lineTo(t.x + 8.dp.toPx(), t.y * 0.6f)
-                            lineTo(t.x - 6.dp.toPx(), t.y * 0.85f); lineTo(t.x, t.y)
-                        }
-                        drawPath(zig, tint, style = Stroke(if (m.category == MoveCategory.UNIQUE) 7.dp.toPx() else 4.dp.toPx()))
-                    }
-                    m.isFire && m.range >= 0.35f -> {
-                        val spread = if (m.category == MoveCategory.UNIQUE) 0.35f else 0.22f
-                        val path = Path().apply {
-                            moveTo(c.x + dir * 20.dp.toPx(), c.y)
-                            lineTo(c.x + dir * len, c.y - len * spread)
-                            lineTo(c.x + dir * len, c.y + len * spread)
-                            close()
-                        }
-                        drawPath(path, Brush.horizontalGradient(
-                            listOf(Sunflower, tint.copy(alpha = 0.2f)).let { if (dir < 0) it.reversed() else it },
-                            startX = minOf(c.x, c.x + dir * len), endX = maxOf(c.x, c.x + dir * len),
-                        ))
-                    }
-                    m.range >= 0.35f -> {
-                        val width = when {
-                            m.category == MoveCategory.UNIQUE -> 18.dp
-                            m.category == MoveCategory.SPECIAL -> 12.dp
-                            else -> 7.dp
-                        }
-                        drawLine(tint.copy(alpha = 0.85f), Offset(c.x + dir * 18.dp.toPx(), c.y), Offset(c.x + dir * len, c.y),
-                            strokeWidth = width.toPx(), cap = StrokeCap.Round)
-                    }
-                    else -> if (age >= hitAt) {
-                        val p = Offset(c.x + dir * 34.dp.toPx(), c.y)
-                        drawCircle(tint, (if (m.damage >= 20) 20.dp else if (m.damage >= 10) 14.dp else 9.dp).toPx(), p)
-                    }
-                }
+                drawMove(s, info, sx, sy)
             }
+            f.snap.fighters.forEach { s -> if (s.hurtAgeMs < 260) drawImpact(pos(s), s.hurtAgeMs / 260f) }
         }
         val density = androidx.compose.ui.platform.LocalDensity.current
         val half = with(density) { (spriteDp / 2).roundToPx() }
@@ -603,6 +719,6 @@ fun Element.tint(): Color = when (this) {
 @Composable
 fun MoveCategory.color(): Color = when (this) {
     MoveCategory.NORMAL -> MaterialTheme.colorScheme.outline
-    MoveCategory.SPECIAL -> ClearSky
-    MoveCategory.UNIQUE -> Color(0xFF9C27B0)
+    MoveCategory.SPECIAL -> EmberOrangeBright
+    MoveCategory.UNIQUE -> EmberGold
 }

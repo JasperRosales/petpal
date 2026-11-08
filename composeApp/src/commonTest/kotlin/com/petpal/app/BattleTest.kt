@@ -127,3 +127,20 @@ class BattleTest {
         assertEquals(Protocol.Command(Move.GUARD), Protocol.parse(Protocol.command(Move.GUARD)))
     }
 }
+
+class HitboxTest {
+    @Test fun projectileFollowsAimNotFacing() {
+        // target straight below: an aimed line hits it, a left/right line would not
+        assertTrue(Move.EMBER.hits(0.5f, 0.3f, 0.5f, 0.7f, 1, 0.5f, 0.7f, Move.EMBER.range))
+        assertFalse(Move.EMBER.hits(0.5f, 0.3f, 0.9f, 0.3f, 1, 0.5f, 0.7f, Move.EMBER.range))
+    }
+
+    @Test fun meleeNeedsOverlap() {
+        assertTrue(Move.PUNCH.hits(0.5f, 0.5f, 0.6f, 0.5f, 1, 0.6f, 0.5f, Move.PUNCH.range))
+        assertFalse(Move.PUNCH.hits(0.5f, 0.5f, 0.6f, 0.5f, 1, 0.6f, 0.8f, Move.PUNCH.range))
+    }
+
+    @Test fun coneCoversSides() {
+        assertTrue(Move.TIDAL_WAVE.hits(0.2f, 0.5f, 0.6f, 0.5f, 1, 0.5f, 0.75f, Move.TIDAL_WAVE.range))
+    }
+}

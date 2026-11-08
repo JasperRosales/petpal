@@ -79,6 +79,11 @@ data class FighterSnap(
     val energy: Int,
     val uniqueLeft: Int,
     val cooldowns: List<Long>, // remaining ms, same order as FighterInfo.loadout
+    val aimX: Float = x, // where the current move is aimed (target position when it was started)
+    val aimY: Float = y,
+    val originX: Float = x, // where the move was fired from
+    val originY: Float = y,
+    val projectileAgeMs: Long = -1, // flight time of a live projectile, -1 when none
 ) {
     fun has(flag: Int) = status and flag != 0
 }
@@ -123,6 +128,10 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
         var pendingHit = false
         var lifeSaved = false
         var facing = 1
+        var aimX = x; var aimY = y
+        var originX = x; var originY = y
+        var projectile: Move? = null
+        var launchAt = 0L
         val readyAt = LongArray(Move.entries.size)
         val passive get() = info.passive
     }
@@ -138,7 +147,7 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
     fun isReady(i: Int, m: Move, now: Long): Boolean {
         val me = f[i]
         return !ended && m in me.info.loadout && now >= me.busyUntil && now >= me.stunUntil &&
-            now >= me.readyAt[m.ordinal] &&
+            now >= me.readyAt[m.ordinal] && me.projectile == null &&
             (m.category != MoveCategory.SPECIAL || me.energy >= BattleRules.MAX_ENERGY) &&
             (m.category != MoveCategory.UNIQUE || me.uniqueUsed < BattleRules.UNIQUE_USES)
     }
@@ -149,6 +158,9 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
         val me = f[i]
         me.action = m
         me.actionAt = now
+        val opp = f[1 - i]
+        me.aimX = opp.x; me.aimY = opp.y
+        me.originX = me.x; me.originY = me.y
         var cdScale = if (now < me.hasteUntil) 0.7f else 1f
         if (now < me.paralyzeUntil) cdScale *= 1.5f
         me.readyAt[m.ordinal] = now + (BattleStats.cooldown(me.info, m) * cdScale).toLong()
@@ -188,13 +200,23 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
                 me.y = opp.y
                 me.vanishUntil = 0
             }
-            if (m.isBuff) selfEffect(me, opp, m, now, events) else strike(me, opp, m, now, events)
+            if (m.effect == Effect.LUNGE || m.effect == Effect.VANISH) { me.aimX = opp.x; me.aimY = opp.y }
+            me.originX = me.x; me.originY = me.y
+            when {
+                m.isBuff -> selfEffect(me, opp, m, now, events)
+                m.shape == HitShape.PROJECTILE -> { me.projectile = m; me.launchAt = now }
+                else -> strike(me, opp, m, now, events,
+                    connected = now >= opp.vanishUntil &&
+                        m.hits(me.x, me.y, me.aimX, me.aimY, me.facing, opp.x, opp.y, BattleStats.range(me.info, m)))
+            }
             if (m.effect == Effect.RECHARGE) {
                 me.stunUntil = now + 1500
                 me.busyUntil = maxOf(me.busyUntil, now + 1500)
                 events += "${me.info.name} must recharge"
             }
         }
+
+        f.forEachIndexed { i, me -> flyProjectile(me, f[1 - i], now, events) }
 
         val down = f.indexOfFirst { it.hp <= 0f }
         if (down >= 0) {
@@ -287,14 +309,30 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
         }
     }
 
-    private fun strike(me: Fighter, opp: Fighter, m: Move, now: Long, events: MutableList<String>) {
+    /** Moves a live projectile along its aim line; it hits the first time it overlaps the target's hurtbox. */
+    private fun flyProjectile(me: Fighter, opp: Fighter, now: Long, events: MutableList<String>) {
+        val m = me.projectile ?: return
+        val range = BattleStats.range(me.info, m)
+        val travelled = PROJECTILE_SPEED * (now - me.launchAt) / 1000f
+        val (dx, dy) = aimDir(me.originX, me.originY, me.aimX, me.aimY, me.facing)
+        val d = minOf(travelled, range)
+        val px = me.originX + dx * d
+        val py = me.originY + dy * d
+        val touching = now >= opp.vanishUntil && hypot(opp.x - px, opp.y - py) <= m.hitSize(range) + PET_RADIUS
+        if (touching || travelled >= range) {
+            me.projectile = null
+            strike(me, opp, m, now, events, connected = touching)
+        }
+    }
+
+    private fun strike(me: Fighter, opp: Fighter, m: Move, now: Long, events: MutableList<String>, connected: Boolean) {
         val name = me.info.name
         val target = opp.info.name
         if (now < opp.vanishUntil) {
             events += "$target is out of reach!"
             return
         }
-        if (distance() > BattleStats.range(me.info, m)) {
+        if (!connected) {
             events += "$name's ${m.label} missed"
             return
         }
@@ -418,7 +456,7 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
             FighterSnap(
                 x = me.x, y = me.y,
                 hp = kotlin.math.ceil(me.hp).toInt(), maxHp = me.maxHp,
-                action = me.action.takeIf { now - me.actionAt < 1200 },
+                action = me.action.takeIf { now - me.actionAt < 1200 || me.projectile != null },
                 actionAgeMs = now - me.actionAt,
                 status = status,
                 hurtAgeMs = now - me.hurtAt,
@@ -426,6 +464,9 @@ class BattleEngine(val infos: List<FighterInfo>, private val rng: Random = Rando
                 energy = me.energy.toInt(),
                 uniqueLeft = BattleRules.UNIQUE_USES - me.uniqueUsed,
                 cooldowns = me.info.loadout.map { (me.readyAt[it.ordinal] - now).coerceAtLeast(0) },
+                aimX = me.aimX, aimY = me.aimY,
+                originX = me.originX, originY = me.originY,
+                projectileAgeMs = if (me.projectile != null) now - me.launchAt else -1,
             )
         },
     )

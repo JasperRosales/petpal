@@ -6,7 +6,7 @@ import kotlin.math.roundToInt
 
 /** Line-based wire format shared by the Bluetooth and Wi-Fi links. */
 object Protocol {
-    const val VERSION = 5
+    const val VERSION = 6
 
     sealed interface Msg
     data class Hello(val version: Int, val info: FighterInfo) : Msg
@@ -28,6 +28,9 @@ object Protocol {
                     (f.x * 1000).roundToInt(), (f.y * 1000).roundToInt(), f.hp, f.maxHp,
                     f.action?.ordinal ?: -1, f.actionAgeMs.coerceAtMost(99_999), f.status,
                     f.hurtAgeMs.coerceAtMost(99_999), f.facing, f.energy, f.uniqueLeft,
+                    (f.aimX * 1000).roundToInt(), (f.aimY * 1000).roundToInt(),
+                    (f.originX * 1000).roundToInt(), (f.originY * 1000).roundToInt(),
+                    f.projectileAgeMs.coerceIn(-1, 99_999),
                 ).joinToString(",")
             )
             f.cooldowns.forEach { append(',').append(it) }
@@ -61,7 +64,10 @@ object Protocol {
                                 action = Move.entries.getOrNull(v[4].toInt()), actionAgeMs = v[5],
                                 status = v[6].toInt(), hurtAgeMs = v[7], facing = v[8].toInt(),
                                 energy = v[9].toInt(), uniqueLeft = v[10].toInt(),
-                                cooldowns = v.drop(11),
+                                aimX = v[11] / 1000f, aimY = v[12] / 1000f,
+                                originX = v[13] / 1000f, originY = v[14] / 1000f,
+                                projectileAgeMs = v[15],
+                                cooldowns = v.drop(16),
                             )
                         },
                     )
