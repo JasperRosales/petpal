@@ -22,7 +22,7 @@ class DocsGenerator {
     private fun Move.row(level: String = this.level.toString()) =
         "| $label | ${element.label} | ${category.label} | $level | ${if (damage == 0) "-" else damage} | " +
             "${if (range == 0f) "self" else "%.2f".format(range)} | ${cooldownMs / 1000.0}s | ${windupMs}ms | " +
-            "${shape.name.lowercase()} | ${effect.label.ifEmpty { "-" }} |"
+            "${shape.name.lowercase()} | ${effectLabel.ifEmpty { "-" }} |"
 
     private val header = "| Move | Type | Category | Lv | Dmg | Range | Cooldown | Wind-up | Hitbox | Effect |\n" +
         "|---|---|---|---|---|---|---|---|---|---|"

@@ -64,7 +64,7 @@ species signatures in slot 5, usable 2x per battle.
 | Counter | Normal | Normal | 18 | - | self | 7.0s | 100ms | self | counter |
 | Heal | Normal | Normal | 20 | - | self | 8.0s | 400ms | self | heal |
 | Double-Edge | Normal | Normal | 22 | 15 | 0.22 | 2.4s | 300ms | melee | recoil |
-| Body Slam | Normal | Normal | 23 | 12 | 0.20 | 2.6s | 350ms | melee | knockback |
+| Body Slam | Normal | Normal | 23 | 12 | 0.20 | 2.6s | 350ms | melee | lunge + knockback |
 | Harden | Normal | Normal | 25 | - | self | 9.0s | 300ms | self | harden |
 | Teleport | Normal | Normal | 27 | - | self | 6.0s | 150ms | self | teleport |
 | Double Kick | Normal | Normal | 28 | 5 | 0.22 | 1.6s | 200ms | melee | hits 2-4x |
@@ -213,7 +213,7 @@ species signatures in slot 5, usable 2x per battle.
 | Bone Rush | Ground | Normal | 20 | 4 | 0.25 | 1.8s | 200ms | melee | hits 2-4x |
 | Dig | Ground | Normal | 24 | 15 | 0.30 | 3.5s | 900ms | melee | vanish |
 | Bulldoze | Ground | Normal | 28 | 9 | 0.45 | 2.4s | 300ms | projectile | slow |
-| Rock Slam | Ground | Special | 32 | 18 | 0.22 | 4.0s | 500ms | melee | stun |
+| Rock Slam | Ground | Special | 32 | 18 | 0.22 | 4.0s | 500ms | melee | lunge + stun |
 | Sandstorm | Ground | Normal | 36 | 9 | 0.60 | 2.4s | 350ms | projectile | - |
 | Head Smash | Ground | Normal | 40 | 20 | 0.20 | 3.0s | 350ms | melee | recoil |
 | Earthquake | Ground | Special | 46 | 20 | 0.90 | 4.5s | 600ms | projectile | stun |

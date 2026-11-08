@@ -359,7 +359,7 @@ class BattleEngine(
                 me.y = opp.y
                 me.vanishUntil = 0
             }
-            if (m.effect == Effect.LUNGE || m.effect == Effect.VANISH || m.effect == Effect.TWIN_SLASH) {
+            if (m.lunges || m.effect == Effect.VANISH || m.effect == Effect.TWIN_SLASH) {
                 me.aimX = opp.x; me.aimY = opp.y
             }
             me.originX = me.x; me.originY = me.y
@@ -418,7 +418,7 @@ class BattleEngine(
         me.facing = if (opp.x >= me.x) 1 else -1
         if (now < me.stunUntil || now < me.vanishUntil || now < me.rootUntil) return
         val evading = now < me.evadeUntil || now < me.stepUntil
-        val lunging = me.action?.effect == Effect.LUNGE && now - me.actionAt < (me.action?.windupMs ?: 0)
+        val lunging = me.action?.lunges == true && now - me.actionAt < (me.action?.windupMs ?: 0)
         if (evading) {
             Unit // heading for the spot picked in evade()
         } else if (lunging) {

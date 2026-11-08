@@ -6,7 +6,7 @@ import kotlin.math.roundToInt
 
 /** Line-based wire format shared by the Bluetooth and Wi-Fi links. */
 object Protocol {
-    const val VERSION = 12
+    const val VERSION = 13
 
     sealed interface Msg
     data class Hello(val version: Int, val info: FighterInfo) : Msg
@@ -15,17 +15,22 @@ object Protocol {
     data class State(val snap: BattleSnapshot) : Msg
     data class Event(val text: String) : Msg
     /** Host -> guest before a match: every fighter in slot order, and which slot the guest controls. */
-    data class Setup(val you: Int, val infos: List<FighterInfo>, val terrain: Terrain = Terrain.ARENA) : Msg
+    data class Setup(
+        val you: Int, val infos: List<FighterInfo>, val terrain: Terrain = Terrain.ARENA,
+        /** Slots played by people (host is 0); the rest are CPUs. */
+        val humans: Set<Int> = setOf(0, you),
+    ) : Msg
 
     fun hello(info: FighterInfo) = "H|$VERSION|${clean(info.name)}|${info.species.name}|${info.stage.name}|${info.level}|" +
         info.moves.joinToString(",") { it.name }
     fun command(m: Move) = "C|${m.ordinal}"
     const val EVADE = "E"
     fun event(text: String) = "V|${clean(text)}"
-    fun setup(you: Int, infos: List<FighterInfo>, terrain: Terrain = Terrain.ARENA) = "T|$you|" + infos.joinToString("#") {
-        listOf(clean(it.name).replace(Regex("[#~]"), " "), it.species.name, it.stage.name, it.level,
-            it.moves.joinToString(",") { m -> m.name }).joinToString("~")
-    } + "|${terrain.name}"
+    fun setup(you: Int, infos: List<FighterInfo>, terrain: Terrain = Terrain.ARENA, humans: Set<Int> = setOf(0, you)) =
+        "T|$you|" + infos.joinToString("#") {
+            listOf(clean(it.name).replace(Regex("[#~]"), " "), it.species.name, it.stage.name, it.level,
+                it.moves.joinToString(",") { m -> m.name }).joinToString("~")
+        } + "|${terrain.name}|${humans.sorted().joinToString(",")}"
 
     fun state(s: BattleSnapshot) = buildString {
         append("S|${s.timeLeftMs},${if (s.ended) 1 else 0},${s.winner}")
@@ -60,11 +65,15 @@ object Protocol {
             "C" -> Command(Move.entries[p[1].toInt()])
             "E" -> EvadeCmd
             "V" -> Event(p[1])
-            "T" -> Setup(p[1].toInt(), p[2].split('#').map { fs ->
-                val v = fs.split('~')
-                FighterInfo(v[0], Species.valueOf(v[1]), Stage.valueOf(v[2]), v[3].toInt().coerceIn(1, 100),
-                    v.getOrNull(4).orEmpty().split(',').mapNotNull { n -> Move.entries.firstOrNull { it.name == n } })
-            }, Terrain.entries.firstOrNull { it.name == p.getOrNull(3) } ?: Terrain.ARENA)
+            "T" -> {
+                val you = p[1].toInt()
+                Setup(you, p[2].split('#').map { fs ->
+                    val v = fs.split('~')
+                    FighterInfo(v[0], Species.valueOf(v[1]), Stage.valueOf(v[2]), v[3].toInt().coerceIn(1, 100),
+                        v.getOrNull(4).orEmpty().split(',').mapNotNull { n -> Move.entries.firstOrNull { it.name == n } })
+                }, Terrain.entries.firstOrNull { it.name == p.getOrNull(3) } ?: Terrain.ARENA,
+                    p.getOrNull(4)?.split(',')?.mapNotNull { it.toIntOrNull() }?.toSet()?.plus(setOf(0, you)) ?: setOf(0, you))
+            }
             "S" -> {
                 val h = p[1].split(',')
                 State(

@@ -69,6 +69,8 @@ enum class Move(
     val windupMs: Long,
     val recoverMs: Long,
     val effect: Effect = Effect.NONE,
+    /** Also dashes at the target during the wind-up, on top of [effect] (slams). */
+    private val alsoLunges: Boolean = false,
 ) {
     // Normal
     TACKLE("Tackle", N, Element.NORMAL, 1, 8, 0.24f, 1300, 250, 200, Effect.LUNGE),
@@ -88,7 +90,7 @@ enum class Move(
     COUNTER("Counter", N, Element.NORMAL, 18, 0, 0f, 7000, 100, 200, Effect.COUNTER),
     HEAL("Heal", N, Element.NORMAL, 20, 0, 0f, 8000, 400, 200, Effect.HEAL),
     DOUBLE_EDGE("Double-Edge", N, Element.NORMAL, 22, 15, 0.22f, 2400, 300, 250, Effect.RECOIL),
-    BODY_SLAM("Body Slam", N, Element.NORMAL, 23, 12, 0.20f, 2600, 350, 250, Effect.KNOCKBACK),
+    BODY_SLAM("Body Slam", N, Element.NORMAL, 23, 12, 0.20f, 2600, 350, 250, Effect.KNOCKBACK, alsoLunges = true),
     HARDEN("Harden", N, Element.NORMAL, 25, 0, 0f, 9000, 300, 200, Effect.HARDEN),
     TELEPORT("Teleport", N, Element.NORMAL, 27, 0, 0f, 6000, 150, 100, Effect.BLINK),
     DOUBLE_KICK("Double Kick", N, Element.NORMAL, 28, 5, 0.22f, 1600, 200, 200, Effect.MULTI),
@@ -216,7 +218,7 @@ enum class Move(
     BONE_RUSH("Bone Rush", N, Element.GROUND, 20, 4, 0.25f, 1800, 200, 200, Effect.MULTI),
     DIG("Dig", N, Element.GROUND, 24, 15, 0.30f, 3500, 900, 300, Effect.VANISH),
     BULLDOZE("Bulldoze", N, Element.GROUND, 28, 9, 0.45f, 2400, 300, 250, Effect.SLOW),
-    ROCK_SLAM("Rock Slam", S, Element.GROUND, 32, 18, 0.22f, 4000, 500, 300, Effect.STUN),
+    ROCK_SLAM("Rock Slam", S, Element.GROUND, 32, 18, 0.22f, 4000, 500, 300, Effect.STUN, alsoLunges = true),
     SANDSTORM("Sandstorm", N, Element.GROUND, 36, 9, 0.60f, 2400, 350, 250),
     HEAD_SMASH("Head Smash", N, Element.GROUND, 40, 20, 0.20f, 3000, 350, 300, Effect.RECOIL),
     EARTHQUAKE("Earthquake", S, Element.GROUND, 46, 20, 0.90f, 4500, 600, 350, Effect.STUN),
@@ -297,6 +299,11 @@ enum class Move(
     /** Buffs target the user; everything else (including 0-damage debuffs) targets the opponent. */
     val isBuff get() = effect.self
     val isFire get() = element == Element.FIRE
+    val lunges get() = effect == Effect.LUNGE || alsoLunges
+
+    /** e.g. "knockback", or "lunge + knockback" for slams. */
+    val effectLabel: String
+        get() = if (alsoLunges) "${Effect.LUNGE.label} + ${effect.label}" else effect.label
 
     /**
      * Energy a normal elemental move spends (scales with its power), so they can't be spammed.
@@ -308,7 +315,7 @@ enum class Move(
     fun describe(): String = buildString {
         append(element.label).append(" · ")
         append(when { isBuff -> "Buff"; damage == 0 -> "Debuff"; else -> "$damage dmg" })
-        if (effect != Effect.NONE && effect != Effect.GUARD) append(", ").append(effect.label)
+        if (effect != Effect.NONE && effect != Effect.GUARD) append(", ").append(effectLabel)
         append(", ${cooldownMs / 1000.0}s cd")
         if (energyCost > 0) append(", $energyCost energy")
     }

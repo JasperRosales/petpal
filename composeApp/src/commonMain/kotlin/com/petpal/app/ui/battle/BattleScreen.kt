@@ -55,7 +55,11 @@ fun BattleScreen(vm: BattleViewModel = koinViewModel()) {
     }
     when (s.mode) {
         BattleScreenMode.LOBBY -> Lobby(vm, s.message, s.format)
-        BattleScreenMode.HOSTING -> Waiting("Waiting for an opponent via ${s.link?.label}...", hostHint(s.link), vm::leave)
+        BattleScreenMode.HOSTING -> Waiting(
+            if (s.format.guests > 1) "Waiting for ${s.format.guests} friends via ${s.link?.label}..."
+            else "Waiting for an opponent via ${s.link?.label}...",
+            listOfNotNull(s.message, hostHint(s.link)).joinToString("\n\n"), vm::leave,
+        )
         BattleScreenMode.CONNECTING -> Waiting("Connecting to ${s.message}...", null, vm::leave)
         BattleScreenMode.SEARCHING -> Searching(s, vm)
         BattleScreenMode.FIGHT -> s.fight?.let { Fight(it, vm) }
@@ -116,11 +120,14 @@ private fun FormatPicker(format: BattleFormat, onPick: (BattleFormat) -> Unit) {
                 NeuButton(onClick = { onPick(BattleFormat.DUO_PARTNER) }, text = "Partner", icon = Icons.Rounded.Handshake,
                     selected = format == BattleFormat.DUO_PARTNER, modifier = Modifier.weight(1f))
             }
+            NeuButton(onClick = { onPick(BattleFormat.QUAD) }, text = "4 players", icon = Icons.Rounded.Groups,
+                selected = format == BattleFormat.QUAD, modifier = Modifier.fillMaxWidth())
             Text(
                 when (format) {
-                    BattleFormat.DUO_RIVAL -> "You + CPU vs friend + CPU"
-                    else -> "You + friend vs 2 CPUs"
-                } + ". Empty slots are filled with CPU pets at your level. The host picks the format.",
+                    BattleFormat.DUO_RIVAL -> "You + CPU vs friend + CPU. Empty slots are filled with CPU pets at your level."
+                    BattleFormat.DUO_PARTNER -> "You + friend vs 2 CPUs. Empty slots are filled with CPU pets at your level."
+                    else -> "Host + the first friend to join vs the next two friends. All 3 join your host."
+                } + " The host picks the format.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -264,21 +271,26 @@ private fun Fight(f: FightState, vm: BattleViewModel) {
             }
             if (f.result != null) {
                 Card(
-                    Modifier.align(Alignment.Center).padding(24.dp),
+                    Modifier.align(Alignment.Center).padding(16.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
                 ) {
                     // Arm the button after a beat so taps meant for move buttons don't skip the result.
                     var armed by remember { mutableStateOf(false) }
                     LaunchedEffect(Unit) { kotlinx.coroutines.delay(1200); armed = true }
-                    Column(Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally,
+                    Column(Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(14.dp)) {
                         Text(f.result, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
-                        NeuButton(onClick = vm::battleAgain, text = "Battle again", icon = Icons.Rounded.Replay,
-                            filled = true, enabled = armed, surface = MaterialTheme.colorScheme.tertiaryContainer)
-                        NeuButton(onClick = vm::leave, text = "Back to lobby", enabled = armed,
-                            surface = MaterialTheme.colorScheme.tertiaryContainer)
+                        val pad = PaddingValues(horizontal = 10.dp, vertical = 12.dp)
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                            NeuButton(onClick = vm::battleAgain, modifier = Modifier.weight(1f), text = "Battle again",
+                                icon = Icons.Rounded.Replay, filled = true, enabled = armed, contentPadding = pad,
+                                surface = MaterialTheme.colorScheme.tertiaryContainer)
+                            NeuButton(onClick = vm::leave, modifier = Modifier.weight(1f), text = "Back to lobby",
+                                enabled = armed, contentPadding = pad, surface = MaterialTheme.colorScheme.tertiaryContainer)
+                        }
                         if (f.humans.size > 1) Text(
-                            "Both players tap Battle again for a rematch on the next map.",
+                            (if (f.humans.size > 2) "Everyone taps" else "Both players tap") +
+                                " Battle again for a rematch on the next map.",
                             style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center,
                         )
                     }

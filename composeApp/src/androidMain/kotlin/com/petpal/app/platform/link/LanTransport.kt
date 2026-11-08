@@ -17,16 +17,18 @@ class LanTransport(context: Context) : BattleTransport {
     override val kind = LinkKind.HOTSPOT
     override val isAvailable = true
 
-    override suspend fun host(name: String): BattleConnection = coroutineScope {
+    override fun hostMany(name: String, count: Int): Flow<BattleConnection> = channelFlow {
         val server = ServerSocket().apply {
             reuseAddress = true
             bind(InetSocketAddress(GAME_PORT))
         }
         val beacon = launch(Dispatchers.IO) { broadcastBeacon(name) }
         try {
-            val socket = blockingIo(server) { server.accept() }
-            socket.tcpNoDelay = true
-            StreamConnection(socket.getInputStream(), socket.getOutputStream(), socket)
+            repeat(count) {
+                val socket = blockingIo(server) { server.accept() }
+                socket.tcpNoDelay = true
+                send(StreamConnection(socket.getInputStream(), socket.getOutputStream(), socket))
+            }
         } finally {
             beacon.cancel()
             runCatching { server.close() }

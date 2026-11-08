@@ -29,7 +29,7 @@ private val WAVES = setOf(Move.SPLASH_WAVE, Move.TIDAL_WAVE, Move.TSUNAMI, Move.
 val Move.shape: HitShape
     get() = when {
         isBuff -> HitShape.SELF
-        effect == Effect.LUNGE || effect == Effect.VANISH -> HitShape.MELEE
+        lunges || effect == Effect.VANISH -> HitShape.MELEE
         range < 0.3f -> HitShape.MELEE
         this in BEAMS -> HitShape.BEAM
         this in WAVES -> HitShape.CONE

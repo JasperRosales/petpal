@@ -74,6 +74,8 @@ After a match, **Battle again** starts a rematch on the next map. Linked: both p
 
 Any seat without a person gets a **CPU**: a random species at the matching level with a random learned loadout. In Duo you can practice with a CPU partner against 2 CPUs. With a friend linked, they join as your rival (you + CPU vs friend + CPU) or your partner (you + friend vs 2 CPUs).
 
+**4 players:** every seat is a person. The host waits for 3 friends to join; the first to join partners the host, the next two form the other team. If a player drops mid-match a CPU takes over their pet, as long as both teams still have a player.
+
 ### Links
 
 - **Bluetooth:** one phone hosts, the other joins.

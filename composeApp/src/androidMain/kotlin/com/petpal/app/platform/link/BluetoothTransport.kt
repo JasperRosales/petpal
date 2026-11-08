@@ -28,7 +28,7 @@ class BluetoothTransport(private val context: Context) : BattleTransport {
         return a
     }
 
-    override suspend fun host(name: String): BattleConnection {
+    override fun hostMany(name: String, count: Int): Flow<BattleConnection> = channelFlow {
         val a = requireOn()
         // Let unpaired phones find us for 2 minutes.
         runCatching {
@@ -40,8 +40,10 @@ class BluetoothTransport(private val context: Context) : BattleTransport {
         }
         val server = a.listenUsingInsecureRfcommWithServiceRecord("PetPal Battle", SERVICE_UUID)
         try {
-            val socket = blockingIo(server) { server.accept() }
-            return StreamConnection(socket.inputStream, socket.outputStream, socket)
+            repeat(count) {
+                val socket = blockingIo(server) { server.accept() }
+                send(StreamConnection(socket.inputStream, socket.outputStream, socket))
+            }
         } finally {
             runCatching { server.close() }
         }
