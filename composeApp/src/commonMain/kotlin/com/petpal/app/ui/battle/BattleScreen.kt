@@ -737,36 +737,142 @@ private fun DrawScope.drawMove(s: FighterSnap, info: FighterInfo, sx: Float, sy:
             val by = oy + dy * d
             val tail = minOf(d, 0.14f)
             val from = p(bx - dx * tail, by - dy * tail)
-            drawLine(Brush.linearGradient(listOf(Color.Transparent, tint.copy(alpha = 0.8f)), from, p(bx, by)),
-                from, p(bx, by), hs * 1.4f * sx, StrokeCap.Round)
-            val glow = circle(bx, by, hs * 1.6f)
-            drawOval(Brush.radialGradient(listOf(Color.White, m.coreTint(), tint, tint.copy(alpha = 0f)), p(bx, by), hs * 1.6f * sx),
-                glow.topLeft, glow.size)
+            val spin = s.projectileAgeMs / 60f
+            when (if (m.explodes) 2 else m.variant(4)) {
+                1 -> { // the move's own glyph, spinning, with fading after-images
+                    for (k in 3 downTo 0) {
+                        val back = minOf(d, k * 0.035f)
+                        drawSignature(m, p(bx - dx * back, by - dy * back), hs * sx * 0.9f, spin - k * 0.5f, 1f - k * 0.28f)
+                    }
+                }
+                2 -> { // comet: hot head shedding sparks
+                    for (k in 0 until 7) {
+                        val f = ((spin * 0.35f + k / 7f) % 1f)
+                        val back = minOf(d, f * 0.16f)
+                        val side = sin(k * 2.3f + spin) * hs * (0.4f + f)
+                        val q = p(bx - dx * back + px * side, by - dy * back + py * side)
+                        drawCircle(m.coreTint().copy(alpha = 1f - f), hs * sx * 0.35f * (1f - f * 0.6f), q)
+                    }
+                    val glow = circle(bx, by, hs * 1.9f)
+                    drawOval(Brush.radialGradient(listOf(Color.White, m.coreTint(), tint, tint.copy(alpha = 0f)), p(bx, by), hs * 1.9f * sx),
+                        glow.topLeft, glow.size)
+                }
+                3 -> { // twin orbs braiding around the aim line
+                    for (k in 0 until 10) {
+                        val back = minOf(d, k * 0.014f)
+                        val w = sin((d - back) * 45f) * hs * 0.9f
+                        listOf(1f, -1f).forEach { sg ->
+                            drawCircle(tint.copy(alpha = 0.6f * (1 - k / 10f)), hs * sx * 0.3f,
+                                p(bx - dx * back + px * w * sg, by - dy * back + py * w * sg))
+                        }
+                    }
+                    val w = sin(d * 45f) * hs * 0.9f
+                    listOf(1f, -1f).forEach { sg ->
+                        val q = p(bx + px * w * sg, by + py * w * sg)
+                        drawCircle(Brush.radialGradient(listOf(Color.White, m.coreTint(), tint.copy(alpha = 0f)), q, hs * sx), hs * sx, q)
+                    }
+                }
+                else -> {
+                    drawLine(Brush.linearGradient(listOf(Color.Transparent, tint.copy(alpha = 0.8f)), from, p(bx, by)),
+                        from, p(bx, by), hs * 1.4f * sx, StrokeCap.Round)
+                    val glow = circle(bx, by, hs * 1.6f)
+                    drawOval(Brush.radialGradient(listOf(Color.White, m.coreTint(), tint, tint.copy(alpha = 0f)), p(bx, by), hs * 1.6f * sx),
+                        glow.topLeft, glow.size)
+                }
+            }
         }
         HitShape.MELEE -> {
             if (after > 260) return
             val t = after / 260f
             val k = 1f - t
-            val slashes = if (m.effect == Effect.MULTI) 3 else if (big) 2 else 1
-            for (n in 0 until slashes) {
-                val shift = (n - (slashes - 1) / 2f) * hs * 0.45f
-                val r = hs * (0.7f + 0.3f * t)
-                val path = Path().apply {
-                    moveTo(p(cx + px * r + dx * shift, cy + py * r + dy * shift))
-                    quadTo(p(cx + dx * (r * 0.9f + shift), cy + dy * (r * 0.9f + shift)),
-                        p(cx - px * r + dx * shift, cy - py * r + dy * shift))
-                }
-                drawPath(path, tint.copy(alpha = 0.55f * k), style = Stroke((if (big) 12 else 8).dp.toPx(), cap = StrokeCap.Round))
+            val thick = (if (big) 12 else 8).dp.toPx()
+            fun stroke(path: Path) {
+                drawPath(path, tint.copy(alpha = 0.55f * k), style = Stroke(thick, cap = StrokeCap.Round))
                 drawPath(path, Color.White.copy(alpha = k), style = Stroke(2.5.dp.toPx(), cap = StrokeCap.Round))
+            }
+            when (m.variant(4)) {
+                1 -> { // X cross-slash, the second stroke a beat after the first
+                    val r = hs * 0.8f
+                    for (n in 0..1) {
+                        val g = ((t - n * 0.25f) / 0.6f).coerceIn(0f, 1f)
+                        if (g <= 0f) continue
+                        val sgn = if (n == 0) 1f else -1f
+                        val ax = cx + (px * sgn - dx) * r; val ay = cy + (py * sgn - dy) * r
+                        val bx = cx - (px * sgn - dx) * r; val by = cy - (py * sgn - dy) * r
+                        stroke(Path().apply { moveTo(p(ax, ay)); lineTo(p(ax + (bx - ax) * g, ay + (by - ay) * g)) })
+                    }
+                }
+                2 -> { // shockwave: ring and spikes bursting from the hit point
+                    val c = p(cx, cy)
+                    val r = hs * sx * (0.3f + 0.9f * t)
+                    drawCircle(tint.copy(alpha = 0.5f * k), r, c, style = Stroke(thick * k + 1f))
+                    drawCircle(Color.White.copy(alpha = 0.8f * k), r * 0.85f, c, style = Stroke(2.dp.toPx()))
+                    for (a in 0 until 8) {
+                        val ang = a * PI.toFloat() / 4 + m.ordinal
+                        val u = Offset(cos(ang), sin(ang))
+                        drawLine(tint.copy(alpha = k), c + u * r * 0.9f, c + u * r * 1.35f, 3.dp.toPx(), StrokeCap.Round)
+                    }
+                }
+                3 -> { // three raking claw marks
+                    val r = hs * 0.75f
+                    for (n in -1..1) {
+                        val g = ((t - (n + 1) * 0.08f) / 0.5f).coerceIn(0f, 1f)
+                        if (g <= 0f) continue
+                        val off = n * hs * 0.32f
+                        val ax = cx + px * r + dx * off - dx * r * 0.3f; val ay = cy + py * r + dy * off - dy * r * 0.3f
+                        val bx = cx - px * r + dx * off + dx * r * 0.3f; val by = cy - py * r + dy * off + dy * r * 0.3f
+                        stroke(Path().apply { moveTo(p(ax, ay)); lineTo(p(ax + (bx - ax) * g, ay + (by - ay) * g)) })
+                    }
+                }
+                else -> {
+                    val slashes = if (m.effect == Effect.MULTI) 3 else if (big) 2 else 1
+                    for (n in 0 until slashes) {
+                        val shift = (n - (slashes - 1) / 2f) * hs * 0.45f
+                        val r = hs * (0.7f + 0.3f * t)
+                        stroke(Path().apply {
+                            moveTo(p(cx + px * r + dx * shift, cy + py * r + dy * shift))
+                            quadTo(p(cx + dx * (r * 0.9f + shift), cy + dy * (r * 0.9f + shift)),
+                                p(cx - px * r + dx * shift, cy - py * r + dy * shift))
+                        })
+                    }
+                }
             }
         }
         HitShape.BEAM -> {
             if (after > 380) return
             val k = 1f - after / 380f
             val grow = minOf(1f, after / 90f)
-            drawPath(beamPath(range * grow, hs), tint.copy(alpha = 0.55f * k))
-            drawPath(beamPath(range * grow, hs * 0.45f), m.coreTint().copy(alpha = 0.9f * k))
-            drawPath(beamPath(range * grow, hs * 0.15f), Color.White.copy(alpha = k))
+            val len = range * grow
+            when (m.variant(3)) {
+                1 -> { // helix: two strands twisting around a thin core
+                    drawPath(beamPath(len, hs * 0.25f), m.coreTint().copy(alpha = 0.9f * k))
+                    listOf(0f, PI.toFloat()).forEach { phase ->
+                        val strand = Path()
+                        val steps = 40
+                        for (i in 0..steps) {
+                            val f = len * i / steps
+                            val w = sin(f * 40f + phase + after / 40f) * hs
+                            val q = p(ox + dx * f + px * w, oy + dy * f + py * w)
+                            if (i == 0) strand.moveTo(q) else strand.lineTo(q)
+                        }
+                        drawPath(strand, tint.copy(alpha = 0.8f * k), style = Stroke(4.dp.toPx(), cap = StrokeCap.Round))
+                        drawPath(strand, Color.White.copy(alpha = 0.7f * k), style = Stroke(1.5.dp.toPx(), cap = StrokeCap.Round))
+                    }
+                }
+                2 -> { // pulses racing down the line
+                    drawPath(beamPath(len, hs * 0.6f), tint.copy(alpha = 0.3f * k))
+                    val dash = hs * sx * 1.2f
+                    val line = Path().apply { moveTo(p(ox, oy)); lineTo(p(ox + dx * len, oy + dy * len)) }
+                    drawPath(line, m.coreTint().copy(alpha = k), style = Stroke(hs * sx * 1.2f, cap = StrokeCap.Round,
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(dash, dash * 0.8f), -after / 380f * dash * 12)))
+                    drawPath(line, Color.White.copy(alpha = k), style = Stroke(1.5.dp.toPx()))
+                }
+                else -> {
+                    drawPath(beamPath(len, hs), tint.copy(alpha = 0.55f * k))
+                    drawPath(beamPath(len, hs * 0.45f), m.coreTint().copy(alpha = 0.9f * k))
+                    drawPath(beamPath(len, hs * 0.15f), Color.White.copy(alpha = k))
+                }
+            }
             val ring = circle(ox, oy, hs * 1.3f)
             drawOval(Color.White.copy(alpha = 0.7f * k), ring.topLeft, ring.size)
         }
@@ -775,10 +881,35 @@ private fun DrawScope.drawMove(s: FighterSnap, info: FighterInfo, sx: Float, sy:
             val t = after / 420f
             val k = 1f - t
             val reach = range * minOf(1f, 0.35f + t * 1.6f)
-            drawPath(conePath(reach), Brush.radialGradient(
-                listOf(m.coreTint().copy(alpha = 0.95f * k), tint.copy(alpha = 0.75f * k), tint.copy(alpha = 0.1f * k)),
-                p(ox, oy), (reach * sx).coerceAtLeast(1f),
-            ))
+            val base = atan2(dy, dx)
+            val half = m.coneHalfAngle()
+            when (m.variant(3)) {
+                1 -> { // streaks shooting out across the cone
+                    drawPath(conePath(reach), tint.copy(alpha = 0.18f * k))
+                    for (i in 0 until 11) {
+                        val a = base - half + 2 * half * (i + 0.5f) / 11
+                        val f0 = ((t * 1.6f + i * 0.37f) % 1f) * reach
+                        val f1 = minOf(reach, f0 + range * 0.25f)
+                        val u0 = p(ox + cos(a) * f0, oy + sin(a) * f0)
+                        val u1 = p(ox + cos(a) * f1, oy + sin(a) * f1)
+                        drawLine(tint.copy(alpha = 0.8f * k), u0, u1, 4.dp.toPx(), StrokeCap.Round)
+                        drawLine(Color.White.copy(alpha = 0.7f * k), u0, u1, 1.5.dp.toPx(), StrokeCap.Round)
+                    }
+                }
+                2 -> { // spray of the move's own particles
+                    drawPath(conePath(reach), Brush.radialGradient(
+                        listOf(tint.copy(alpha = 0.35f * k), tint.copy(alpha = 0f)), p(ox, oy), (reach * sx).coerceAtLeast(1f)))
+                    for (i in 0 until 16) {
+                        val a = base - half + 2 * half * ((i * 0.618f) % 1f)
+                        val f = reach * ((0.2f + i * 0.13f + t) % 1f)
+                        drawSignature(m, p(ox + cos(a) * f, oy + sin(a) * f), 4.dp.toPx(), a + t * 6, k)
+                    }
+                }
+                else -> drawPath(conePath(reach), Brush.radialGradient(
+                    listOf(m.coreTint().copy(alpha = 0.95f * k), tint.copy(alpha = 0.75f * k), tint.copy(alpha = 0.1f * k)),
+                    p(ox, oy), (reach * sx).coerceAtLeast(1f),
+                ))
+            }
             if (m.element == Element.WATER || m.damage == 0) for (w in 1..3) { // wave fronts
                 val f = (t + w * 0.22f) % 1f
                 drawPath(conePath(range * f), Color.White.copy(alpha = 0.35f * k * (1 - f)), style = Stroke(2.dp.toPx()))
@@ -789,19 +920,44 @@ private fun DrawScope.drawMove(s: FighterSnap, info: FighterInfo, sx: Float, sy:
             val k = 1f - after / 360f
             val tgt = p(cx, cy)
             val r = 7.dp.toPx()
-            val zig = Path().apply {
-                moveTo(tgt.x + r, 0f)
-                var y = 0f
+            val join = StrokeJoin.Round
+            val w = (if (big) 10 else 6).dp.toPx()
+            fun bolt(x: Float, top: Float, segs: Int, amp: Float) = Path().apply {
+                moveTo(x + amp, top)
+                var y = top
                 var left = true
                 while (y < tgt.y) {
-                    y = minOf(tgt.y, y + tgt.y / 6 + 1f)
+                    y = minOf(tgt.y, y + (tgt.y - top) / segs + 1f)
                     left = !left
-                    lineTo(tgt.x + if (y >= tgt.y) 0f else if (left) -r * 1.6f else r * 1.6f, y)
+                    lineTo(tgt.x + if (y >= tgt.y) 0f else if (left) -amp else amp, y)
                 }
             }
-            val join = StrokeJoin.Round
-            drawPath(zig, tint.copy(alpha = 0.6f * k), style = Stroke((if (big) 10 else 6).dp.toPx(), cap = StrokeCap.Round, join = join))
-            drawPath(zig, Color.White.copy(alpha = k), style = Stroke(2.dp.toPx(), cap = StrokeCap.Round, join = join))
+            fun zap(path: Path, width: Float) {
+                drawPath(path, tint.copy(alpha = 0.6f * k), style = Stroke(width, cap = StrokeCap.Round, join = join))
+                drawPath(path, Color.White.copy(alpha = k), style = Stroke(2.dp.toPx(), cap = StrokeCap.Round, join = join))
+            }
+            when (m.variant(3)) {
+                1 -> { // forked: a main bolt with two branches splitting off
+                    zap(bolt(tgt.x, 0f, 6, r * 1.6f), w)
+                    listOf(-1f, 1f).forEach { sg ->
+                        val y0 = tgt.y * 0.45f
+                        val br = Path().apply {
+                            moveTo(tgt.x + sg * r, y0)
+                            lineTo(tgt.x + sg * r * 3f, y0 + tgt.y * 0.12f)
+                            lineTo(tgt.x + sg * r * 2.2f, y0 + tgt.y * 0.22f)
+                            lineTo(tgt.x + sg * r * 4f, y0 + tgt.y * 0.35f)
+                        }
+                        zap(br, w * 0.5f)
+                    }
+                }
+                2 -> { // pillar of light slamming down
+                    val pw = hs * sx * 1.1f
+                    drawRect(Brush.verticalGradient(listOf(tint.copy(alpha = 0f), tint.copy(alpha = 0.7f * k), Color.White.copy(alpha = k)),
+                        0f, tgt.y), Offset(tgt.x - pw / 2, 0f), Size(pw, tgt.y))
+                    drawRect(Color.White.copy(alpha = 0.8f * k), Offset(tgt.x - pw * 0.12f, 0f), Size(pw * 0.24f, tgt.y))
+                }
+                else -> zap(bolt(tgt.x, 0f, 6, r * 1.6f), w)
+            }
             val c = circle(cx, cy, hs)
             drawOval(tint.copy(alpha = 0.35f * k), c.topLeft, c.size)
             drawOval(Color.White.copy(alpha = 0.8f * k), c.topLeft, c.size, style = Stroke(2.dp.toPx()))

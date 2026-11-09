@@ -333,10 +333,39 @@ internal val Move.fx: List<Layer>
 /** Effect built from a move's type and effect, used by the per-stage unique options. */
 private fun Move.genericFx(): List<Layer> {
     val big = 1f + damage / 40f
-    val typeGlyph = when (element) {
-        Element.FIRE -> FLAME; Element.WATER -> DROP; Element.GRASS -> LEAF; Element.ICE -> SNOW
-        Element.ELECTRIC -> BOLT; Element.FLYING -> FEATHER; Element.GROUND -> ROCK; Element.FIGHTING -> FIST
-        Element.NORMAL -> STAR
+    val pool = when (element) {
+        Element.FIRE -> listOf(FLAME, Glyph.EMBER, SUN, FLAME)
+        Element.WATER -> listOf(DROP, BUBBLE, WAVE)
+        Element.GRASS -> listOf(LEAF, PETAL, SEED, VINE, SPORE)
+        Element.ICE -> listOf(SNOW, SHARD, SNOW)
+        Element.ELECTRIC -> listOf(BOLT, SPARK, BOLT)
+        Element.FLYING -> listOf(FEATHER, WIND)
+        Element.GROUND -> listOf(ROCK, SAND, MUD, ROCK)
+        Element.FIGHTING -> listOf(FIST, STAR)
+        Element.NORMAL -> listOf(STAR, PAW, Glyph.CLAW, SPARK)
+    }
+    // A word in the name wins (Moon Kick gets moons, Bone Club bones); otherwise a stable pick from the type's pool.
+    val word = label.lowercase()
+    val named = listOf(
+        "moon" to MOON, "lunar" to MOON, "shadow" to SHADOW, "night" to SHADOW, "dark" to SHADOW, "fang" to FANG,
+        "bite" to FANG, "claw" to Glyph.CLAW, "swipe" to Glyph.CLAW, "slash" to Glyph.CLAW, "bone" to BONE,
+        "star" to STAR, "sun" to SUN, "solar" to SUN, "eye" to EYE, "glare" to EYE, "needle" to SHARD, "quill" to SHARD,
+        "spike" to SHARD, "thorn" to SHARD, "punch" to FIST, "fist" to FIST, "kick" to STAR, "heart" to HEART,
+        "song" to NOTE, "shriek" to NOTE, "roar" to NOTE, "howl" to NOTE, "bark" to NOTE, "cry" to NOTE, "paw" to PAW,
+        "feather" to FEATHER, "wing" to FEATHER, "gust" to WIND, "wind" to WIND, "bubble" to BUBBLE, "mud" to MUD,
+        "sand" to SAND, "rock" to ROCK, "stone" to ROCK, "quake" to CRACK, "fissure" to CRACK, "leaf" to LEAF,
+        "petal" to PETAL, "seed" to SEED, "spore" to SPORE, "vine" to VINE, "frost" to SNOW, "snow" to SNOW,
+        "ice" to SHARD, "spark" to SPARK, "volt" to BOLT, "thunder" to BOLT, "ember" to Glyph.EMBER, "flame" to FLAME,
+    ).firstOrNull { it.first in word }?.second
+    val typeGlyph = named ?: pool[variant(pool.size)]
+    val alt = pool[(variant(997) / 7 + 1) % pool.size].takeIf { it != typeGlyph } ?: STAR
+    val accent = when (variant(6)) { // one more flourish so moves with the same effect still differ
+        0 -> L(RING, STAMP, 2, 1.2f)
+        1 -> L(alt, SPIRAL, 4, 0.8f)
+        2 -> L(alt, RAIN, 5, 0.9f)
+        3 -> L(alt, GROUND, 6, 0.8f)
+        4 -> L(alt, SWEEP, 4, 0.9f)
+        else -> L(SPARK, BURST, 5, 0.7f, Color.White)
     }
     val second = element2?.let {
         when (it) {
@@ -363,7 +392,16 @@ private fun Move.genericFx(): List<Layer> {
         Effect.KNOCKBACK, Effect.STUN -> listOf(L(typeGlyph, BURST, 8, big), L(STAR, SPIRAL, 3, 1f, Gold))
         else -> listOf(L(typeGlyph, TRAIL, 6, big), L(STAR, STAMP, 1, big))
     }
-    return main + listOfNotNull(second?.let { L(it, BURST, 5) })
+    return main + listOfNotNull(second?.let { L(it, BURST, 5) }) + accent
+}
+
+/** Stable pick among [n] looks per move, so moves sharing a hitbox shape still look different. */
+internal fun Move.variant(n: Int) = (name.hashCode() and 0x7fffffff) % n
+
+/** The move's main particle (its first layer that isn't a plain ring or puff), for projectiles and sprays. */
+internal fun DrawScope.drawSignature(m: Move, c: Offset, size: Float, rot: Float, alpha: Float) {
+    val l = m.fx.firstOrNull { it.glyph != RING && it.glyph != SMOKE } ?: m.fx.first()
+    glyph(l.glyph, c, size, rot, l.color ?: m.tint(), alpha)
 }
 
 private fun rnd(seed: Int): Float {

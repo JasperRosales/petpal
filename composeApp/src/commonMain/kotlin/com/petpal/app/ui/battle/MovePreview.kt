@@ -15,6 +15,7 @@ import com.petpal.app.domain.model.Stage
 import com.petpal.app.ui.theme.EmberCanvas
 import kotlinx.coroutines.delay
 import kotlin.random.Random
+import kotlin.math.roundToInt
 
 /**
  * Shows [move] used by the player's own pet (its stage, level and passive) on a training dummy,
@@ -30,7 +31,10 @@ fun MovePreviewDialog(pet: Pet, move: Move, onDismiss: () -> Unit) {
                 Text(move.describe(), style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 MovePreview(pet, move)
-                Text(howItWorks(move), style = MaterialTheme.typography.bodySmall)
+                val me = remember(pet) { PetEngine.fighterInfo(pet, if (pet.stage == Stage.EGG) Stage.BABY else pet.stage) }
+                Text(whatItDoes(me, move), style = MaterialTheme.typography.bodyMedium)
+                Text(howItWorks(move), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
@@ -77,6 +81,70 @@ fun MovePreview(pet: Pet, move: Move, modifier: Modifier = Modifier) {
         Text(fight?.log?.lastOrNull() ?: " ", style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
     }
+}
+
+private fun secs(ms: Long) = if (ms % 1000 == 0L) "${ms / 1000}s" else "${ms / 100 / 10f}s"
+
+/** What the move does for this pet, with real numbers (its stage, level and passive included). */
+internal fun whatItDoes(me: FighterInfo, m: Move): String {
+    val hp = BattleStats.maxHp(me)
+    val healBoost = 1 + me.passive[Trait.HEAL_BOOST]
+    fun heal(pct: Float) = "heals you ${(hp * pct * healBoost).roundToInt()} HP"
+    val dmg = BattleStats.baseDamage(me, m)
+    val lo = (dmg * 0.85f).roundToInt().coerceAtLeast(1)
+    val hi = (dmg * 1.15f).roundToInt().coerceAtLeast(1)
+    val hit = if (lo == hi) "$lo" else "$lo-$hi"
+    val burnMs = (3000 * (1 + me.passive[Trait.BURN_TIME])).toLong()
+    val parts = mutableListOf<String>()
+    if (m.damage > 0) parts += when (m.effect) {
+        Effect.MULTI -> "Deals $hit damage per hit, 2-4 hits"
+        Effect.TWIN_SLASH -> "Two slashes of $hit damage each"
+        else -> "Deals $hit damage" + if (m.explodes) " to every enemy in the blast" else ""
+    }
+    parts += when (m.effect) {
+        Effect.NONE, Effect.MULTI, Effect.TWIN_SLASH -> null
+        Effect.LUNGE -> "dashes at the target"
+        Effect.VANISH -> "vanishes during the wind-up and reappears next to the target"
+        Effect.DRAIN -> "heals you half the damage dealt"
+        Effect.BURN -> "burns for ${secs(burnMs)} (${(2 * burnMs / 1000f).roundToInt()} HP over time)"
+        Effect.SLOW -> "halves the target's speed for 3s"
+        Effect.STUN -> "stuns for 0.8s"
+        Effect.FREEZE -> "freezes the target for 1.5s"
+        Effect.KNOCKBACK -> "knocks the target back"
+        Effect.PULL -> "pulls the target closer"
+        Effect.RECOIL -> "you take a quarter of the damage dealt"
+        Effect.LEECH -> "drains 1.5 HP/s from the target to you for 5s"
+        Effect.PARALYZE -> "paralyzes for 4s (slower, cooldowns 50% longer)"
+        Effect.WEAKEN -> "target deals 30% less damage for 5s"
+        Effect.ROOT -> "roots the target in place for 2.5s"
+        Effect.SIPHON -> "steals up to 40 energy"
+        Effect.EXECUTE -> "double damage on targets below 30% HP"
+        Effect.RECHARGE -> "you must recharge for 1.5s after"
+        Effect.MARK -> "marked target takes 25% more damage for ${secs(Mechanics.MARK_MS)}"
+        Effect.CHAIN -> "arcs to a nearby enemy for half damage (or zaps the same one again for a third)"
+        Effect.SWAP -> "you and the target swap places"
+        Effect.DISRUPT -> "adds ${secs(Mechanics.DISRUPT_MS)} to all the target's cooldowns"
+        Effect.TRAP -> "lays a snare that roots the first enemy to step on it for ${secs(Trap.ROOT_MS)} (lasts ${secs(Trap.DURATION_MS)})"
+        Effect.SHIELD -> "shield that absorbs ${(hp * Mechanics.shieldFraction(m) * (1 + me.passive[Trait.SHIELD_BOOST])).roundToInt()} damage for ${secs(Mechanics.SHIELD_MS)}"
+        Effect.AID -> heal(Mechanics.AID_HEAL) + " (and each teammate ${(Mechanics.AID_HEAL * 100).roundToInt()}% of their HP)"
+        Effect.HEAL -> heal(0.18f)
+        Effect.RAGE -> "+30% damage for 4s"
+        Effect.GUARD -> "take 60% less damage for 1.2s"
+        Effect.HASTE -> "+50% speed and 30% shorter cooldowns for 5s"
+        Effect.HARDEN -> "take 40% less damage for 5s"
+        Effect.COUNTER -> "the next hit within 1.5s is reflected back"
+        Effect.BLINK -> "teleports to the far side of the arena"
+        Effect.CLEANSE -> "clears your debuffs and " + heal(0.10f)
+        Effect.ENERGIZE -> "+50 energy"
+        Effect.BATTLE_CRY -> "+30% damage and +50% speed for 5s"
+        Effect.PACK_CALL -> "+30% damage for 6s and " + heal(0.25f)
+        Effect.FORTRESS -> "take 60% less damage for 3s and " + heal(0.15f)
+        Effect.ALPHA -> "+30% damage and +50% speed for 8s, and " + heal(0.35f)
+        Effect.CITADEL -> "60% less damage for 4s, 40% less for 8s, and " + heal(0.25f)
+        Effect.SMOKE -> "leaves a smoke cloud that slows enemies for 4s and dashes you away"
+    }.let { listOfNotNull(it) }
+    val text = parts.joinToString(", ")
+    return text.replaceFirstChar { it.uppercase() } + "."
 }
 
 private fun howItWorks(m: Move): String = buildString {
