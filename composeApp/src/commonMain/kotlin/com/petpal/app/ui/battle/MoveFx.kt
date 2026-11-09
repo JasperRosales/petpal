@@ -430,6 +430,7 @@ internal fun DrawScope.drawMoveFx(m: Move, origin: Offset, impact: Offset, after
     val u = 5.dp.toPx()
     val tint = m.tint()
 
+    drawUniqueFx(m, origin, impact, after)
     if (after < 0) { // charge-up
         if (m.windupMs < 250) return
         val l = layers.first()

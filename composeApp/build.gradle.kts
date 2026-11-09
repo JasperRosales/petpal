@@ -54,6 +54,8 @@ kotlin {
         }
         androidUnitTest.dependencies {
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+            implementation("org.robolectric:robolectric:4.14.1")
+            implementation("junit:junit:4.13.2")
         }
     }
 }
@@ -66,8 +68,8 @@ android {
         applicationId = "com.petpal.app"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 25
-        versionName = "0.22.1"
+        versionCode = 26
+        versionName = "0.22.2"
     }
     signingConfigs {
         if (keystoreProps.isNotEmpty()) create("release") {

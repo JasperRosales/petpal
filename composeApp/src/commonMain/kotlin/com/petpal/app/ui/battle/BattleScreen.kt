@@ -639,7 +639,7 @@ private fun DrawScope.drawArenaFloor() {
 }
 
 /** Hit spark on a pet that just took damage. */
-private fun DrawScope.drawImpact(c: Offset, t: Float) {
+internal fun DrawScope.drawImpact(c: Offset, t: Float) {
     val k = 1f - t
     drawCircle(EmberCream.copy(alpha = 0.8f * k), (10 + 26 * t).dp.toPx(), c, style = Stroke((4 * k + 1).dp.toPx()))
     for (a in 0 until 8) {
@@ -656,7 +656,7 @@ private fun DrawScope.drawImpact(c: Offset, t: Float) {
  * Draws a move exactly over its hitbox (see Hitbox.kt), in arena units scaled by [sx]/[sy]:
  * a dashed telegraph while winding up, then the effect itself, aimed at where the target was.
  */
-private fun DrawScope.drawMove(s: FighterSnap, info: FighterInfo, sx: Float, sy: Float) {
+internal fun DrawScope.drawMove(s: FighterSnap, info: FighterInfo, sx: Float, sy: Float) {
     val m = s.action ?: return
     val shape = m.shape
     val age = s.actionAgeMs
@@ -971,7 +971,7 @@ private fun Path.lineTo(o: Offset) = lineTo(o.x, o.y)
 private fun Path.quadTo(c: Offset, e: Offset) = quadraticTo(c.x, c.y, e.x, e.y)
 
 /** Hot inner color of a move's effect. */
-private fun Move.coreTint(): Color = when (element) {
+internal fun Move.coreTint(): Color = when (element) {
     Element.FIRE -> EmberGold
     Element.ELECTRIC -> Color(0xFFFFF3A0)
     Element.WATER -> Color(0xFFBFE6FF)
@@ -1138,7 +1138,7 @@ private fun statusIcons(f: FighterSnap) = buildList {
 }
 
 /** A snare on the floor: a faint ring while arming, then a spiky ring in the move's color. */
-private fun DrawScope.drawTrap(t: TrapSnap, c: Offset, r: Float) {
+internal fun DrawScope.drawTrap(t: TrapSnap, c: Offset, r: Float) {
     val armed = t.ageMs >= Trap.ARM_MS
     val fade = (1f - (t.ageMs - (Trap.DURATION_MS - 600)).coerceAtLeast(0) / 600f).coerceIn(0f, 1f)
     val col = t.element.tint().copy(alpha = (if (armed) 0.85f else 0.35f) * fade)
@@ -1308,15 +1308,17 @@ private class SmoothTrack(var cur: BattleSnapshot) {
 }
 
 /** One explosion, [r] = blast radius in px, [age] ms since it went off. */
-private fun DrawScope.drawBlast(c: Offset, r: Float, age: Long) {
+internal fun DrawScope.drawBlast(c: Offset, r: Float, age: Long) {
     val t = (age / BLAST_MS.toFloat()).coerceIn(0f, 1f)
     val grow = 1f - (1f - minOf(1f, t * 3f)).let { it * it }
     val k = 1f - t
     val fire = Color(0xFFFF6D00)
     val core = Color(0xFFFFD54F)
+    // Android's RadialGradient throws on a zero radius, which is what the first frame (t = 0) gives.
+    val fr = maxOf(r * grow * 1.05f, 1f)
     drawCircle(Brush.radialGradient(
         listOf(Color.White.copy(alpha = k), core.copy(alpha = k), fire.copy(alpha = 0.85f * k), Color(0xFFB71C1C).copy(alpha = 0.5f * k), Color.Transparent),
-        c, r * grow * 1.05f), r * grow * 1.05f, c)
+        c, fr), fr, c)
     drawCircle(core.copy(alpha = 0.8f * k), r * (0.4f + 0.75f * t), c, style = Stroke(r * 0.12f * k + 1f))
     for (i in 0 until 10) {
         val a = i * 0.6283f + 0.3f
