@@ -62,6 +62,8 @@ fun BattleScreen(vm: BattleViewModel = koinViewModel()) {
         )
         BattleScreenMode.CONNECTING -> Waiting("Connecting to ${s.message}...", null, vm::leave)
         BattleScreenMode.SEARCHING -> Searching(s, vm)
+        BattleScreenMode.ROOM -> s.room?.let { Room(it, s.link, vm) }
+            ?: Waiting("Opening the room...", hostHint(s.link), vm::leave)
         BattleScreenMode.FIGHT -> s.fight?.let { Fight(it, vm) }
     }
 }
@@ -90,7 +92,12 @@ private fun Lobby(vm: BattleViewModel, message: String?, format: BattleFormat) {
         NeuButton(
             onClick = vm::practice,
             icon = Icons.Rounded.SmartToy,
-            text = if (format == BattleFormat.SOLO) "Practice vs CPU" else "Duo vs CPU (with a CPU partner)",
+            text = when (format) {
+                BattleFormat.SOLO -> "Practice vs CPU"
+                BattleFormat.TEAMS -> "3v3 vs CPUs (with CPU partners)"
+                BattleFormat.FFA -> "Free-for-all vs 3 CPUs"
+                else -> "Duo vs CPU (with a CPU partner)"
+            },
             modifier = Modifier.fillMaxWidth(),
         )
         Text(
@@ -103,15 +110,22 @@ private fun Lobby(vm: BattleViewModel, message: String?, format: BattleFormat) {
 
 @Composable
 private fun FormatPicker(format: BattleFormat, onPick: (BattleFormat) -> Unit) {
+    val duo = format == BattleFormat.DUO_RIVAL || format == BattleFormat.DUO_PARTNER
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Format", style = MaterialTheme.typography.titleMedium)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             NeuButton(onClick = { onPick(BattleFormat.SOLO) }, text = "1v1", icon = Icons.Rounded.Person,
                 selected = format == BattleFormat.SOLO, modifier = Modifier.weight(1f))
-            NeuButton(onClick = { if (format == BattleFormat.SOLO) onPick(BattleFormat.DUO_RIVAL) }, text = "Duo 2v2",
-                icon = Icons.Rounded.Groups, selected = format != BattleFormat.SOLO, modifier = Modifier.weight(1f))
+            NeuButton(onClick = { if (!duo) onPick(BattleFormat.DUO_RIVAL) }, text = "Duo 2v2",
+                icon = Icons.Rounded.Groups, selected = duo, modifier = Modifier.weight(1f))
         }
-        if (format != BattleFormat.SOLO) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            NeuButton(onClick = { onPick(BattleFormat.TEAMS) }, text = "Teams", icon = Icons.Rounded.Diversity3,
+                selected = format == BattleFormat.TEAMS, modifier = Modifier.weight(1f))
+            NeuButton(onClick = { onPick(BattleFormat.FFA) }, text = "Free-for-all", icon = Icons.Rounded.EmojiEvents,
+                selected = format == BattleFormat.FFA, modifier = Modifier.weight(1f))
+        }
+        if (duo) {
             Text("A friend who joins plays as...", style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -120,17 +134,78 @@ private fun FormatPicker(format: BattleFormat, onPick: (BattleFormat) -> Unit) {
                 NeuButton(onClick = { onPick(BattleFormat.DUO_PARTNER) }, text = "Partner", icon = Icons.Rounded.Handshake,
                     selected = format == BattleFormat.DUO_PARTNER, modifier = Modifier.weight(1f))
             }
-            NeuButton(onClick = { onPick(BattleFormat.QUAD) }, text = "4 players", icon = Icons.Rounded.Groups,
-                selected = format == BattleFormat.QUAD, modifier = Modifier.fillMaxWidth())
-            Text(
-                when (format) {
-                    BattleFormat.DUO_RIVAL -> "You + CPU vs friend + CPU. Empty slots are filled with CPU pets at your level."
-                    BattleFormat.DUO_PARTNER -> "You + friend vs 2 CPUs. Empty slots are filled with CPU pets at your level."
-                    else -> "Host + the first friend to join vs the next two friends. All 3 join your host."
-                } + " The host picks the format.",
-                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+        }
+        if (format != BattleFormat.SOLO) Text(
+            when (format) {
+                BattleFormat.DUO_RIVAL -> "You + CPU vs friend + CPU. Empty slots are filled with CPU pets at your level."
+                BattleFormat.DUO_PARTNER -> "You + friend vs 2 CPUs. Empty slots are filled with CPU pets at your level."
+                BattleFormat.TEAMS -> "Up to $MAX_PLAYERS players join your room and pick a team. You start when both teams have someone."
+                else -> "Up to $MAX_PLAYERS players join your room, everyone for themselves. Last pet standing wins."
+            } + " The host picks the format.",
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/** Waiting room for team battles and free-for-alls. */
+@Composable
+private fun Room(r: RoomUi, link: LinkKind?, vm: BattleViewModel) {
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(if (r.ffa) "Free-for-all room" else "Team battle room",
+                style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
+            Text("${r.players.size}/$MAX_PLAYERS", style = MaterialTheme.typography.titleMedium)
+        }
+        Text(
+            when {
+                r.host -> (hostHint(link)?.let { "$it " } ?: "") +
+                    if (r.ffa) "Tap Start when everyone is in." else "Tap a player to move them to the other team."
+                r.ffa -> "Waiting for the host to start..."
+                else -> "Waiting for the host to start. You can switch teams until then."
+            },
+            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        @Composable
+        fun PlayerRow(i: Int, color: Color) {
+            val p = r.players[i]
+            val tag = when { i == r.you -> " (you)"; i == 0 -> " (host)"; else -> "" }
+            ListItem(
+                headlineContent = { Text(p.name + tag) },
+                supportingContent = { Text("Lv ${p.level}") },
+                leadingContent = { Icon(Icons.Rounded.Pets, null, tint = color) },
+                trailingContent = if (r.host && !r.ffa) { { Icon(Icons.Rounded.SwapHoriz, "Switch team") } } else null,
+                modifier = Modifier.clip(MaterialTheme.shapes.medium)
+                    .then(if (r.host && !r.ffa) Modifier.clickable { vm.switchTeam(i) } else Modifier),
             )
         }
+        if (r.ffa) {
+            r.players.indices.forEach { PlayerRow(it, MaterialTheme.colorScheme.primary) }
+        } else {
+            listOf(0 to "Team A", 1 to "Team B").forEach { (t, label) ->
+                val color = if (t == 0) AllyBlue else MaterialTheme.colorScheme.error
+                Text(label, style = MaterialTheme.typography.titleMedium, color = color)
+                val members = r.players.indices.filter { r.players[it].team == t }
+                if (members.isEmpty()) Text("Nobody yet", style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                members.forEach { PlayerRow(it, color) }
+            }
+            if (!r.host) NeuButton(onClick = { vm.switchTeam(r.you) }, text = "Switch team", icon = Icons.Rounded.SwapHoriz,
+                modifier = Modifier.fillMaxWidth())
+        }
+        if (r.host) NeuButton(
+            onClick = vm::startRoom, enabled = r.canStart, filled = true, icon = Icons.Rounded.PlayArrow,
+            text = when {
+                r.canStart -> "Start (${r.players.size} players)"
+                r.ffa -> "Need at least 2 players"
+                else -> "Need someone on each team"
+            },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        NeuButton(onClick = vm::leave, text = if (r.host) "Close room" else "Leave", icon = Icons.Rounded.Close,
+            modifier = Modifier.fillMaxWidth())
     }
 }
 
@@ -755,6 +830,7 @@ internal fun Arena(fight: FightState, modifier: Modifier) {
                 mood = if (s.hp < s.maxHp * 0.3f) Mood.SAD else Mood.HAPPY,
                 species = info.species,
                 size = spriteDp,
+                fried = s.has(Status.FRIED),
                 modifier = Modifier
                     .offset { IntOffset(c.x.roundToInt() - half, c.y.roundToInt() - half) }
                     .graphicsLayer {
@@ -802,7 +878,7 @@ internal fun Arena(fight: FightState, modifier: Modifier) {
 
 private val AllyBlue = Color(0xFF4FA3E0)
 
-private fun teamOf(f: FightState, i: Int) = i * 2 / f.fighters.size
+private fun teamOf(f: FightState, i: Int) = f.teams[i]
 
 private fun statusIcons(f: FighterSnap) = buildList {
     if (f.has(Status.BURN)) add(Icons.Rounded.LocalFireDepartment to Color(0xFFE5532D))

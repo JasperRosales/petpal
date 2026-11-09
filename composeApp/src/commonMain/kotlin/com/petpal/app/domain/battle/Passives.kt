@@ -16,6 +16,13 @@ enum class Trait {
     WEAKEN_TOUCH, STATIC_TOUCH, FLAME_TOUCH, RESIST, ADAPT, DESPERATE, LOW_HP_POWER, EXECUTE, OPENER,
     SNIPER, BRAWLER, GUTS, BERSERK, CRIT, GRIT, ENDURANCE, HEAL_BOOST, IRON_WILL, STEADFAST,
     START_SHIELD, SHIELD_BOOST,
+    FRIED, // Tilapia: comes back once as a Fried Tilapia that sizzles away
+}
+
+/** Fried Tilapia: HP it comes back with, and HP it loses every second. */
+object Fried {
+    const val HP = 30f
+    const val DECAY_PER_SEC = 5f
 }
 
 data class Perk(val trait: Trait, val amount: Float = 0f, val elements: Set<Element> = emptySet()) {
@@ -69,6 +76,7 @@ data class Perk(val trait: Trait, val amount: Float = 0f, val elements: Set<Elem
             Trait.STEADFAST -> "Can't be knocked back or pulled."
             Trait.START_SHIELD -> "Starts every battle with a shield worth $p of its max HP."
             Trait.SHIELD_BOOST -> "Its shields are $p stronger."
+            Trait.FRIED -> "When knocked out, it comes back as a Fried Tilapia with ${Fried.HP.toInt()} HP that loses ${Fried.DECAY_PER_SEC.toInt()} HP every second."
         }
     }
 }
@@ -119,6 +127,7 @@ private fun ironWill() = p(Trait.IRON_WILL)
 private fun steadfast() = p(Trait.STEADFAST)
 private fun startShield(a: Float) = p(Trait.START_SHIELD, a)
 private fun shieldBoost(a: Float) = p(Trait.SHIELD_BOOST, a)
+private fun fried() = p(Trait.FRIED)
 
 /**
  * Every passive belongs to exactly one species and stage; each stage has two (listed A then B).
@@ -365,6 +374,30 @@ enum class Passive(val species: Species, val stage: Stage, vararg perks: Perk) {
     WHISKER_SENSE(SEAL, TEEN, dodge(0.08f), range(0.08f)),
     WALRUS_HIDE(SEAL, ADULT, maxHp(0.2f), endurance(0.4f)),
     CIRCUS_STAR(SEAL, ADULT, energyRate(0.2f), crit(0.08f)),
+    TOUGH_HIDE(ELEPHANT, BABY, armor(0.12f)),
+    MUD_BATH(ELEPHANT, BABY, endurance(0.3f), resist(0.2f,FIRE)),
+    TRUNK_POWER(ELEPHANT, KID, boost(0.2f,GROUND), brawler(0.08f)),
+    WATER_HOSE(ELEPHANT, KID, boost(0.2f,WATER), maxHp(0.06f)),
+    NEVER_FORGETS(ELEPHANT, TEEN, adapt(0.25f), ironWill()),
+    HEAVYWEIGHT(ELEPHANT, TEEN, maxHp(0.15f), steadfast()),
+    MATRIARCH(ELEPHANT, ADULT, maxHp(0.2f), healBoost(0.3f)),
+    TITAN(ELEPHANT, ADULT, armor(0.15f), brawler(0.15f)),
+    STRIPES(TIGER, BABY, dodge(0.08f), opener(0.1f)),
+    CUB_CLAWS(TIGER, BABY, brawler(0.12f)),
+    TIGER_BLAZE(TIGER, KID, boost(0.2f,FIRE), crit(0.05f)),
+    STRIPED_FIST(TIGER, KID, boost(0.2f,FIGHTING), speed(0.05f)),
+    AMBUSH(TIGER, TEEN, opener(0.3f)),
+    PROWL(TIGER, TEEN, speed(0.12f), dodge(0.05f)),
+    MAN_EATER(TIGER, ADULT, execute(0.3f), crit(0.1f)),
+    STRIPED_TERROR(TIGER, ADULT, lifesteal(0.12f), berserk(0.2f)),
+    FRIED_TILAPIA(TILAPIA, BABY, fried()),
+    CRISPY_SKIN(TILAPIA, BABY, fried(), armor(0.05f)),
+    NILE_SWIMMER(TILAPIA, KID, fried(), boost(0.2f,WATER)),
+    POND_WEED(TILAPIA, KID, fried(), boost(0.2f,GRASS)),
+    SCHOOLING(TILAPIA, TEEN, fried(), dodge(0.08f)),
+    HARDY_FISH(TILAPIA, TEEN, fried(), endurance(0.4f)),
+    GOLDEN_FRY(TILAPIA, ADULT, fried(), regen(0.5f)),
+    MOUTH_BROODER(TILAPIA, ADULT, fried(), healBoost(0.3f), maxHp(0.1f)),
     ;
 
     val perks: List<Perk> = perks.toList()

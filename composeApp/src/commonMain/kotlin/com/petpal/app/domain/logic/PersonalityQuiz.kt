@@ -140,6 +140,9 @@ object PersonalityQuiz {
         KANGAROO to intArrayOf(3, 1, 0, 1, 3, 2),
         EAGLE to intArrayOf(1, 0, 2, 1, 3, 0),
         SEAL to intArrayOf(1, 3, 0, 2, 0, 2),
+        ELEPHANT to intArrayOf(1, 3, 2, 1, 2, 3),
+        TIGER to intArrayOf(2, 0, 1, 0, 3, 1),
+        TILAPIA to intArrayOf(0, 3, 1, 3, 1, 0),
     )
 
     /** Raw trait points for the chosen answer index per question. */

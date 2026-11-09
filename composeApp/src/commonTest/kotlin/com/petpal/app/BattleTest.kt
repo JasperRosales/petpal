@@ -370,4 +370,59 @@ class HitboxTest {
     @Test fun evadeCommandRoundTrips() {
         assertEquals(Protocol.EvadeCmd, Protocol.parse(Protocol.EVADE))
     }
+
+    @Test fun tilapiaComesBackFriedThenSizzlesAway() {
+        val fish = FighterInfo("T", Species.TILAPIA, Stage.BABY, 10)
+        val bully = FighterInfo("D", Species.DRAKE, Stage.ADULT, 60, listOf(Move.TACKLE))
+        val e = BattleEngine(listOf(bully, fish), Random(1), demo = true)
+        e.place(0, 0.45f, 0.6f); e.place(1, 0.55f, 0.6f)
+        val log = mutableListOf<String>()
+        var t = 0L
+        while (t < 60_000 && !e.snapshot(t).fighters[1].has(Status.FRIED)) {
+            e.command(0, Move.TACKLE, t); log += e.tick(t); t += 50
+        }
+        val s = e.snapshot(t).fighters[1]
+        assertTrue(s.has(Status.FRIED))
+        assertTrue(s.hp in 1..30)
+        assertFalse(e.ended)
+        assertTrue(log.any { "Fried Tilapia" in it })
+        val start = t
+        while (!e.ended && t < start + 10_000) { e.tick(t); t += 50 } // left alone: loses 5 HP a second
+        assertTrue(e.ended)
+        assertEquals(0, e.winner)
+        assertTrue(t - start in 1000..6600, "${t - start}")
+    }
+
+    @Test fun freeForAllAndUnevenTeamsPlayToOneWinner() {
+        val pets = listOf(Species.DRAKE, Species.TIGER, Species.ELEPHANT, Species.FOX, Species.BEAR, Species.OWL)
+        val infos = pets.mapIndexed { i, sp -> FighterInfo("P$i", sp, Stage.KID, 30, SpeciesKit.starters(sp)) }
+        for (teams in listOf(BattleEngine.freeForAll(6), listOf(0, 0, 0, 0, 1, 1), listOf(1, 0, 1))) {
+            val n = teams.size
+            val e = BattleEngine(infos.take(n), Random(3), teamIds = teams)
+            val s0 = e.snapshot(0).fighters
+            for (i in 0 until n) for (j in i + 1 until n) // nobody spawns on top of anyone
+                assertTrue(kotlin.math.hypot(s0[i].x - s0[j].x, s0[i].y - s0[j].y) > 0.1f, "$teams $i $j")
+            var t = 0L
+            val rng = Random(5)
+            while (!e.ended) {
+                for (i in 0 until n) BattleBot.pick(e, i, t, rng)?.let { e.command(i, it, t) }
+                e.tick(t); t += 50
+            }
+            val snap = e.snapshot(t)
+            assertTrue(snap.winner == -1 || snap.winner in teams, "$teams ${snap.winner}")
+            if (snap.winner >= 0 && t < BATTLE_MS) assertTrue(teams.indices.filter { teams[it] != snap.winner }.all { snap.fighters[it].hp == 0 })
+        }
+    }
+
+    @Test fun roomMessagesRoundTrip() {
+        val players = listOf(Protocol.RoomEntry("Host", 12, 0), Protocol.RoomEntry("A#b~c", 3, 1))
+        val lobby = Protocol.parse(Protocol.lobby(1, false, players)) as Protocol.Lobby
+        assertEquals(1, lobby.you); assertFalse(lobby.ffa)
+        assertEquals(listOf(0, 1), lobby.players.map { it.team })
+        assertEquals(Protocol.SwitchTeam, Protocol.parse(Protocol.SWITCH_TEAM))
+        val infos = List(3) { FighterInfo("P$it", Species.TILAPIA, Stage.BABY, 5) }
+        val setup = Protocol.parse(Protocol.setup(2, infos, Terrain.ARENA, setOf(0, 1, 2), BattleEngine.freeForAll(3))) as Protocol.Setup
+        assertEquals(listOf(0, 1, 2), setup.teams)
+        assertEquals(setOf(0, 1, 2), setup.humans)
+    }
 }

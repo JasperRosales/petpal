@@ -2,7 +2,7 @@
 
 _Generated from the game data by `DocsGenerator`. Don't edit by hand._
 
-417 moves. Ranges are in arena widths (the arena is 1.0 wide and 1.2 tall).
+441 moves. Ranges are in arena widths (the arena is 1.0 wide and 1.2 tall).
 Normal moves only have a cooldown, Specials also need a full energy bar, and Uniques are
 species signatures in slot 5, usable 2x per battle.
 
@@ -520,3 +520,27 @@ Each species has two unique options per stage (Baby, Kid, Teen, Adult). The play
 | Blubber Up | Ice | Unique | Seal Teen | - | self | 15.0s | 250ms | self | harden |
 | Arctic Tide | Water | Unique | Seal Adult | 32 | 0.65 | 15.0s | 600ms | cone | freeze |
 | Polar Splash | Water | Unique | Seal Adult | - | 0.60 | 15.0s | 400ms | cone | freeze |
+| Trunk Slap | Normal | Unique | Elephant Baby | 16 | 0.24 | 15.0s | 250ms | melee | knockback |
+| Trunk Spray | Water | Unique | Elephant Baby | - | 0.50 | 15.0s | 300ms | cone | slow |
+| Tusk Gore | Ground | Unique | Elephant Kid | 24 | 0.28 | 15.0s | 350ms | melee | lunge + stun |
+| Mud Shower | Ground | Unique | Elephant Kid | - | self | 15.0s | 300ms | self | cleanse |
+| Stampede | Ground | Unique | Elephant Teen | 28 | 0.35 | 15.0s | 400ms | melee | lunge + knockback |
+| Trumpet | Normal | Unique | Elephant Teen | - | 0.55 | 15.0s | 300ms | cone | disrupt |
+| Mammoth Quake | Ground | Unique | Elephant Adult | 34 | 0.45 | 15.0s | 550ms | projectile | stun |
+| Herd Guardian | Ground | Unique | Elephant Adult | - | self | 15.0s | 400ms | self | guard + harden + heal |
+| Stripe Slash | Fighting | Unique | Tiger Baby | 10 | 0.20 | 15.0s | 200ms | melee | 2 stepping slashes |
+| Tiger Growl | Normal | Unique | Tiger Baby | - | 0.50 | 15.0s | 250ms | cone | weaken |
+| Tiger Pounce | Fighting | Unique | Tiger Kid | 24 | 0.40 | 15.0s | 300ms | melee | lunge |
+| Stalk | Normal | Unique | Tiger Kid | - | self | 15.0s | 200ms | self | haste |
+| Blazing Claw | Fire | Unique | Tiger Teen | 28 | 0.24 | 15.0s | 350ms | melee | lunge + burn |
+| Predator Eye | Normal | Unique | Tiger Teen | - | 0.60 | 15.0s | 250ms | cone | mark |
+| Savage Maul | Fighting | Unique | Tiger Adult | 34 | 0.25 | 15.0s | 450ms | melee | lunge + execute |
+| Tiger King | Fighting | Unique | Tiger Adult | - | self | 15.0s | 400ms | self | rage + haste + heal |
+| Fin Flick | Water | Unique | Tilapia Baby | 16 | 0.24 | 15.0s | 250ms | melee | slow |
+| Bubble Nest | Water | Unique | Tilapia Baby | - | self | 15.0s | 250ms | self | shield |
+| School Rush | Water | Unique | Tilapia Kid | 9 | 0.30 | 15.0s | 300ms | cone | hits 2-4x |
+| Mouth Brood | Water | Unique | Tilapia Kid | - | self | 15.0s | 300ms | self | guard + heal |
+| Algae Bloom | Grass | Unique | Tilapia Teen | 26 | 0.55 | 15.0s | 450ms | projectile | leech |
+| Scale Shed | Normal | Unique | Tilapia Teen | - | self | 15.0s | 250ms | self | cleanse |
+| Nile Flood | Water | Unique | Tilapia Adult | 34 | 0.65 | 15.0s | 600ms | cone | knockback |
+| Fish Fry | Fire | Unique | Tilapia Adult | 30 | 0.45 | 15.0s | 450ms | cone | burn |

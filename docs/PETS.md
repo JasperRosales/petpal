@@ -2,7 +2,7 @@
 
 _Generated from the game data by `DocsGenerator`. Don't edit by hand._
 
-30 species. Every pet starts with 2 moves, keeps up to 4, and has its unique in slot 5.
+33 species. Every pet starts with 2 moves, keeps up to 4, and has its unique in slot 5.
 Base HP: Egg 85, Baby 100, Kid 115, Teen 122, Adult 130 (the same multiplier scales damage).
 
 Every stage (Baby, Kid, Teen, Adult) has two passive options. When the pet hatches or evolves, one of the two is rolled at random.
@@ -39,6 +39,9 @@ Every stage (Baby, Kid, Teen, Adult) has two passive options. When the pet hatch
 | [Kangaroo](#kangaroo) | Normal, Fighting, Ground | Steadfast / Pouch Guard | Boxer / Outback | Big Leap / Tail Balance | Champion Boxer / Mob Boss |
 | [Eagle](#eagle) | Normal, Flying, Fighting | First Strike / Talon Grip | Thermal Rider / Dive Bomb | Eagle Eye / Sky Sovereign | Apex Talons / Storm Crown |
 | [Seal](#seal) | Normal, Water, Ice | Blubber / Flipper Flop | Ice Floe / Wave Rider | Beach Nap / Whisker Sense | Walrus Hide / Circus Star |
+| [Elephant](#elephant) | Normal, Ground, Water | Tough Hide / Mud Bath | Trunk Power / Water Hose | Never Forgets / Heavyweight | Matriarch / Titan |
+| [Tiger](#tiger) | Normal, Fire, Fighting | Stripes / Cub Claws | Tiger Blaze / Striped Fist | Ambush / Prowl | Man Eater / Striped Terror |
+| [Tilapia](#tilapia) | Normal, Water, Grass | Fried Tilapia / Crispy Skin | Nile Swimmer / Pond Weed | Schooling / Hardy Fish | Golden Fry / Mouth Brooder |
 
 ## Sprout
 
@@ -3054,5 +3057,294 @@ _Friendly and easygoing. You bring smiles wherever you go, even on cold days._
 | 52 | Glacier Crash | Ice | Special |
 | 57 | Undertow | Water | Special |
 | 57 | Absolute Zero | Ice | Special |
+
+</details>
+
+## Elephant
+
+_Wise and caring. You never forget a friend and always look out for the herd._
+
+- **Types:** Normal, Ground, Water
+- **Passive options by stage (one is rolled):**
+  - Baby: **Tough Hide** (Takes 12% less damage from every hit.) or **Mud Bath** (Takes 30% less damage from burn, leech seed and terrain. Takes 20% less damage from Fire moves.)
+  - Kid: **Trunk Power** (Ground moves deal 20% more damage. Close-range hits deal 8% more damage.) or **Water Hose** (Water moves deal 20% more damage. 6% more max HP.)
+  - Teen: **Never Forgets** (Takes 25% less damage from the type it was last hit by. Can't be weakened or disrupted.) or **Heavyweight** (15% more max HP. Can't be knocked back or pulled.)
+  - Adult: **Matriarch** (20% more max HP. Healing moves heal 30% more.) or **Titan** (Takes 15% less damage from every hit. Close-range hits deal 15% more damage.)
+- **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 156
+- **Starters:** Tackle, Mud Slap
+- **Unique options by stage (pick one):**
+  - Baby: Trunk Slap or Trunk Spray
+  - Kid: Tusk Gore or Mud Shower
+  - Teen: Stampede or Trumpet
+  - Adult: Mammoth Quake or Herd Guardian
+- **Off-type moves it can learn:** Seed Bomb, Razor Leaf, Avalanche, Bramble Snare
+- **Can never learn:** Zoomies, Quick Attack, Teleport, Pounce, Punch, Quick Jab, Mega Punch, Claw Swipe, Fury Swipes, Aqua Jet
+
+<details><summary>Learnset (69 moves)</summary>
+
+| Lv | Move | Type | Category |
+|---|---|---|---|
+| 1 | Tackle | Normal | Normal |
+| 1 | Mud Slap | Ground | Normal |
+| 2 | Guard | Normal | Normal |
+| 2 | Growl | Normal | Normal |
+| 3 | Bubble | Water | Normal |
+| 5 | Water Gun | Water | Normal |
+| 5 | Sand Attack | Ground | Normal |
+| 6 | Bite | Normal | Normal |
+| 7 | Rapid Spin | Normal | Normal |
+| 8 | Howl | Normal | Normal |
+| 8 | Withdraw | Water | Normal |
+| 8 | Rock Throw | Ground | Normal |
+| 11 | Razor Leaf | Grass | Normal |
+| 11 | Sand Tomb | Ground | Normal |
+| 12 | Rock Smash | Ground | Normal |
+| 13 | Distract | Normal | Normal |
+| 14 | Headbutt | Normal | Normal |
+| 14 | Aqua Tail | Water | Normal |
+| 14 | Stomp | Ground | Normal |
+| 15 | Glare | Normal | Normal |
+| 16 | Lock-On | Normal | Normal |
+| 16 | Mud Bomb | Ground | Normal |
+| 17 | Rain Dance | Water | Normal |
+| 17 | Stone Skin | Ground | Normal |
+| 18 | Counter | Normal | Normal |
+| 18 | Bramble Snare | Grass | Normal |
+| 19 | Switcheroo | Normal | Normal |
+| 20 | Heal | Normal | Normal |
+| 20 | Whirlpool | Water | Normal |
+| 20 | Bone Rush | Ground | Normal |
+| 21 | Cheer | Normal | Normal |
+| 21 | Ricochet | Ground | Normal |
+| 22 | Double-Edge | Normal | Normal |
+| 22 | Bubble Shield | Water | Normal |
+| 23 | Body Slam | Normal | Normal |
+| 24 | Brine | Water | Normal |
+| 24 | Seed Bomb | Grass | Normal |
+| 24 | Dig | Ground | Normal |
+| 25 | Harden | Normal | Normal |
+| 26 | Barrier | Normal | Normal |
+| 26 | Scald | Water | Normal |
+| 26 | Caltrops | Ground | Normal |
+| 28 | Double Kick | Normal | Normal |
+| 28 | Dive | Water | Normal |
+| 28 | Bulldoze | Ground | Normal |
+| 30 | Focus Energy | Normal | Normal |
+| 31 | Finishing Blow | Normal | Normal |
+| 32 | Water Jet | Water | Special |
+| 32 | Avalanche | Ice | Normal |
+| 32 | Rock Slam | Ground | Special |
+| 33 | Refresh | Normal | Normal |
+| 34 | Healing Rain | Water | Normal |
+| 35 | Battle Cry | Normal | Special |
+| 36 | Aqua Ring | Water | Normal |
+| 36 | Sandstorm | Ground | Normal |
+| 38 | Hyper Fang | Normal | Special |
+| 40 | Waterfall | Water | Normal |
+| 40 | Head Smash | Ground | Normal |
+| 42 | Second Wind | Normal | Normal |
+| 44 | Seismic Toss | Fighting | Special |
+| 45 | Giga Impact | Normal | Special |
+| 46 | Hydro Pump | Water | Special |
+| 46 | Earthquake | Ground | Special |
+| 50 | Last Stand | Normal | Special |
+| 52 | Hyper Beam | Normal | Special |
+| 52 | Hydro Cannon | Water | Special |
+| 52 | Fissure | Ground | Special |
+| 57 | Undertow | Water | Special |
+| 57 | Stone Edge | Ground | Special |
+
+</details>
+
+## Tiger
+
+_Fierce and confident. You stalk your goals and pounce when the time is right._
+
+- **Types:** Normal, Fire, Fighting
+- **Passive options by stage (one is rolled):**
+  - Baby: **Stripes** (8% chance to dodge an attack completely. Deals 10% more damage to targets above 70% HP.) or **Cub Claws** (Close-range hits deal 12% more damage.)
+  - Kid: **Tiger Blaze** (Fire moves deal 20% more damage. 5% chance to land a critical hit for 1.5x damage.) or **Striped Fist** (Fighting moves deal 20% more damage. Moves 5% faster.)
+  - Teen: **Ambush** (Deals 30% more damage to targets above 70% HP.) or **Prowl** (Moves 12% faster. 5% chance to dodge an attack completely.)
+  - Adult: **Man Eater** (Deals 30% more damage to targets below half HP. 10% chance to land a critical hit for 1.5x damage.) or **Striped Terror** (Heals for 12% of all damage dealt. Deals up to 20% more damage the lower its HP.)
+- **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 130
+- **Starters:** Tackle, Ember
+- **Unique options by stage (pick one):**
+  - Baby: Stripe Slash or Tiger Growl
+  - Kid: Tiger Pounce or Stalk
+  - Teen: Blazing Claw or Predator Eye
+  - Adult: Savage Maul or Tiger King
+- **Off-type moves it can learn:** Thunder Fang, Ice Fang, Dig, Bounce
+- **Can never learn:** Howl, Teleport, Harden, Barrier
+
+<details><summary>Learnset (73 moves)</summary>
+
+| Lv | Move | Type | Category |
+|---|---|---|---|
+| 1 | Tackle | Normal | Normal |
+| 1 | Ember | Fire | Normal |
+| 2 | Guard | Normal | Normal |
+| 2 | Growl | Normal | Normal |
+| 3 | Karate Chop | Fighting | Normal |
+| 3 | Punch | Normal | Normal |
+| 4 | Claw Swipe | Normal | Normal |
+| 4 | Comet Punch | Fighting | Normal |
+| 5 | Quick Attack | Normal | Normal |
+| 5 | Smokescreen | Fire | Normal |
+| 5 | Ice Fang | Ice | Normal |
+| 6 | Bite | Normal | Normal |
+| 6 | Low Kick | Fighting | Normal |
+| 7 | Rapid Spin | Normal | Normal |
+| 8 | Fire Fang | Fire | Normal |
+| 8 | Thunder Fang | Electric | Normal |
+| 9 | Fury Swipes | Normal | Normal |
+| 10 | Bulk Up | Fighting | Normal |
+| 11 | Pounce | Normal | Normal |
+| 11 | Flame Dash | Fire | Normal |
+| 12 | Quick Jab | Normal | Normal |
+| 12 | Rock Smash | Ground | Normal |
+| 12 | Vacuum Wave | Fighting | Normal |
+| 13 | Distract | Normal | Normal |
+| 14 | Headbutt | Normal | Normal |
+| 14 | Incinerate | Fire | Normal |
+| 15 | Glare | Normal | Normal |
+| 15 | Brick Break | Fighting | Normal |
+| 16 | Lock-On | Normal | Normal |
+| 17 | Zoomies | Normal | Normal |
+| 17 | Heat Up | Fire | Normal |
+| 18 | Counter | Normal | Normal |
+| 18 | Thunder Punch | Electric | Normal |
+| 18 | Fire Punch | Fire | Normal |
+| 19 | Switcheroo | Normal | Normal |
+| 20 | Heal | Normal | Normal |
+| 20 | Aqua Fist | Water | Normal |
+| 20 | Fire Spin | Fire | Normal |
+| 20 | Ice Punch | Ice | Normal |
+| 21 | Cheer | Normal | Normal |
+| 22 | Double-Edge | Normal | Normal |
+| 22 | Drain Punch | Fighting | Normal |
+| 23 | Body Slam | Normal | Normal |
+| 24 | Sucker Punch | Normal | Normal |
+| 24 | Flame Wheel | Fire | Normal |
+| 24 | Dig | Ground | Normal |
+| 26 | Sky Uppercut | Flying | Normal |
+| 26 | Scorch Mark | Fire | Normal |
+| 28 | Double Kick | Normal | Normal |
+| 28 | Will-o-Wisp | Fire | Normal |
+| 30 | Focus Energy | Normal | Normal |
+| 30 | Cross Chop | Fighting | Normal |
+| 30 | Bounce | Flying | Normal |
+| 31 | Finishing Blow | Normal | Normal |
+| 32 | Fire Breath | Fire | Special |
+| 33 | Refresh | Normal | Normal |
+| 35 | Battle Cry | Normal | Special |
+| 36 | Fireball | Fire | Normal |
+| 38 | Hyper Fang | Normal | Special |
+| 38 | Dynamic Punch | Fighting | Special |
+| 40 | Flare Blitz | Fire | Normal |
+| 42 | Second Wind | Normal | Normal |
+| 42 | Heat Wave | Fire | Special |
+| 44 | Seismic Toss | Fighting | Special |
+| 45 | Giga Impact | Normal | Special |
+| 46 | Magma Burst | Fire | Special |
+| 48 | Close Combat | Fighting | Special |
+| 50 | Last Stand | Normal | Special |
+| 52 | Hyper Beam | Normal | Special |
+| 52 | Overheat | Fire | Special |
+| 55 | Mega Punch | Normal | Special |
+| 56 | Focus Blast | Fighting | Special |
+| 57 | Blast Flame | Fire | Special |
+
+</details>
+
+## Tilapia
+
+_Chill and resilient. You go with the flow, and even a bad day can't keep you down._
+
+- **Types:** Normal, Water, Grass
+- **Passive options by stage (one is rolled):**
+  - Baby: **Fried Tilapia** (When knocked out, it comes back as a Fried Tilapia with 30 HP that loses 5 HP every second.) or **Crispy Skin** (When knocked out, it comes back as a Fried Tilapia with 30 HP that loses 5 HP every second. Takes 5% less damage from every hit.)
+  - Kid: **Nile Swimmer** (When knocked out, it comes back as a Fried Tilapia with 30 HP that loses 5 HP every second. Water moves deal 20% more damage.) or **Pond Weed** (When knocked out, it comes back as a Fried Tilapia with 30 HP that loses 5 HP every second. Grass moves deal 20% more damage.)
+  - Teen: **Schooling** (When knocked out, it comes back as a Fried Tilapia with 30 HP that loses 5 HP every second. 8% chance to dodge an attack completely.) or **Hardy Fish** (When knocked out, it comes back as a Fried Tilapia with 30 HP that loses 5 HP every second. Takes 40% less damage from burn, leech seed and terrain.)
+  - Adult: **Golden Fry** (When knocked out, it comes back as a Fried Tilapia with 30 HP that loses 5 HP every second. Regenerates 0.5 HP every second.) or **Mouth Brooder** (When knocked out, it comes back as a Fried Tilapia with 30 HP that loses 5 HP every second. Healing moves heal 30% more. 10% more max HP.)
+- **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 130
+- **Starters:** Tackle, Bubble
+- **Unique options by stage (pick one):**
+  - Baby: Fin Flick or Bubble Nest
+  - Kid: School Rush or Mouth Brood
+  - Teen: Algae Bloom or Scale Shed
+  - Adult: Nile Flood or Fish Fry
+- **Off-type moves it can learn:** Mud Slap, Icy Wind, Thunder Wave
+- **Can never learn:** Punch, Mega Punch, Quick Jab, Claw Swipe, Fury Swipes, Howl, Double Kick, Pounce, Body Slam
+
+<details><summary>Learnset (66 moves)</summary>
+
+| Lv | Move | Type | Category |
+|---|---|---|---|
+| 1 | Tackle | Normal | Normal |
+| 1 | Bubble | Water | Normal |
+| 2 | Guard | Normal | Normal |
+| 2 | Growl | Normal | Normal |
+| 3 | Leaf Toss | Grass | Normal |
+| 4 | Mud Slap | Ground | Normal |
+| 5 | Quick Attack | Normal | Normal |
+| 5 | Water Gun | Water | Normal |
+| 5 | Absorb | Grass | Normal |
+| 5 | Thunder Wave | Electric | Normal |
+| 6 | Bite | Normal | Normal |
+| 7 | Rapid Spin | Normal | Normal |
+| 8 | Withdraw | Water | Normal |
+| 8 | Leech Seed | Grass | Normal |
+| 11 | Aqua Jet | Water | Normal |
+| 11 | Razor Leaf | Grass | Normal |
+| 11 | Icy Wind | Ice | Normal |
+| 13 | Distract | Normal | Normal |
+| 14 | Headbutt | Normal | Normal |
+| 14 | Aqua Tail | Water | Normal |
+| 14 | Stun Spore | Grass | Normal |
+| 15 | Glare | Normal | Normal |
+| 16 | Lock-On | Normal | Normal |
+| 17 | Zoomies | Normal | Normal |
+| 17 | Rain Dance | Water | Normal |
+| 17 | Growth | Grass | Normal |
+| 18 | Counter | Normal | Normal |
+| 18 | Spore Cloud | Grass | Normal |
+| 18 | Bramble Snare | Grass | Normal |
+| 19 | Switcheroo | Normal | Normal |
+| 20 | Heal | Normal | Normal |
+| 20 | Whirlpool | Water | Normal |
+| 20 | Bullet Seed | Grass | Normal |
+| 21 | Cheer | Normal | Normal |
+| 22 | Double-Edge | Normal | Normal |
+| 22 | Bubble Shield | Water | Normal |
+| 24 | Brine | Water | Normal |
+| 24 | Seed Bomb | Grass | Normal |
+| 25 | Harden | Normal | Normal |
+| 26 | Barrier | Normal | Normal |
+| 26 | Scald | Water | Normal |
+| 27 | Teleport | Normal | Normal |
+| 28 | Dive | Water | Normal |
+| 28 | Vine Whip | Grass | Normal |
+| 30 | Focus Energy | Normal | Normal |
+| 31 | Finishing Blow | Normal | Normal |
+| 32 | Water Jet | Water | Special |
+| 32 | Synthesis | Grass | Normal |
+| 33 | Refresh | Normal | Normal |
+| 34 | Healing Rain | Water | Normal |
+| 35 | Battle Cry | Normal | Special |
+| 36 | Aqua Ring | Water | Normal |
+| 36 | Giga Drain | Grass | Normal |
+| 38 | Hyper Fang | Normal | Special |
+| 40 | Waterfall | Water | Normal |
+| 40 | Sleep Powder | Grass | Normal |
+| 42 | Second Wind | Normal | Normal |
+| 45 | Giga Impact | Normal | Special |
+| 46 | Hydro Pump | Water | Special |
+| 46 | Petal Storm | Grass | Special |
+| 50 | Last Stand | Normal | Special |
+| 52 | Hyper Beam | Normal | Special |
+| 52 | Hydro Cannon | Water | Special |
+| 52 | Frenzy Plant | Grass | Special |
+| 57 | Undertow | Water | Special |
+| 57 | Leaf Blade | Grass | Special |
 
 </details>

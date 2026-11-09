@@ -523,6 +523,33 @@ enum class Move(
     SEAL_SPIN("Seal Spin", U, Element.WATER, 0, 28, 0.30f, 15_000, 300, 250, Effect.KNOCKBACK),
     BLUBBER_UP("Blubber Up", U, Element.ICE, 0, 0, 0.00f, 15_000, 250, 200, Effect.HARDEN),
     POLAR_SPLASH("Polar Splash", U, Element.WATER, 0, 0, 0.60f, 15_000, 400, 200, Effect.FREEZE),
+    // Elephant
+    TRUNK_SLAP("Trunk Slap", U, Element.NORMAL, 0, 16, 0.24f, 15_000, 250, 250, Effect.KNOCKBACK),
+    TRUNK_SPRAY("Trunk Spray", U, Element.WATER, 0, 0, 0.50f, 15_000, 300, 200, Effect.SLOW),
+    TUSK_GORE("Tusk Gore", U, Element.GROUND, 0, 24, 0.28f, 15_000, 350, 250, Effect.STUN, alsoLunges = true),
+    MUD_SHOWER("Mud Shower", U, Element.GROUND, 0, 0, 0.00f, 15_000, 300, 200, Effect.CLEANSE),
+    STAMPEDE("Stampede", U, Element.GROUND, 0, 28, 0.35f, 15_000, 400, 250, Effect.KNOCKBACK, alsoLunges = true),
+    TRUMPET("Trumpet", U, Element.NORMAL, 0, 0, 0.55f, 15_000, 300, 200, Effect.DISRUPT),
+    MAMMOTH_QUAKE("Mammoth Quake", U, Element.GROUND, 0, 34, 0.45f, 15_000, 550, 300, Effect.STUN, element2 = Element.ICE),
+    HERD_GUARDIAN("Herd Guardian", U, Element.GROUND, 0, 0, 0.00f, 15_000, 400, 200, Effect.CITADEL),
+    // Tiger
+    STRIPE_SLASH("Stripe Slash", U, Element.FIGHTING, 0, 10, 0.20f, 15_000, 200, 200, Effect.TWIN_SLASH),
+    TIGER_GROWL("Tiger Growl", U, Element.NORMAL, 0, 0, 0.50f, 15_000, 250, 200, Effect.WEAKEN),
+    TIGER_POUNCE("Tiger Pounce", U, Element.FIGHTING, 0, 24, 0.40f, 15_000, 300, 250, Effect.LUNGE),
+    STALK("Stalk", U, Element.NORMAL, 0, 0, 0.00f, 15_000, 200, 200, Effect.HASTE),
+    BLAZING_CLAW("Blazing Claw", U, Element.FIRE, 0, 28, 0.24f, 15_000, 350, 250, Effect.BURN, alsoLunges = true, element2 = Element.FIGHTING),
+    PREDATOR_EYE("Predator Eye", U, Element.NORMAL, 0, 0, 0.60f, 15_000, 250, 200, Effect.MARK),
+    SAVAGE_MAUL("Savage Maul", U, Element.FIGHTING, 0, 34, 0.25f, 15_000, 450, 300, Effect.EXECUTE, alsoLunges = true, element2 = Element.FIRE),
+    TIGER_KING("Tiger King", U, Element.FIGHTING, 0, 0, 0.00f, 15_000, 400, 200, Effect.ALPHA),
+    // Tilapia
+    FIN_FLICK("Fin Flick", U, Element.WATER, 0, 16, 0.24f, 15_000, 250, 250, Effect.SLOW),
+    BUBBLE_NEST("Bubble Nest", U, Element.WATER, 0, 0, 0.00f, 15_000, 250, 200, Effect.SHIELD),
+    SCHOOL_RUSH("School Rush", U, Element.WATER, 0, 9, 0.30f, 15_000, 300, 250, Effect.MULTI),
+    MOUTH_BROOD("Mouth Brood", U, Element.WATER, 0, 0, 0.00f, 15_000, 300, 200, Effect.FORTRESS),
+    ALGAE_BLOOM("Algae Bloom", U, Element.GRASS, 0, 26, 0.55f, 15_000, 450, 250, Effect.LEECH),
+    SCALE_SHED("Scale Shed", U, Element.NORMAL, 0, 0, 0.00f, 15_000, 250, 200, Effect.CLEANSE),
+    NILE_FLOOD("Nile Flood", U, Element.WATER, 0, 34, 0.65f, 15_000, 600, 300, Effect.KNOCKBACK, element2 = Element.GRASS),
+    FISH_FRY("Fish Fry", U, Element.FIRE, 0, 30, 0.45f, 15_000, 450, 250, Effect.BURN),
     ;
 
     /** Buffs target the user; everything else (including 0-damage debuffs) targets the opponent. */
@@ -602,6 +629,9 @@ object SpeciesKit {
         Species.KANGAROO -> setOf(Element.FIGHTING, Element.GROUND)
         Species.EAGLE -> setOf(Element.FLYING, Element.FIGHTING)
         Species.SEAL -> setOf(Element.WATER, Element.ICE)
+        Species.ELEPHANT -> setOf(Element.GROUND, Element.WATER)
+        Species.TIGER -> setOf(Element.FIRE, Element.FIGHTING)
+        Species.TILAPIA -> setOf(Element.WATER, Element.GRASS)
         Species.LIZARD -> setOf(Element.FIRE, Element.GROUND)
         Species.RACCOON -> setOf(Element.ELECTRIC, Element.ICE)
         Species.HAMSTER -> setOf(Element.ELECTRIC, Element.GRASS)
@@ -636,6 +666,9 @@ object SpeciesKit {
         Species.KANGAROO -> setOf(Move.BOUNCE, Move.AERIAL_ACE, Move.WATER_GUN)
         Species.EAGLE -> setOf(Move.ROCK_THROW, Move.SHOCK_WAVE, Move.ICY_WIND)
         Species.SEAL -> setOf(Move.MUD_SLAP, Move.SHOCK_WAVE, Move.BULLDOZE)
+        Species.ELEPHANT -> setOf(Move.SEED_BOMB, Move.RAZOR_LEAF, Move.AVALANCHE, Move.BRAMBLE_SNARE)
+        Species.TIGER -> setOf(Move.THUNDER_FANG, Move.ICE_FANG, Move.DIG, Move.BOUNCE)
+        Species.TILAPIA -> setOf(Move.MUD_SLAP, Move.ICY_WIND, Move.THUNDER_WAVE)
         Species.LIZARD -> setOf(Move.THUNDER_FANG, Move.LEECH_SEED, Move.WATER_GUN, Move.AERIAL_ACE)
         Species.RACCOON -> setOf(Move.DIG, Move.MUD_SLAP, Move.FIRE_FANG, Move.SMOKESCREEN, Move.BOUNCE)
         Species.HAMSTER -> setOf(Move.DIG, Move.MUD_SLAP, Move.SAND_ATTACK, Move.ROCK_THROW)
@@ -672,6 +705,11 @@ object SpeciesKit {
         Species.KANGAROO -> setOf(Move.TELEPORT, Move.HOWL, Move.BITE, Move.HYPER_FANG)
         Species.EAGLE -> setOf(Move.PUNCH, Move.MEGA_PUNCH, Move.QUICK_JAB, Move.BODY_SLAM, Move.ZOOMIES, Move.HOWL)
         Species.SEAL -> setOf(Move.PUNCH, Move.MEGA_PUNCH, Move.QUICK_JAB, Move.DOUBLE_KICK, Move.POUNCE, Move.CLAW, Move.FURY_SWIPES)
+        Species.ELEPHANT -> setOf(Move.ZOOMIES, Move.QUICK_ATTACK, Move.TELEPORT, Move.POUNCE, Move.PUNCH, Move.QUICK_JAB,
+            Move.MEGA_PUNCH, Move.CLAW, Move.FURY_SWIPES, Move.AQUA_JET)
+        Species.TIGER -> setOf(Move.HOWL, Move.TELEPORT, Move.HARDEN, Move.BARRIER)
+        Species.TILAPIA -> setOf(Move.PUNCH, Move.MEGA_PUNCH, Move.QUICK_JAB, Move.CLAW, Move.FURY_SWIPES, Move.HOWL,
+            Move.DOUBLE_KICK, Move.POUNCE, Move.BODY_SLAM)
         Species.LIZARD -> setOf(Move.PUNCH, Move.MEGA_PUNCH, Move.HOWL, Move.BODY_SLAM, Move.QUICK_JAB)
         Species.RACCOON -> setOf(Move.HOWL, Move.BODY_SLAM, Move.GIGA_IMPACT, Move.ABSOLUTE_ZERO)
         Species.HAMSTER -> setOf(Move.HOWL, Move.BODY_SLAM, Move.GIGA_IMPACT, Move.MEGA_PUNCH, Move.HEAD_SMASH)
@@ -809,6 +847,18 @@ object SpeciesKit {
         Species.BEAVER -> listOf(
             Move.LOG_TOSS to Move.GNAW, Move.TIMBER_TRAP to Move.BEAVER_TAIL_SLAP,
             Move.LODGE to Move.FLOOD_GATE, Move.GREAT_DAM to Move.TIMBER_FALL,
+        )
+        Species.ELEPHANT -> listOf(
+            Move.TRUNK_SLAP to Move.TRUNK_SPRAY, Move.TUSK_GORE to Move.MUD_SHOWER,
+            Move.STAMPEDE to Move.TRUMPET, Move.MAMMOTH_QUAKE to Move.HERD_GUARDIAN,
+        )
+        Species.TIGER -> listOf(
+            Move.STRIPE_SLASH to Move.TIGER_GROWL, Move.TIGER_POUNCE to Move.STALK,
+            Move.BLAZING_CLAW to Move.PREDATOR_EYE, Move.SAVAGE_MAUL to Move.TIGER_KING,
+        )
+        Species.TILAPIA -> listOf(
+            Move.FIN_FLICK to Move.BUBBLE_NEST, Move.SCHOOL_RUSH to Move.MOUTH_BROOD,
+            Move.ALGAE_BLOOM to Move.SCALE_SHED, Move.NILE_FLOOD to Move.FISH_FRY,
         )
     }
 

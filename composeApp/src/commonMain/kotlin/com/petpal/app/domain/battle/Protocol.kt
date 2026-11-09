@@ -6,7 +6,7 @@ import kotlin.math.roundToInt
 
 /** Line-based wire format shared by the Bluetooth and Wi-Fi links. */
 object Protocol {
-    const val VERSION = 18
+    const val VERSION = 19
 
     sealed interface Msg
     data class Hello(val version: Int, val info: FighterInfo) : Msg
@@ -19,18 +19,32 @@ object Protocol {
         val you: Int, val infos: List<FighterInfo>, val terrain: Terrain = Terrain.ARENA,
         /** Slots played by people (host is 0); the rest are CPUs. */
         val humans: Set<Int> = setOf(0, you),
+        /** Team id per slot (free-for-all: each slot its own). */
+        val teams: List<Int> = BattleEngine.defaultTeams(infos.size),
     ) : Msg
+    /** Host -> guest while waiting in a room: everyone in it, and which entry is the guest. */
+    data class Lobby(val you: Int, val ffa: Boolean, val players: List<RoomEntry>) : Msg
+    /** Guest -> host: put me on the other team. */
+    data object SwitchTeam : Msg
+
+    data class RoomEntry(val name: String, val level: Int, val team: Int)
 
     fun hello(info: FighterInfo) = "H|$VERSION|${clean(info.name)}|${info.species.name}|${info.stage.name}|${info.level}|" +
         info.moves.joinToString(",") { it.name } + "|${info.stagePassive?.name.orEmpty()}"
     fun command(m: Move) = "C|${m.ordinal}"
     const val EVADE = "E"
+    const val SWITCH_TEAM = "W"
+    fun lobby(you: Int, ffa: Boolean, players: List<RoomEntry>) = "L|$you|${if (ffa) 1 else 0}|" +
+        players.joinToString("#") { "${clean(it.name).replace(Regex("[#~]"), " ")}~${it.level}~${it.team}" }
     fun event(text: String) = "V|${clean(text)}"
-    fun setup(you: Int, infos: List<FighterInfo>, terrain: Terrain = Terrain.ARENA, humans: Set<Int> = setOf(0, you)) =
+    fun setup(
+        you: Int, infos: List<FighterInfo>, terrain: Terrain = Terrain.ARENA, humans: Set<Int> = setOf(0, you),
+        teams: List<Int> = BattleEngine.defaultTeams(infos.size),
+    ) =
         "T|$you|" + infos.joinToString("#") {
             listOf(clean(it.name).replace(Regex("[#~]"), " "), it.species.name, it.stage.name, it.level,
                 it.moves.joinToString(",") { m -> m.name }, it.stagePassive?.name.orEmpty()).joinToString("~")
-        } + "|${terrain.name}|${humans.sorted().joinToString(",")}"
+        } + "|${terrain.name}|${humans.sorted().joinToString(",")}|${teams.joinToString(",")}"
 
     fun state(s: BattleSnapshot) = buildString {
         append("S|${s.timeLeftMs},${if (s.ended) 1 else 0},${s.winner},${s.smokes.size}")
@@ -67,16 +81,24 @@ object Protocol {
             )
             "C" -> Command(Move.entries[p[1].toInt()])
             "E" -> EvadeCmd
+            "W" -> SwitchTeam
+            "L" -> Lobby(p[1].toInt(), p[2] == "1", p[3].split('#').filter { it.isNotEmpty() }.map { e ->
+                val v = e.split('~')
+                RoomEntry(v[0], v[1].toInt(), v[2].toInt())
+            })
             "V" -> Event(p[1])
             "T" -> {
                 val you = p[1].toInt()
-                Setup(you, p[2].split('#').map { fs ->
+                val infos = p[2].split('#').map { fs ->
                     val v = fs.split('~')
                     FighterInfo(v[0], Species.valueOf(v[1]), Stage.valueOf(v[2]), v[3].toInt().coerceIn(1, 100),
                         v.getOrNull(4).orEmpty().split(',').mapNotNull { n -> Move.entries.firstOrNull { it.name == n } },
                         passiveOf(v.getOrNull(5)))
-                }, Terrain.entries.firstOrNull { it.name == p.getOrNull(3) } ?: Terrain.ARENA,
-                    p.getOrNull(4)?.split(',')?.mapNotNull { it.toIntOrNull() }?.toSet()?.plus(setOf(0, you)) ?: setOf(0, you))
+                }
+                Setup(you, infos, Terrain.entries.firstOrNull { it.name == p.getOrNull(3) } ?: Terrain.ARENA,
+                    p.getOrNull(4)?.split(',')?.mapNotNull { it.toIntOrNull() }?.toSet()?.plus(setOf(0, you)) ?: setOf(0, you),
+                    p.getOrNull(5)?.split(',')?.mapNotNull { it.toIntOrNull() }?.takeIf { it.size == infos.size }
+                        ?: BattleEngine.defaultTeams(infos.size))
             }
             "S" -> {
                 val h = p[1].split(',')

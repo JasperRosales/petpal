@@ -76,6 +76,7 @@ object Status {
     const val EVADE = 8192
     const val SHIELD = 16384
     const val MARKED = 32768
+    const val FRIED = 65536
 }
 
 /** Snares laid by TRAP moves: arm after a moment, then root and hurt the first enemy to step on one. */
@@ -169,7 +170,18 @@ class BattleEngine(
     /** Move previews: pets hold still, any move is allowed and the energy bar starts full. */
     private val demo: Boolean = false,
     val terrain: Terrain = Terrain.ARENA,
+    /** Team id per fighter. Default: first half vs second half. Free-for-all: everyone on their own team. */
+    teamIds: List<Int> = defaultTeams(infos.size),
 ) {
+    companion object {
+        fun defaultTeams(n: Int) = List(n) { it * 2 / n }
+        fun freeForAll(n: Int) = List(n) { it }
+    }
+
+    private val teams = IntArray(infos.size) { teamIds[it] }
+    /** Team id of fighter [i]. */
+    fun teamOf(i: Int) = teams[i]
+
     private inner class Fighter(val info: FighterInfo, var x: Float, var y: Float) {
         val maxHp = BattleStats.maxHp(info)
         var hp = maxHp.toFloat()
@@ -209,6 +221,7 @@ class BattleEngine(
         var snacked = false
         var pendingHit = false
         var lifeSaved = false
+        var fried = false
         var facing = 1
         var aimX = x; var aimY = y
         var originX = x; var originY = y
@@ -223,15 +236,20 @@ class BattleEngine(
         }
     }
 
-    /** 2 fighters = 1v1; 4 = duo vs duo (0,1 vs 2,3). */
-    fun teamOf(i: Int) = i * 2 / infos.size
-    private val f = infos.mapIndexed { i, info ->
-        val perTeam = infos.size / 2
-        val slot = i % perTeam
-        val y = if (perTeam == 1) ARENA_H / 2 else ARENA_H * (0.3f + 0.4f * slot)
-        Fighter(info, if (teamOf(i) == 0) 0.25f else 0.75f, y)
+    private val f = run {
+        val ids = teams.distinct()
+        infos.mapIndexed { i, info ->
+            if (ids.size == 2) { // two sides facing each other, teammates spread top to bottom
+                val mates = infos.indices.filter { teams[it] == teams[i] }
+                val k = mates.indexOf(i)
+                val y = if (mates.size == 1) ARENA_H / 2 else ARENA_H * (0.3f + 0.4f * k / (mates.size - 1))
+                Fighter(info, if (teams[i] == ids[0]) 0.25f else 0.75f, y)
+            } else { // free-for-all: a ring around the middle, starting on the left
+                val a = kotlin.math.PI + 2 * kotlin.math.PI * i / infos.size
+                Fighter(info, 0.5f + 0.32f * kotlin.math.cos(a).toFloat(), ARENA_H / 2 + 0.42f * kotlin.math.sin(a).toFloat())
+            }
+        }
     }
-    private val teams = IntArray(f.size) { teamOf(it) }
     private class Cloud(val team: Int, val x: Float, val y: Float, val at: Long)
     private val clouds = mutableListOf<Cloud>()
     private class Snare(val owner: Int, val move: Move, val x: Float, val y: Float, val at: Long)
@@ -400,6 +418,7 @@ class BattleEngine(
                 if (now - me.lastHitAt >= 4000) regen += me.passive[Trait.REGEN_IDLE]
                 me.hp = minOf(me.maxHp.toFloat(), me.hp + regen * dt)
             }
+            if (me.fried) me.hp = (minOf(me.hp, Fried.HP) - Fried.DECAY_PER_SEC * dt).coerceAtLeast(0f)
             if (now >= me.shieldUntil) me.shield = 0f
             move(me, opp, now, dt)
         }
@@ -452,19 +471,24 @@ class BattleEngine(
             f[it].action = null; f[it].projectile = null; f[it].pendingHit = false
             if (f.size > 2) events += "${f[it].info.name} is knocked out!"
         }
-        val standing = (0..1).map { t -> f.indices.any { teams[it] == t && alive(it) } }
-        if (!standing[0] || !standing[1]) {
+        val standing = f.indices.filter { alive(it) }.map { teams[it] }.toSet()
+        if (standing.size <= 1) {
             ended = true
-            winner = when { standing[0] -> 0; standing[1] -> 1; else -> -1 }
+            winner = standing.firstOrNull() ?: -1
         } else if (now >= BATTLE_MS) {
             ended = true
-            val p = (0..1).map { t -> f.indices.filter { teams[it] == t }.sumOf { hpFraction(it).toDouble() } }
-            winner = when { p[0] > p[1] -> 0; p[1] > p[0] -> 1; else -> -1 }
+            // Average HP left per team (teams can be uneven)
+            val p = teams.distinct().associateWith { t ->
+                f.indices.filter { teams[it] == t }.map { hpFraction(it).toDouble() }.average()
+            }
+            val best = p.values.max()
+            winner = p.filterValues { it == best }.keys.singleOrNull() ?: -1
         }
         if (ended) events += when {
             winner < 0 -> "Time! It's a draw"
-            f.size == 2 -> "${f[winner].info.name} wins!"
-            else -> f.indices.filter { teams[it] == winner }.joinToString(" & ") { f[it].info.name } + " win!"
+            else -> f.indices.filter { teams[it] == winner }.let { w ->
+                if (w.size == 1) "${f[w[0]].info.name} wins!" else w.joinToString(" & ") { f[it].info.name } + " win!"
+            }
         }
         return events
     }
@@ -809,6 +833,12 @@ class BattleEngine(
             who.hp = 1f
             events += "${who.info.name} hangs on with ${who.passive.label}!"
         }
+        if (who.hp <= 0f && who.passive.has(Trait.FRIED) && !who.fried) {
+            who.fried = true
+            who.hp = Fried.HP
+            who.burnUntil = 0; who.leechUntil = 0
+            events += "${who.info.name} is now a Fried Tilapia!"
+        }
         who.hp = who.hp.coerceAtLeast(0f)
         if (who.hp > 0f && who.passive.has(Trait.SNACK) && !who.snacked && who.hp < who.maxHp * 0.4f) {
             who.snacked = true
@@ -850,6 +880,7 @@ class BattleEngine(
             if (now < me.evadeUntil) status = status or Status.EVADE
             if (me.shield > 0f && now < me.shieldUntil) status = status or Status.SHIELD
             if (now < me.markUntil) status = status or Status.MARKED
+            if (me.fried) status = status or Status.FRIED
             FighterSnap(
                 x = me.x, y = me.y,
                 hp = kotlin.math.ceil(me.hp).toInt(), maxHp = me.maxHp,

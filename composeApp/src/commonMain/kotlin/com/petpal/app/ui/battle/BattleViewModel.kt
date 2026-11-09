@@ -15,14 +15,37 @@ import kotlin.random.Random
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.TimeSource
 
-enum class BattleScreenMode { LOBBY, HOSTING, SEARCHING, CONNECTING, FIGHT }
+enum class BattleScreenMode { LOBBY, HOSTING, SEARCHING, CONNECTING, ROOM, FIGHT }
+
+/** Most people in one room (host included). */
+const val MAX_PLAYERS = 6
 
 /**
  * SOLO = 1v1. DUO_RIVAL = you + CPU vs friend + CPU. DUO_PARTNER = you + friend vs 2 CPUs.
- * QUAD = four players: you + the first friend to join vs the next two.
+ * TEAMS / FFA: a room of up to [MAX_PLAYERS]; players pick teams (or it's everyone for themselves) and the host starts.
  */
 enum class BattleFormat(val label: String, val guests: Int = 1) {
-    SOLO("1v1"), DUO_RIVAL("Duo: friend as rival"), DUO_PARTNER("Duo: friend as partner"), QUAD("2v2: 4 players", guests = 3),
+    SOLO("1v1"), DUO_RIVAL("Duo: friend as rival"), DUO_PARTNER("Duo: friend as partner"),
+    TEAMS("Team battle", guests = MAX_PLAYERS - 1), FFA("Free-for-all", guests = MAX_PLAYERS - 1);
+
+    val isRoom get() = this == TEAMS || this == FFA
+}
+
+/** Waiting room before a team or free-for-all match. [you] = your entry in [players]. */
+data class RoomUi(
+    val ffa: Boolean,
+    val players: List<Protocol.RoomEntry>,
+    val you: Int,
+    val host: Boolean,
+    val canStart: Boolean,
+)
+
+private sealed interface RoomEv {
+    class Joined(val c: BattleConnection, val info: FighterInfo) : RoomEv
+    class Left(val c: BattleConnection) : RoomEv
+    class Switch(val c: BattleConnection) : RoomEv
+    class HostSwitch(val index: Int) : RoomEv
+    data object Start : RoomEv
 }
 
 data class FightState(
@@ -34,6 +57,8 @@ data class FightState(
     val practice: Boolean = false,
     val result: String? = null, // set when over
     val terrain: Terrain = Terrain.ARENA,
+    /** Team id per fighter. */
+    val teams: List<Int> = BattleEngine.defaultTeams(fighters.size),
 )
 
 data class BattleUiState(
@@ -43,6 +68,7 @@ data class BattleUiState(
     val message: String? = null,
     val fight: FightState? = null,
     val format: BattleFormat = BattleFormat.SOLO,
+    val room: RoomUi? = null,
 )
 
 class BattleViewModel(
@@ -61,6 +87,10 @@ class BattleViewModel(
     private fun nextTerrain() = Terrain.rotation(mapIndex++)
     /** Re-runs the last kind of match (same CPU format, same link, same host). */
     private var again: (() -> Unit)? = null
+    /** Host side of an open room. */
+    private var roomEvents: Channel<RoomEv>? = null
+    /** Guest side of an open room. */
+    private var roomConn: BattleConnection? = null
 
     fun isAvailable(kind: LinkKind) = links[kind].isAvailable
 
@@ -87,13 +117,19 @@ class BattleViewModel(
         }
     }
 
-    /** 1v1 vs a CPU, or (any duo format) you + CPU partner vs 2 CPUs. */
+    /** 1v1 vs a CPU, duo (you + CPU vs 2 CPUs), 3v3 with CPU partners, or a 4-pet free-for-all. */
     fun practice(): Unit = start {
         again = ::practice
         val me = myInfo()
-        val infos = if (format == BattleFormat.SOLO) listOf(me, CpuOpponent.random(me))
-        else listOf(me, CpuOpponent.random(me, prefix = "CPU"), CpuOpponent.random(me), CpuOpponent.random(me))
-        runHost(infos, remotes = emptyMap(), terrain = nextTerrain())
+        val ally = { CpuOpponent.random(me, prefix = "CPU") }
+        val foe = { CpuOpponent.random(me) }
+        val (infos, teams) = when (format) {
+            BattleFormat.SOLO -> listOf(me, foe()).let { it to BattleEngine.defaultTeams(2) }
+            BattleFormat.FFA -> listOf(me, foe(), foe(), foe()).let { it to BattleEngine.freeForAll(4) }
+            BattleFormat.TEAMS -> listOf(me, ally(), ally(), foe(), foe(), foe()).let { it to BattleEngine.defaultTeams(6) }
+            else -> listOf(me, ally(), foe(), foe()).let { it to BattleEngine.defaultTeams(4) }
+        }
+        runHost(infos, remotes = emptyMap(), terrain = nextTerrain(), teams = teams)
     }
 
     /** "Battle again" on the result screen. Linked matches: the host re-hosts and the guest reconnects. */
@@ -102,13 +138,27 @@ class BattleViewModel(
     fun host(kind: LinkKind): Unit = start {
         again = { host(kind) }
         val fmt = format
+        if (fmt.isRoom) {
+            _state.value = BattleUiState(mode = BattleScreenMode.ROOM, link = kind, format = fmt)
+            return@start hostRoom(kind, fmt == BattleFormat.FFA)
+        }
         _state.value = BattleUiState(mode = BattleScreenMode.HOSTING, link = kind, format = fmt)
         val me = myInfo()
         val joined = mutableListOf<Pair<BattleConnection, FighterInfo>>()
         if (fmt.guests > 1) _state.update { it.copy(message = "0 of ${fmt.guests} friends joined") }
-        links[kind].hostMany(me.name, fmt.guests).collect { c ->
+        // A phone that drops during the handshake is skipped; keep listening until everyone's in.
+        links[kind].hostMany(me.name, Int.MAX_VALUE).mapNotNull { c ->
             conns += c
-            joined += c to handshake(c, me)
+            try {
+                c to handshake(c, me)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (e is VersionMismatch) _state.update { it.copy(message = e.message) }
+                c.close(); conns.remove(c); null
+            }
+        }.take(fmt.guests).collect { j ->
+            joined += j
             if (fmt.guests > 1) _state.update {
                 it.copy(message = "${joined.size} of ${fmt.guests} friends joined: " + joined.joinToString { j -> j.second.name })
             }
@@ -123,8 +173,7 @@ class BattleViewModel(
                 val lead = if (friend.level > me.level) friend else me
                 listOf(me, friend, CpuOpponent.random(lead), CpuOpponent.random(lead)) to listOf(1)
             }
-            // Join order picks teams: the first friend partners the host, the next two team up.
-            BattleFormat.QUAD -> listOf(me) + joined.map { it.second } to listOf(1, 2, 3)
+            BattleFormat.TEAMS, BattleFormat.FFA -> error("rooms are hosted by hostRoom")
         }
         val remotes = slots.zip(joined.map { it.first }).toMap()
         val terrain = nextTerrain()
@@ -132,6 +181,77 @@ class BattleViewModel(
         remotes.forEach { (slot, c) -> c.send(Protocol.setup(slot, infos, terrain, humans)) }
         runHost(infos, remotes, terrain)
     }
+
+    /**
+     * Open room: friends join (up to [MAX_PLAYERS] in all), switch teams, and the host taps Start.
+     * The host is always slot 0; in team battles the host's team spawns on the left.
+     */
+    private suspend fun hostRoom(kind: LinkKind, ffa: Boolean) = coroutineScope {
+        val me = myInfo()
+        class Member(val c: BattleConnection?, val info: FighterInfo, var team: Int)
+        val members = mutableListOf(Member(null, me, 0))
+        val events = Channel<RoomEv>(Channel.UNLIMITED)
+        roomEvents = events
+        fun canStart() = members.size >= 2 && (ffa || members.map { it.team }.toSet().size == 2)
+        suspend fun publish() {
+            val entries = members.map { Protocol.RoomEntry(it.info.name, it.info.level, if (ffa) 0 else it.team) }
+            _state.update { it.copy(mode = BattleScreenMode.ROOM, room = RoomUi(ffa, entries, 0, host = true, canStart = canStart())) }
+            members.forEachIndexed { i, m -> m.c?.let { c -> runCatching { c.send(Protocol.lobby(i, ffa, entries)) } } }
+        }
+        val accept = launch {
+            links[kind].hostMany(me.name, MAX_PLAYERS - 1).collect { c ->
+                conns += c
+                launch {
+                    try {
+                        val info = handshake(c, me)
+                        events.send(RoomEv.Joined(c, info))
+                        c.incoming.collect { if (Protocol.parse(it) == Protocol.SwitchTeam) events.send(RoomEv.Switch(c)) }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (_: Exception) {
+                    }
+                    events.send(RoomEv.Left(c)) // also cleans up phones that never finished joining
+                }
+            }
+        }
+        publish()
+        for (ev in events) {
+            when (ev) {
+                is RoomEv.Joined -> if (members.size < MAX_PLAYERS) {
+                    // New players balance the teams (ties go to the other side, so 1v1 is the default)
+                    val team = if (members.count { it.team == 1 } <= members.count { it.team == 0 }) 1 else 0
+                    members += Member(ev.c, ev.info, team)
+                } else ev.c.close()
+                is RoomEv.Left -> { members.removeAll { it.c === ev.c }; ev.c.close(); conns.remove(ev.c) }
+                is RoomEv.Switch -> if (!ffa) members.firstOrNull { it.c === ev.c }?.let { it.team = 1 - it.team }
+                is RoomEv.HostSwitch -> if (!ffa) members.getOrNull(ev.index)?.let { it.team = 1 - it.team }
+                RoomEv.Start -> if (canStart()) break
+            }
+            publish()
+        }
+        roomEvents = null
+        accept.cancelAndJoin() // stop accepting and stop the room readers before the match reads the links
+        val inRoom = members.mapNotNull { it.c }.toSet()
+        conns.filter { it !in inRoom }.forEach { it.close() }
+        conns.retainAll(inRoom)
+        val order = if (ffa) members.toList() else members.sortedBy { if (it.team == members[0].team) 0 else 1 }
+        val infos = order.map { it.info }
+        val teams = if (ffa) BattleEngine.freeForAll(order.size) else order.map { it.team }
+        val remotes = order.withIndex().filter { it.value.c != null }.associate { it.index to it.value.c!! }
+        val terrain = nextTerrain()
+        remotes.forEach { (slot, c) -> c.send(Protocol.setup(slot, infos, terrain, order.indices.toSet(), teams)) }
+        _state.update { it.copy(room = null) }
+        runHost(infos, remotes, terrain, teams)
+    }
+
+    /** Room: host taps a player to move them; a guest moves themselves. */
+    fun switchTeam(index: Int) {
+        roomEvents?.let { it.trySend(RoomEv.HostSwitch(index)); return }
+        val c = roomConn ?: return
+        viewModelScope.launch { runCatching { c.send(Protocol.SWITCH_TEAM) } }
+    }
+
+    fun startRoom() { roomEvents?.trySend(RoomEv.Start) }
 
     fun search(kind: LinkKind) = start {
         _state.value = BattleUiState(mode = BattleScreenMode.SEARCHING, link = kind, format = format)
@@ -163,10 +283,20 @@ class BattleViewModel(
         }
         conns += c
         handshake(c, me)
-        val setup = withTimeout(10_000) {
-            c.incoming.map { Protocol.parse(it) }.filterIsInstance<Protocol.Setup>().first()
-        }
-        runGuest(setup.infos, setup.you, setup.humans, c, setup.terrain)
+        roomConn = c
+        // Rooms send lobby updates until the host taps Start; other formats send the setup right away.
+        val setup = c.incoming.map { Protocol.parse(it) }.transform { m ->
+            when (m) {
+                is Protocol.Lobby -> _state.update {
+                    it.copy(mode = BattleScreenMode.ROOM, room = RoomUi(m.ffa, m.players, m.you, host = false, canStart = false))
+                }
+                is Protocol.Setup -> emit(m)
+                else -> Unit
+            }
+        }.firstOrNull() ?: error("Host closed the room")
+        roomConn = null
+        _state.update { it.copy(room = null) }
+        runGuest(setup.infos, setup.you, setup.humans, c, setup.terrain, setup.teams)
     }
 
     fun use(move: Move) = sendMove(move)
@@ -179,6 +309,7 @@ class BattleViewModel(
 
     private fun stop() {
         job?.cancel(); job = null
+        roomEvents = null; roomConn = null
         closeLinks()
         sendMove = {}
     }
@@ -190,25 +321,31 @@ class BattleViewModel(
 
     override fun onCleared() = stop()
 
+    /**
+     * Swaps pet info. The link can drop or stall here (the other phone backed out, the host started
+     * without it, a full room): that's a plain failure, never a bare "no element" or a silent cancel.
+     */
     private suspend fun handshake(c: BattleConnection, me: FighterInfo): FighterInfo {
         c.send(Protocol.hello(me))
-        val hello = withTimeout(10_000) {
-            c.incoming.map { Protocol.parse(it) }.filterIsInstance<Protocol.Hello>().first()
-        }
-        require(hello.version == Protocol.VERSION) { "Opponent has a different PetPal version" }
+        val hello = withTimeoutOrNull(10_000) {
+            c.incoming.map { Protocol.parse(it) }.filterIsInstance<Protocol.Hello>().firstOrNull()
+                ?: throw LinkLost("the other phone disconnected (room full or already started?)")
+        } ?: throw LinkLost("the other phone didn't answer")
+        if (hello.version != Protocol.VERSION) throw VersionMismatch()
         return hello.info
     }
 
     /** Runs the simulation locally (practice, or host of a linked match). [remotes]: slot -> that player's link. */
     private suspend fun runHost(
         infos: List<FighterInfo>, remotes: Map<Int, BattleConnection>, terrain: Terrain,
+        teams: List<Int> = BattleEngine.defaultTeams(infos.size),
     ) = coroutineScope {
-        val engine = BattleEngine(infos, terrain = terrain)
+        val engine = BattleEngine(infos, terrain = terrain, teamIds = teams)
         val rng = Random.Default
         val humans = setOf(0) + remotes.keys
         val bots = infos.indices.filter { it !in humans }.toMutableSet()
         // CPU-only enemies (no friend on the other team) give practice XP
-        val practice = humans.all { engine.teamOf(it) == 0 }
+        val practice = humans.all { engine.teamOf(it) == engine.teamOf(0) }
         val commands = Channel<Pair<Int, Move?>>(Channel.UNLIMITED)
         sendMove = { commands.trySend(0 to it) }
         val left = Channel<Int>(Channel.UNLIMITED)
@@ -228,7 +365,7 @@ class BattleViewModel(
         var quitMsg: String? = null
         _state.value = BattleUiState(
             mode = BattleScreenMode.FIGHT,
-            fight = FightState(0, infos, humans, engine.snapshot(0), practice = practice, terrain = terrain),
+            fight = FightState(0, infos, humans, engine.snapshot(0), practice = practice, terrain = terrain, teams = teams),
             format = format,
         )
         val clock = TimeSource.Monotonic.markNow()
@@ -284,9 +421,10 @@ class BattleViewModel(
         outboxes.values.forEach { it.stop() }
     }
 
-    private suspend fun runGuest(infos: List<FighterInfo>, you: Int, humans: Set<Int>, c: BattleConnection, terrain: Terrain) {
-        val teamOf = { i: Int -> i * 2 / infos.size }
-        val practice = humans.all { teamOf(it) == teamOf(0) } // every player on one team vs CPUs
+    private suspend fun runGuest(
+        infos: List<FighterInfo>, you: Int, humans: Set<Int>, c: BattleConnection, terrain: Terrain, teams: List<Int>,
+    ) {
+        val practice = humans.all { teams[it] == teams[0] } // every player on one team vs CPUs
         sendMove = { m -> viewModelScope.launch { runCatching { c.send(if (m == null) Protocol.EVADE else Protocol.command(m)) } } }
         var last: BattleSnapshot? = null
         c.incoming.map { Protocol.parse(it) }.flowOn(Dispatchers.Default).collect { msg ->
@@ -294,7 +432,7 @@ class BattleViewModel(
                 is Protocol.State -> {
                     if (_state.value.mode != BattleScreenMode.FIGHT) {
                         _state.value = BattleUiState(mode = BattleScreenMode.FIGHT, format = format,
-                            fight = FightState(you, infos, humans, msg.snap, practice = practice, terrain = terrain))
+                            fight = FightState(you, infos, humans, msg.snap, practice = practice, terrain = terrain, teams = teams))
                     }
                     last = msg.snap
                     push(msg.snap, emptyList())
@@ -323,8 +461,9 @@ class BattleViewModel(
 
     private suspend fun finish(me: Int, snap: BattleSnapshot, practice: Boolean) {
         if (_state.value.fight?.result != null) return
-        val fighters = _state.value.fight?.fighters.orEmpty()
-        val teamOf = { i: Int -> i * 2 / fighters.size.coerceAtLeast(2) }
+        val fight = _state.value.fight ?: return
+        val fighters = fight.fighters
+        val teamOf = { i: Int -> fight.teams[i] }
         val outcome = when (snap.winner) {
             -1 -> BattleOutcome.DRAW
             teamOf(me) -> BattleOutcome.WIN
@@ -375,3 +514,6 @@ private class Outbox(private val c: BattleConnection) {
 
     suspend fun stop() { wake.close(); job?.join() }
 }
+
+private class VersionMismatch : Exception("A friend has a different PetPal version. Both phones need the same update.")
+private class LinkLost(msg: String) : Exception(msg)

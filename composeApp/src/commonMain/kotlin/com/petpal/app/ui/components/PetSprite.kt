@@ -27,6 +27,8 @@ fun PetSprite(
     mood: Mood,
     species: Species,
     modifier: Modifier = Modifier,
+    /** Fried Tilapia form (battle passive). */
+    fried: Boolean = false,
     size: Dp = when (stage) {
         Stage.EGG -> 120.dp
         Stage.BABY -> 136.dp
@@ -42,8 +44,8 @@ fun PetSprite(
         animationSpec = infiniteRepeatable(tween(if (mood == Mood.HAPPY) 450 else 900), RepeatMode.Reverse),
         label = "bounce",
     )
-    val grid = remember(stage, mood, species) { PetArt.draw(species, stage, mood) }
-    val palette = remember(species) { species.palette() }
+    val grid = remember(stage, mood, species, fried) { if (fried) PetArt.friedFish() else PetArt.draw(species, stage, mood) }
+    val palette = remember(species, fried) { if (fried) FRIED_PALETTE else species.palette() }
 
     Canvas(
         modifier.size(size).graphicsLayer {
@@ -61,6 +63,12 @@ fun PetSprite(
         }
     }
 }
+
+private val FRIED_PALETTE = mapOf(
+    'o' to Color(0xFF5A2E0C), 'e' to SpriteInk,
+    'b' to Color(0xFFD08A2E), 'd' to Color(0xFF8A4A16), 'l' to Color(0xFFF0C062),
+    'h' to Color(0xFFEDEDED), 'y' to Color(0xFFF7E15A), 'g' to SpriteLeaf,
+)
 
 private fun Species.palette(): Map<Char, Color> {
     val (body, dark, belly) = colors()
@@ -103,6 +111,9 @@ fun Species.colors(): Triple<Color, Color, Color> = when (this) {
     Species.KANGAROO -> Triple(Color(0xFFD08A52), Color(0xFF8E5530), Color(0xFFF6DDBF))
     Species.EAGLE -> Triple(Color(0xFF7A5434), Color(0xFF4A3220), Color(0xFFFAF7F0))
     Species.SEAL -> Triple(Color(0xFFB8C2CC), Color(0xFF6E7C8A), Color(0xFFEEF2F5))
+    Species.ELEPHANT -> Triple(Color(0xFFA7AEB8), Color(0xFF6B7380), Color(0xFFD8DCE2))
+    Species.TIGER -> Triple(Color(0xFFF08A2C), Color(0xFF2B2420), Color(0xFFFFF4E6))
+    Species.TILAPIA -> Triple(Color(0xFF8FA8A0), Color(0xFF4F6B66), Color(0xFFE6EEDF))
 }
 
 internal object PetArt {
@@ -262,6 +273,17 @@ internal object PetArt {
                 g.rect(b.cx.toInt() - w, y - 1, b.cx.toInt() - 1, y, 'd')
                 g.rect(b.cx.toInt(), y - 1, b.cx.toInt() + w - 1, y, 'd')
             }
+            Species.TIGER -> { // striped tail
+                val tx = b.left + 2 * b.rx.toInt()
+                g.rect(tx - 1, b.cy.toInt() - (if (grown) 4 else 2), tx, b.cy.toInt() + 2, 'b')
+                g.set(tx, b.cy.toInt() - 1, 'd'); if (grown) g.set(tx, b.cy.toInt() - 3, 'd')
+            }
+            Species.TILAPIA -> { // fanned tail fin
+                val tx = b.left + 2 * b.rx.toInt()
+                val ty = b.cy.toInt()
+                val h = if (big) 4 else 3
+                for (i in 0..h) for (y in ty - i..ty + i) g.set(tx - 1 + i, y, 'd')
+            }
             Species.BEAVER -> { // flat paddle tail
                 val r = if (big) 2.4f else if (grown) 2f else 1.6f
                 g.ellipse(b.cx + b.rx + r * 0.5f, b.bottom - r * 0.6f, r, r * 0.8f, 'd')
@@ -330,6 +352,18 @@ internal object PetArt {
             Species.KANGAROO -> g.spike(b.left + 2, b.top + 1, if (big) 5 else if (grown) 4 else 3, 3, 'b', 'l')
             Species.EAGLE -> g.ellipse(b.cx, b.top + 2f, b.rx * 0.7f, 2.4f, 'l') // white head
             Species.SEAL -> Unit
+            Species.ELEPHANT -> { // big flappy ears
+                val r = if (big) 3.4f else if (grown) 3f else 2.5f
+                listOf(-1, 1).forEach { s ->
+                    g.ellipse(b.cx + s * (b.rx + 0.2f), b.cy - b.ry * 0.25f, r, r * 1.2f, 'b')
+                    g.ellipse(b.cx + s * (b.rx + 0.4f), b.cy - b.ry * 0.25f, r * 0.55f, r * 0.75f, 'p')
+                }
+            }
+            Species.TIGER -> g.spike(b.left + 2, b.top + 1, if (big) 4 else 3, 4, 'b', 'l')
+            Species.TILAPIA -> for (k in -3..2) { // spiny dorsal fin
+                val h = if ((k + 3) % 2 == 0) (if (big) 3 else 2) else 1
+                for (i in 0..h) g.set(N / 2 + k, b.top - i + 1, 'd')
+            }
             Species.OTTER, Species.RACCOON, Species.HAMSTER, Species.BEAVER -> {
                 val r = if (big) 1.6f else 1.3f
                 g.ellipse(b.cx - b.rx * 0.65f, b.top + 1f, r, r, 'b'); g.ellipse(b.cx + b.rx * 0.65f, b.top + 1f, r, r, 'b')
@@ -349,7 +383,7 @@ internal object PetArt {
             val sy = b0.cy - b0.ry - 0.2f
             listOf(-3f, 0f, 3f).forEach { dx -> g.ellipse(b.cx + dx, sy + if (dx == 0f) 0f else 1.2f, 1f, 0.9f, 'y', onlyOver = 'd') }
         }
-        if (grown) {
+        if (grown && species != Species.TILAPIA) {
             val fx = (b.cx - b.rx * 0.5f).toInt()
             g.rect(fx - 1, b.bottom - 1, fx + 1, b.bottom, 'b')
             g.rect(N - 1 - fx - 1, b.bottom - 1, N - 1 - fx + 1, b.bottom, 'b')
@@ -416,7 +450,7 @@ internal object PetArt {
             }
             if (species in setOf(Species.PUP, Species.BEAR, Species.FOX, Species.KITTY, Species.HEDGEHOG, Species.DEER,
                     Species.OTTER, Species.PANDA, Species.RACCOON, Species.HAMSTER, Species.KOALA, Species.BEAVER,
-                    Species.MONKEY, Species.KANGAROO, Species.SEAL)) {
+                    Species.MONKEY, Species.KANGAROO, Species.SEAL, Species.TIGER)) {
                 g.set(c - 1, my - 1, 'e'); g.set(c, my - 1, 'e') // nose
             }
             when (mood) {
@@ -461,7 +495,7 @@ internal object PetArt {
             Species.BEAVER -> { g.set(c - 1, my + 2, 'h'); g.set(c, my + 2, 'h') } // buck teeth
             Species.SEAL -> { // whiskers and front flippers
                 g.mirror(c - 3, my, 'd'); g.mirror(c - 4, my - 1, 'd')
-                g.mirror(b.left, b.cy.toInt() + 2, 'd'); g.mirror(b.left - 1, b.cy.toInt() + 3, 'd')
+                g.mirror(b.left + 1, b.cy.toInt() + 2, 'd')
             }
             Species.KANGAROO -> if (grown) { // pouch
                 val py = b.cy.toInt() + 2
@@ -470,12 +504,45 @@ internal object PetArt {
             }
             Species.EAGLE -> if (big) { g.mirror(b.left + 1, b.bottom, 'y'); g.mirror(b.left + 2, b.bottom, 'y') } // talons
             Species.MONKEY -> if (big) g.mirror(c - 3, b.top + 1, 'd') // brow tufts
+            Species.ELEPHANT -> { // trunk, plus tusks once grown
+                for (y in my - 1..my + (if (grown) 3 else 2)) { g.set(c - 1, y, 'd'); g.set(c, y, 'd') }
+                g.set(c + 1, my + (if (grown) 3 else 2), 'd')
+                if (grown) { g.set(c - 2, my + 1, 'h'); g.set(c + 1, my + 1, 'h') }
+                if (big) { g.set(c - 3, my + 2, 'h'); g.set(c + 2, my + 2, 'h') }
+            }
+            Species.TIGER -> { // forehead and side stripes
+                g.set(c - 1, b.top + 1, 'd'); g.set(c, b.top + 1, 'd'); g.set(c - 1, b.top + 2, 'd')
+                if (grown) { g.mirror(c - 3, b.top + 1, 'd') }
+                for (dy in 0..2) if (g[b.left + 1, b.cy.toInt() + dy] == 'b') g.mirror(b.left + 1, b.cy.toInt() + dy, 'd')
+                if (big) for (dy in 0..1) if (g[b.left + 2, b.cy.toInt() - 2 + dy] == 'b') g.mirror(b.left + 2, b.cy.toInt() - 2 + dy, 'd')
+            }
+            Species.TILAPIA -> { // gills, faint bars and side fins
+                listOf(0, 1).forEach { dy -> g.mirror(b.left + 1, b.cy.toInt() + dy, 'd') }
+                if (grown) listOf(-3, 2).forEach { dx ->
+                    for (dy in -2..-1) if (g[c + dx, b.cy.toInt() + dy] == 'b') g.set(c + dx, b.cy.toInt() + dy, 'd')
+                }
+                g.mirror(b.left + 1, b.cy.toInt() + 2, 'd')
+            }
             Species.SHARK -> listOf(0, 1).forEach { dy -> g.mirror(b.left + 1, b.cy.toInt() + dy, 'd') } // gills
             Species.CHAMELEON -> if (grown) listOf(-3, 0, 3).forEach { dx -> // stripes
                 for (dy in 0..1) if (g[c + dx, b.cy.toInt() + dy] == 'b') g.set(c + dx, b.cy.toInt() + dy, 'd')
             }
             else -> Unit
         }
+        return g.rows()
+    }
+
+    /** Fried Tilapia: crispy golden fish with an X eye, still steaming. */
+    fun friedFish(): List<String> {
+        val g = Grid()
+        g.ellipse(8.5f, 11.5f, 6.5f, 3.8f, 'b')
+        for (i in 0..3) for (y in 11 - i - 1..11 + i + 1) g.set(15 + i, y, 'd') // tail
+        for (k in -2..2) g.set(8 + k * 2, 7, 'd') // crispy fin spikes
+        g.ellipse(8.5f, 13.2f, 5f, 1.6f, 'l', onlyOver = 'b')
+        g.outline()
+        listOf(7, 10, 13).forEach { x -> for (d in 0..2) if (g[x - d, 10 + d] == 'b') g.set(x - d, 10 + d, 'd') } // grill marks
+        listOf(4 to 10, 6 to 10, 5 to 11, 4 to 12, 6 to 12).forEach { (x, y) -> g.set(x, y, 'e') } // X eye
+        listOf(6 to 5, 7 to 4, 6 to 3, 10 to 5, 11 to 4, 10 to 3).forEach { (x, y) -> g.set(x, y, 'h') } // steam
         return g.rows()
     }
 
