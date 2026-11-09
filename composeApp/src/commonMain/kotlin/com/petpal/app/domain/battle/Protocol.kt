@@ -6,7 +6,7 @@ import kotlin.math.roundToInt
 
 /** Line-based wire format shared by the Bluetooth and Wi-Fi links. */
 object Protocol {
-    const val VERSION = 20
+    const val VERSION = 21
 
     sealed interface Msg
     data class Hello(val version: Int, val info: FighterInfo) : Msg
@@ -47,8 +47,8 @@ object Protocol {
         } + "|${terrain.name}|${humans.sorted().joinToString(",")}|${teams.joinToString(",")}"
 
     fun state(s: BattleSnapshot) = buildString {
-        append("S|${s.timeLeftMs},${if (s.ended) 1 else 0},${s.winner},${s.smokes.size}")
-        s.smokes.forEach { append(",${(it.x * 1000).roundToInt()},${(it.y * 1000).roundToInt()},${it.ageMs}") }
+        append("S|${s.timeLeftMs},${if (s.ended) 1 else 0},${s.winner},${s.smokes.size},${s.blasts.size}")
+        (s.smokes + s.blasts).forEach { append(",${(it.x * 1000).roundToInt()},${(it.y * 1000).roundToInt()},${it.ageMs}") }
         s.traps.forEach { append(",${(it.x * 1000).roundToInt()},${(it.y * 1000).roundToInt()},${it.ageMs},${it.element.ordinal}") }
         s.fighters.forEach { f ->
             append('|')
@@ -98,15 +98,18 @@ object Protocol {
             "S" -> {
                 val h = p[1].split(',')
                 val nSmokes = h[3].toInt()
-                val extra = h.drop(4).map { it.toLong() }
+                val nBlasts = h[4].toInt()
+                val extra = h.drop(5).map { it.toLong() }
+                val clouds = extra.take((nSmokes + nBlasts) * 3).chunked(3).filter { it.size == 3 }
+                    .map { (x, y, age) -> SmokeSnap(x / 1000f, y / 1000f, age) }
                 State(
                     BattleSnapshot(
                         timeLeftMs = h[0].toLong(),
                         ended = h[1] == "1",
                         winner = h[2].toInt(),
-                        smokes = extra.take(nSmokes * 3).chunked(3).filter { it.size == 3 }
-                            .map { (x, y, age) -> SmokeSnap(x / 1000f, y / 1000f, age) },
-                        traps = extra.drop(nSmokes * 3).chunked(4).filter { it.size == 4 }
+                        smokes = clouds.take(nSmokes),
+                        blasts = clouds.drop(nSmokes),
+                        traps = extra.drop((nSmokes + nBlasts) * 3).chunked(4).filter { it.size == 4 }
                             .map { (x, y, age, el) -> TrapSnap(x / 1000f, y / 1000f, age, Element.entries[el.toInt()]) },
                         fighters = p.drop(2).map { fs ->
                             val v = fs.split(',').map { it.toLong() }

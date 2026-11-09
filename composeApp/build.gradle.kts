@@ -47,6 +47,7 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation(libs.koin.android)
             implementation(libs.kotlinx.coroutines.android)
+            implementation(libs.okhttp)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
@@ -65,8 +66,8 @@ android {
         applicationId = "com.petpal.app"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 23
-        versionName = "0.21.0"
+        versionCode = 24
+        versionName = "0.22.0"
     }
     signingConfigs {
         if (keystoreProps.isNotEmpty()) create("release") {

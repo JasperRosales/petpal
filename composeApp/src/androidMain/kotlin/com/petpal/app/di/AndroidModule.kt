@@ -20,5 +20,6 @@ val androidModule = module {
     single<com.petpal.app.domain.platform.StepTracking> { com.petpal.app.platform.AndroidStepTracking(androidContext()) }
     single<SoundPlayer> { AndroidSoundPlayer(androidContext()) }
     single<AppUpdater> { AndroidAppUpdater(androidContext()) }
+    single<com.petpal.app.domain.platform.OnlineService> { com.petpal.app.platform.link.OnlineClient(androidContext()) }
     single { BattleLinks(listOf(BluetoothTransport(androidContext()), LanTransport(androidContext()))) }
 }

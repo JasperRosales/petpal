@@ -76,7 +76,7 @@ private fun Species.palette(): Map<Char, Color> {
         'o' to SpriteInk, 'e' to SpriteInk, 'm' to SpriteInk,
         'b' to body, 'd' to dark, 'l' to belly,
         'c' to SpriteCheek, 'p' to SpritePink, 'y' to SpriteYellow,
-        'h' to SpriteCream, 'g' to SpriteLeaf, 'r' to SpriteRed,
+        'h' to SpriteCream, 'g' to SpriteLeaf, 'r' to SpriteRed, 'w' to Color.White,
     )
 }
 
@@ -177,10 +177,61 @@ internal object PetArt {
         else -> Body(cy = 11f, rx = 7f, ry = 6.2f)
     }
 
+    /** Body width/height scale per species, so silhouettes differ before any features go on. */
+    private fun Species.build(): Pair<Float, Float> = when (this) {
+        Species.PENGUIN -> 0.78f to 1.12f
+        Species.OWL -> 0.86f to 1.1f
+        Species.EAGLE -> 0.84f to 1.08f
+        Species.KANGAROO -> 0.8f to 1.1f
+        Species.DEER -> 0.82f to 1.06f
+        Species.FOX -> 0.86f to 1.02f
+        Species.KITTY -> 0.9f to 0.94f
+        Species.BUNNY -> 0.86f to 0.86f
+        Species.BAT -> 0.76f to 0.8f
+        Species.PARROT -> 0.8f to 1.04f
+        Species.MONKEY -> 0.84f to 1.0f
+        Species.SPROUT -> 0.92f to 0.9f
+        Species.FROG -> 1.08f to 0.76f
+        Species.SHARK -> 1.06f to 0.74f
+        Species.TILAPIA -> 1.0f to 0.72f
+        Species.LIZARD -> 1.02f to 0.74f
+        Species.CHAMELEON -> 1.0f to 0.8f
+        Species.SEAL -> 1.08f to 0.78f
+        Species.MOLE -> 1.1f to 0.8f
+        Species.HEDGEHOG -> 1.04f to 0.82f
+        Species.AXOLOTL -> 1.02f to 0.8f
+        Species.HAMSTER -> 1.08f to 0.94f
+        Species.OTTER -> 0.88f to 1.04f
+        Species.ELEPHANT -> 1.12f to 1.04f
+        Species.BEAR -> 1.1f to 1.06f
+        Species.PANDA -> 1.08f to 1.04f
+        Species.KOALA -> 0.96f to 1.0f
+        Species.BEAVER -> 1.0f to 0.96f
+        Species.TIGER -> 1.04f to 0.96f
+        else -> 1f to 1f
+    }
+
+    private val SIDE_TAILS = setOf(Species.LIZARD, Species.SHARK, Species.CHAMELEON, Species.MONKEY, Species.KANGAROO,
+        Species.TIGER, Species.TILAPIA, Species.KITTY, Species.FOX, Species.RACCOON, Species.BEAVER)
+
+    /** How each species' eyes look: 0 = 1x2, 1 = 2x2 with a shine, 2 = single dot, 3 = 2x1 slit. */
+    private fun Species.eyeStyle() = when (this) {
+        Species.BUNNY, Species.KITTY, Species.HAMSTER, Species.AXOLOTL, Species.SEAL, Species.KOALA, Species.BAT, Species.DEER -> 1
+        Species.SHARK, Species.MOLE, Species.TILAPIA, Species.ELEPHANT, Species.PENGUIN -> 2
+        Species.LIZARD, Species.CHAMELEON, Species.TIGER, Species.FOX, Species.EAGLE -> 3
+        else -> 0
+    }
+
     fun draw(species: Species, stage: Stage, mood: Mood): List<String> {
         if (stage == Stage.EGG) return egg(species)
         val g = Grid()
-        val b0 = bodyFor(stage)
+        val base = bodyFor(stage)
+        val (wx, hy) = species.build().let { (w, h) -> // babies are rounder, the shape shows more as they grow
+            if (stage == Stage.BABY) (1 + (w - 1) * 0.5f) to (1 + (h - 1) * 0.5f) else w to h
+        }
+        val ry = base.ry * hy
+        // Keep the feet on the same ground line; side-tailed species stay narrow enough to fit the grid
+        val b0 = base.copy(cy = (base.cy + base.ry - ry).coerceAtMost(18.4f - ry), rx = minOf(base.rx * wx, if (species in SIDE_TAILS) 7f else 7.8f), ry = ry)
         // Turtles: smaller body tucked under a shell dome
         val b = if (species == Species.TURTLE) b0.copy(cy = b0.cy + 1f, rx = b0.rx - 0.5f, ry = b0.ry - 1f) else b0
         val big = stage >= Stage.TEEN
@@ -429,11 +480,24 @@ internal object PetArt {
         // 4. Face
         val ey = (b.cy - b.ry * 0.15f).roundToInt().let { if (species == Species.FROG) b.top + 1 else it }
         val ex = (b.cx - b.rx * if (species == Species.FROG) 0.5f else 0.4f).toInt()
+        val eyes = species.eyeStyle()
         if (mood == Mood.SLEEPY) {
             g.mirror(ex - 1, ey, 'e'); g.mirror(ex, ey, 'e')
-        } else {
-            g.mirror(ex, ey, 'e'); g.mirror(ex, ey - 1, 'e')
-            if (species == Species.OWL || big) { g.mirror(ex - 1, ey, 'e'); g.mirror(ex - 1, ey - 1, 'e') }
+        } else when (eyes) {
+            1 -> { // big shiny eyes
+                g.mirror(ex - 1, ey, 'e'); g.mirror(ex, ey, 'e'); g.mirror(ex - 1, ey - 1, 'e'); g.mirror(ex, ey - 1, 'w')
+                if (big) { g.mirror(ex - 1, ey + 1, 'e'); g.mirror(ex, ey + 1, 'e') }
+            }
+            2 -> { g.mirror(ex, ey, 'e'); if (big) g.mirror(ex, ey - 1, 'e') } // beady
+            3 -> { // narrow, sharp
+                g.mirror(ex - 1, ey, 'e'); g.mirror(ex, ey, 'e')
+                if (big) g.mirror(ex - 1, ey - 1, 'd')
+            }
+            else -> {
+                g.mirror(ex, ey, 'e'); g.mirror(ex, ey - 1, 'e')
+                if (species == Species.OWL || big) { g.mirror(ex - 1, ey, 'e'); g.mirror(ex - 1, ey - 1, 'e') }
+                if (species == Species.OWL) { g.mirror(ex, ey - 1, 'w') }
+            }
         }
         val my = (b.cy + b.ry * 0.25f).roundToInt()
         val c = N / 2

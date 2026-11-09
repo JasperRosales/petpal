@@ -140,11 +140,21 @@ class BattleTest {
         var t = 0L
         repeat(2) {
             assertNotNull(e.command(0, Move.INFERNO, t))
-            t += 16_000
-            e.tick(t)
+            val end = t + 16_000
+            while (t < end) { t += 100; e.tick(t) } // let the fireball fly and explode
         }
         assertNull(e.command(0, Move.INFERNO, t))
         assertEquals(0, e.snapshot(t).fighters[0].uniqueLeft)
+    }
+
+    @Test fun infernoExplodesOnBothEnemies() {
+        val e = BattleEngine(listOf(a, b, b), Random(1), demo = true, teamIds = listOf(0, 1, 1))
+        e.place(0, 0.3f, 0.3f); e.place(1, 0.7f, 0.3f); e.place(2, 0.7f, 0.42f)
+        assertNotNull(e.command(0, Move.INFERNO, 0))
+        var t = 0L
+        while (t < 1500) { t += 33; e.tick(t) }
+        val s = e.snapshot(t)
+        assertTrue(s.fighters[1].hp < s.fighters[1].maxHp && s.fighters[2].hp < s.fighters[2].maxHp)
     }
 
     @Test fun everySpeciesCanWinTheQuiz() {

@@ -28,7 +28,7 @@ val sharedModule = module {
     viewModel { HomeViewModel(get(), get(), get(), get(), get()) }
     viewModel { HabitsViewModel(get(), get()) }
     viewModel { StatsViewModel(get(), get(), get()) }
-    viewModel { BattleViewModel(get(), get()) }
+    viewModel { BattleViewModel(get(), get(), get()) }
     viewModel { OnboardingViewModel(get()) }
     viewModel { RootViewModel(get()) }
     viewModel { com.petpal.app.ui.pets.PetsViewModel(get()) }

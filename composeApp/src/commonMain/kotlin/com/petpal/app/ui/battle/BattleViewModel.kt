@@ -15,7 +15,7 @@ import kotlin.random.Random
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.TimeSource
 
-enum class BattleScreenMode { LOBBY, HOSTING, SEARCHING, CONNECTING, ROOM, FIGHT }
+enum class BattleScreenMode { LOBBY, HOSTING, SEARCHING, CONNECTING, ROOM, FIGHT, MATCHMAKING, LEADERBOARD }
 
 /** Most people in one room (host included). */
 const val MAX_PLAYERS = 6
@@ -69,11 +69,15 @@ data class BattleUiState(
     val fight: FightState? = null,
     val format: BattleFormat = BattleFormat.SOLO,
     val room: RoomUi? = null,
+    /** Online leaderboard screen: null while loading. */
+    val board: Leaderboard? = null,
+    val boardError: String? = null,
 )
 
 class BattleViewModel(
     private val links: BattleLinks,
     private val petRepository: PetRepository,
+    private val online: OnlineService? = null,
 ) : ViewModel() {
     private val _state = MutableStateFlow(BattleUiState())
     val state: StateFlow<BattleUiState> = _state.asStateFlow()
@@ -299,6 +303,44 @@ class BattleViewModel(
         runGuest(setup.infos, setup.you, setup.humans, c, setup.terrain, setup.teams)
     }
 
+    val hasOnline get() = online != null
+
+    /** Ranked 1v1 against a random player online. The first one waiting hosts the battle. */
+    fun findOnline(): Unit = start {
+        val service = online ?: error("Online play isn't available")
+        again = ::findOnline
+        _state.value = BattleUiState(mode = BattleScreenMode.MATCHMAKING, format = BattleFormat.SOLO)
+        val me = myInfo()
+        val match = service.findMatch(me)
+        val c = match.conn
+        conns += c
+        _state.update { it.copy(mode = BattleScreenMode.CONNECTING, message = "${match.opponent} (online)") }
+        val rival = handshake(c, me)
+        if (match.host) {
+            val infos = listOf(me, rival)
+            val terrain = nextTerrain()
+            c.send(Protocol.setup(1, infos, terrain, setOf(0, 1)))
+            runHost(infos, mapOf(1 to c), terrain, ranked = true)
+        } else {
+            val setup = c.incoming.map { Protocol.parse(it) }.filterIsInstance<Protocol.Setup>().firstOrNull()
+                ?: error("${match.opponent} left")
+            runGuest(setup.infos, setup.you, setup.humans, c, setup.terrain, setup.teams, ranked = true)
+        }
+    }
+
+    fun showLeaderboard() {
+        stop()
+        _state.value = BattleUiState(mode = BattleScreenMode.LEADERBOARD, format = format)
+        val service = online ?: return
+        job = viewModelScope.launch {
+            val board = runCatching { service.leaderboard() }
+            _state.update {
+                if (it.mode != BattleScreenMode.LEADERBOARD) it
+                else it.copy(board = board.getOrNull(), boardError = board.exceptionOrNull()?.let { e -> "Couldn't load: ${e.message ?: "no connection"}" })
+            }
+        }
+    }
+
     fun use(move: Move) = sendMove(move)
     fun evade() = sendMove(null)
 
@@ -339,6 +381,7 @@ class BattleViewModel(
     private suspend fun runHost(
         infos: List<FighterInfo>, remotes: Map<Int, BattleConnection>, terrain: Terrain,
         teams: List<Int> = BattleEngine.defaultTeams(infos.size),
+        ranked: Boolean = false,
     ) = coroutineScope {
         val engine = BattleEngine(infos, terrain = terrain, teamIds = teams)
         val rng = Random.Default
@@ -419,10 +462,12 @@ class BattleViewModel(
         finish(0, engine.snapshot(clock.elapsedNow().inWholeMilliseconds), practice)
         if (remotes.isNotEmpty()) delay(1500) // let the final state reach the guests
         outboxes.values.forEach { it.stop() }
+        if (ranked) showRating()
     }
 
     private suspend fun runGuest(
         infos: List<FighterInfo>, you: Int, humans: Set<Int>, c: BattleConnection, terrain: Terrain, teams: List<Int>,
+        ranked: Boolean = false,
     ) {
         val practice = humans.all { teams[it] == teams[0] } // every player on one team vs CPUs
         sendMove = { m -> viewModelScope.launch { runCatching { c.send(if (m == null) Protocol.EVADE else Protocol.command(m)) } } }
@@ -446,7 +491,17 @@ class BattleViewModel(
                 else -> Unit
             }
         }
-        if (last?.ended != true) endEarly("Host left the battle")
+        if (last?.ended != true) endEarly(if (ranked) "Opponent left the battle" else "Host left the battle")
+        if (ranked) showRating()
+    }
+
+    /** Adds your new rating and place to the result line (the server scores the match as it ends). */
+    private suspend fun showRating() {
+        val service = online ?: return
+        delay(500)
+        val me = runCatching { service.leaderboard().me }.getOrNull() ?: return
+        val place = if (me.rank > 0) "  #${me.rank}" else ""
+        _state.update { s -> s.copy(fight = s.fight?.copy(result = s.fight.result?.let { "$it\nRating ${me.rating}$place" })) }
     }
 
     private fun push(snap: BattleSnapshot?, events: List<String>) = _state.update { s ->

@@ -17,13 +17,18 @@ const val PROJECTILE_SPEED = 1.6f
 enum class HitShape {
     SELF,       // buffs, no hitbox
     MELEE,      // circle just in front of the user
-    PROJECTILE, // small ball that flies along the aim line and stops on the first hit
+    PROJECTILE, // small ball that flies along the aim line and stops on the first hit (explosive ones blow up in a circle)
     BEAM,       // instant thick line along the aim
     CONE,       // breath / wave spreading from the user
     STRIKE,     // lands on the aimed spot from above (lightning)
 }
 
 private val BEAMS = setOf(Move.HYPER_BEAM, Move.ZAP_CANNON, Move.SUN_RAY, Move.SOLAR_BEAM, Move.SOLAR_FLARE, Move.OVERHEAT, Move.PRISM_BLAST)
+/** Fireballs that explode on impact, hitting every enemy within [BLAST_RADIUS]. */
+private val EXPLOSIVE = setOf(Move.INFERNO)
+const val BLAST_RADIUS = 0.17f
+val Move.explodes: Boolean get() = this in EXPLOSIVE
+
 private val WAVES = setOf(Move.SPLASH_WAVE, Move.TIDAL_WAVE, Move.TSUNAMI, Move.ECHO_SHRIEK)
 
 val Move.shape: HitShape
@@ -31,6 +36,7 @@ val Move.shape: HitShape
         isBuff -> HitShape.SELF
         lunges || effect == Effect.VANISH -> HitShape.MELEE
         range < 0.3f -> HitShape.MELEE
+        explodes -> HitShape.PROJECTILE
         this in BEAMS -> HitShape.BEAM
         this in WAVES -> HitShape.CONE
         element == Element.ELECTRIC -> HitShape.STRIKE
@@ -44,7 +50,7 @@ val Move.shape: HitShape
 fun Move.hitSize(range: Float): Float = when (shape) {
     HitShape.SELF -> 0f
     HitShape.MELEE -> range * 0.5f
-    HitShape.PROJECTILE -> if (category == MoveCategory.NORMAL) 0.035f else 0.05f
+    HitShape.PROJECTILE -> if (explodes) 0.065f else if (category == MoveCategory.NORMAL) 0.035f else 0.05f
     HitShape.BEAM -> if (category == MoveCategory.UNIQUE) 0.075f else 0.055f
     HitShape.STRIKE -> if (category == MoveCategory.NORMAL) 0.075f else 0.1f
     HitShape.CONE -> 0f

@@ -70,10 +70,44 @@ class LinkedBattleTest {
         override suspend fun upsert(day: StepDayEntity) {}
     }
 
-    private fun vm(link: FakeLink, name: String, species: Species): BattleViewModel {
+    /** Pairs the first two callers like the server: first in line hosts. */
+    private class FakeOnline : OnlineService {
+        val waiting = Channel<Pair<String, CompletableDeferred<OnlineMatch>>>(1)
+        override suspend fun findMatch(me: com.petpal.app.domain.battle.FighterInfo): OnlineMatch {
+            val other = waiting.tryReceive().getOrNull()
+            if (other == null) {
+                val mine = CompletableDeferred<OnlineMatch>()
+                waiting.send(me.name to mine)
+                return mine.await()
+            }
+            val a = Pipe(); val b = Pipe(); a.other = b; b.other = a
+            other.second.complete(OnlineMatch(true, me.name, a))
+            return OnlineMatch(false, other.first, b)
+        }
+        override suspend fun leaderboard() = Leaderboard(emptyList(), RankEntry(3, "x", null, null, 1016, 1, 0, 0))
+    }
+
+    private fun vm(link: FakeLink, name: String, species: Species, online: OnlineService? = null): BattleViewModel {
         val repo = PetRepository(Pets(), Habits, Battles, Steps, { System.currentTimeMillis() })
         runBlocking { repo.adopt(name, species) }
-        return BattleViewModel(BattleLinks(listOf(link)), repo)
+        return BattleViewModel(BattleLinks(listOf(link)), repo, online)
+    }
+
+    @Test fun online() {
+        val server = FakeOnline()
+        val a = vm(FakeLink(), "Ann", Species.entries[0], server)
+        val b = vm(FakeLink(), "Ben", Species.entries[1], server)
+        runBlocking(main) { a.findOnline() }
+        waitFor("queued") { a.state.value.mode == BattleScreenMode.MATCHMAKING }
+        runBlocking(main) { b.findOnline() }
+        waitFor("both fighting; a=${a.state.value} b=${b.state.value}") {
+            a.state.value.mode == BattleScreenMode.FIGHT && b.state.value.mode == BattleScreenMode.FIGHT
+        }
+        assertEquals(listOf("Ann", "Ben"), b.state.value.fight!!.fighters.map { it.name })
+        assertEquals(1, b.state.value.fight!!.me)
+        runBlocking(main) { b.leave() }
+        waitFor("host sees rating") { a.state.value.fight?.result?.contains("Rating 1016  #3") == true }
+        runBlocking(main) { a.leave() }
     }
 
     private fun waitFor(what: String, ms: Long = 5000, ok: () -> Boolean) = runBlocking {

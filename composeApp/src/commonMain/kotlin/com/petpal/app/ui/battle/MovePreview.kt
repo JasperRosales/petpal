@@ -83,7 +83,8 @@ private fun howItWorks(m: Move): String = buildString {
     append(when (m.shape) {
         HitShape.SELF -> "Used on yourself."
         HitShape.MELEE -> "Close-range hit in front of you."
-        HitShape.PROJECTILE -> "Fires a shot at where the target stood; it hits the first enemy in its path."
+        HitShape.PROJECTILE -> if (m.explodes) "Fires a fireball that explodes on the first enemy it hits, burning everyone nearby."
+            else "Fires a shot at where the target stood; it hits the first enemy in its path."
         HitShape.BEAM -> "Instant beam along your aim."
         HitShape.CONE -> "A wave that spreads out in front of you."
         HitShape.STRIKE -> "Lands on the spot you aimed at."

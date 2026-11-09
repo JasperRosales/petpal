@@ -65,6 +65,9 @@ fun BattleScreen(vm: BattleViewModel = koinViewModel()) {
         BattleScreenMode.ROOM -> s.room?.let { Room(it, s.link, vm) }
             ?: Waiting("Opening the room...", hostHint(s.link), vm::leave)
         BattleScreenMode.FIGHT -> s.fight?.let { Fight(it, vm) }
+        BattleScreenMode.MATCHMAKING -> Waiting("Finding an opponent online...",
+            "Ranked 1v1 against a random player. If nobody's been online for a while the server needs up to a minute to wake up.", vm::leave)
+        BattleScreenMode.LEADERBOARD -> LeaderboardScreen(s, vm)
     }
 }
 
@@ -82,11 +85,12 @@ private fun Lobby(vm: BattleViewModel, message: String?, format: BattleFormat) {
     ) {
         Text("Battle", style = MaterialTheme.typography.headlineMedium)
         Text(
-            "Fight a friend nearby, no internet needed. Pets roam on their own. Time your moves for when they're in range. Hits charge your energy bar for Special moves; Your unique (slot 5) works twice per battle.",
+            "Fight a friend nearby with no internet, or a random player online. Pets roam on their own. Time your moves for when they're in range. Hits charge your energy bar for Special moves; Your unique (slot 5) works twice per battle.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         message?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        if (vm.hasOnline) OnlineCard(vm)
         FormatPicker(format, vm::setFormat)
         LinkKind.entries.forEach { kind -> LinkCard(kind, vm) }
         NeuButton(
@@ -240,6 +244,80 @@ private fun LinkCard(kind: LinkKind, vm: BattleViewModel) {
             }
         }
     }
+}
+
+@Composable
+private fun OnlineCard(vm: BattleViewModel) {
+    val surface = MaterialTheme.colorScheme.surfaceVariant
+    Card(colors = CardDefaults.cardColors(containerColor = surface)) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Rounded.Public, null)
+                Spacer(Modifier.width(10.dp))
+                Text("Online ranked", style = MaterialTheme.typography.titleMedium)
+            }
+            Text("1v1 against a random player. Wins raise your rating; the top 10 make the leaderboard.",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                NeuButton(onClick = vm::findOnline, text = "Find match", icon = Icons.Rounded.TravelExplore,
+                    filled = true, surface = surface, modifier = Modifier.weight(1f))
+                NeuButton(onClick = vm::showLeaderboard, text = "Top 10", icon = Icons.Rounded.Leaderboard,
+                    surface = surface, modifier = Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+@Composable
+private fun LeaderboardScreen(s: BattleUiState, vm: BattleViewModel) {
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text("Leaderboard", style = MaterialTheme.typography.headlineMedium)
+        val board = s.board
+        when {
+            s.boardError != null -> Text(s.boardError, color = MaterialTheme.colorScheme.error)
+            board == null -> Row(verticalAlignment = Alignment.CenterVertically) {
+                CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                Spacer(Modifier.width(10.dp))
+                Text("Loading (the server may take a minute to wake up)...", style = MaterialTheme.typography.bodyMedium)
+            }
+            board.top.isEmpty() -> Text("No ranked matches yet. Be the first!")
+            else -> board.top.forEach { RankRow(it, highlight = it.rank == board.me?.rank) }
+        }
+        board?.me?.let { me ->
+            Spacer(Modifier.height(8.dp))
+            Text("You", style = MaterialTheme.typography.titleMedium)
+            if (me.rank == 0) Text("Rating ${me.rating}. Finish a ranked match to get a place.",
+                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            else RankRow(me, highlight = true)
+        }
+        Spacer(Modifier.height(8.dp))
+        NeuButton(onClick = vm::findOnline, text = "Find match", icon = Icons.Rounded.TravelExplore, filled = true,
+            modifier = Modifier.fillMaxWidth())
+        NeuButton(onClick = vm::leave, text = "Back", icon = Icons.Rounded.Close, modifier = Modifier.fillMaxWidth())
+    }
+}
+
+@Composable
+private fun RankRow(e: com.petpal.app.domain.platform.RankEntry, highlight: Boolean) {
+    val medal = when (e.rank) { 1 -> Color(0xFFFFC107); 2 -> Color(0xFFB0BEC5); 3 -> Color(0xFFCD7F32); else -> null }
+    ListItem(
+        leadingContent = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("#${e.rank}", style = MaterialTheme.typography.titleMedium, color = medal ?: MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.width(40.dp))
+                if (e.species != null && e.stage != null) PetSprite(e.stage, Mood.HAPPY, e.species, size = 40.dp)
+            }
+        },
+        headlineContent = { Text(e.name) },
+        supportingContent = { Text("${e.wins}W ${e.losses}L" + if (e.draws > 0) " ${e.draws}D" else "") },
+        trailingContent = { Text("${e.rating}", style = MaterialTheme.typography.titleMedium) },
+        colors = if (highlight) ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+            else ListItemDefaults.colors(),
+        modifier = Modifier.clip(MaterialTheme.shapes.medium),
+    )
 }
 
 @Composable
@@ -635,6 +713,7 @@ private fun DrawScope.drawMove(s: FighterSnap, info: FighterInfo, sx: Float, sy:
             HitShape.BEAM, HitShape.PROJECTILE -> beamPath(range, hs)
             else -> conePath(range)
         }
+        if (m.explodes) path.addOval(circle(ox + dx * range, oy + dy * range, BLAST_RADIUS)) // where it blows up if nothing's in the way
         drawPath(path, tint.copy(alpha = 0.08f + 0.14f * t))
         drawPath(path, tint.copy(alpha = 0.6f), style = Stroke(1.5.dp.toPx(),
             pathEffect = PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 5.dp.toPx()))))
@@ -861,6 +940,10 @@ internal fun Arena(fight: FightState, modifier: Modifier) {
                 drawCircle(Color(0xFFB0B0B0).copy(alpha = 0.45f * alpha), r * 0.6f, c)
             }
         }
+        // Fireball explosions: a white-hot flash that swells to the blast radius, a shockwave ring and flying embers.
+        if (f.snap.blasts.isNotEmpty()) Canvas(Modifier.matchParentSize()) {
+            f.snap.blasts.forEach { b -> drawBlast(Offset(b.x * sx, b.y * sy), BLAST_RADIUS * minOf(sx, sy), b.ageMs) }
+        }
         // "YOU" marker bobbing above your pet
         val mine = pos(f.snap.fighters[f.me])
         val markerW = with(density) { 44.dp.roundToPx() }
@@ -1062,7 +1145,30 @@ private class SmoothTrack(var cur: BattleSnapshot) {
                 )
             },
             smokes = cur.smokes.map { it.copy(ageMs = it.ageMs + dt) },
+            blasts = cur.blasts.map { it.copy(ageMs = it.ageMs + dt) },
             traps = cur.traps.map { it.copy(ageMs = it.ageMs + dt) },
         )
+    }
+}
+
+/** One explosion, [r] = blast radius in px, [age] ms since it went off. */
+private fun DrawScope.drawBlast(c: Offset, r: Float, age: Long) {
+    val t = (age / BLAST_MS.toFloat()).coerceIn(0f, 1f)
+    val grow = 1f - (1f - minOf(1f, t * 3f)).let { it * it }
+    val k = 1f - t
+    val fire = Color(0xFFFF6D00)
+    val core = Color(0xFFFFD54F)
+    drawCircle(Brush.radialGradient(
+        listOf(Color.White.copy(alpha = k), core.copy(alpha = k), fire.copy(alpha = 0.85f * k), Color(0xFFB71C1C).copy(alpha = 0.5f * k), Color.Transparent),
+        c, r * grow * 1.05f), r * grow * 1.05f, c)
+    drawCircle(core.copy(alpha = 0.8f * k), r * (0.4f + 0.75f * t), c, style = Stroke(r * 0.12f * k + 1f))
+    for (i in 0 until 10) {
+        val a = i * 0.6283f + 0.3f
+        val d = r * (0.25f + 1.0f * t) * (if (i % 2 == 0) 1f else 0.75f)
+        drawCircle((if (i % 3 == 0) core else fire).copy(alpha = k), r * 0.07f * (1f + k), c + Offset(cos(a), sin(a) * 0.8f) * d)
+    }
+    if (t > 0.3f) { // smoke left behind
+        val sm = (t - 0.3f) / 0.7f
+        drawCircle(Color(0xFF5A5A5A).copy(alpha = 0.35f * (1f - sm)), r * (0.6f + 0.3f * sm), c - Offset(0f, r * 0.3f * sm))
     }
 }

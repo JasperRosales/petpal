@@ -125,6 +125,9 @@ private val MOVEMENT_DEBUFFS = setOf(Effect.SLOW, Effect.STUN, Effect.FREEZE, Ef
 
 data class SmokeSnap(val x: Float, val y: Float, val ageMs: Long)
 
+/** How long an explosion stays on screen. */
+const val BLAST_MS = 550L
+
 data class FighterSnap(
     val x: Float,
     val y: Float,
@@ -155,6 +158,7 @@ data class BattleSnapshot(
     val fighters: List<FighterSnap>,
     val smokes: List<SmokeSnap> = emptyList(),
     val traps: List<TrapSnap> = emptyList(),
+    val blasts: List<SmokeSnap> = emptyList(), // explosions, same x/y/age fields
 )
 
 /**
@@ -252,6 +256,8 @@ class BattleEngine(
     private val clouds = mutableListOf<Cloud>()
     private class Snare(val owner: Int, val move: Move, val x: Float, val y: Float, val at: Long)
     private val snares = mutableListOf<Snare>()
+    private class Boom(val x: Float, val y: Float, val at: Long)
+    private val booms = mutableListOf<Boom>()
     private var lastTick = 0L
     var ended = false; private set
     /** Winning team (same as the fighter index in 1v1), -1 = draw or ongoing. */
@@ -387,6 +393,7 @@ class BattleEngine(
         val events = mutableListOf<String>()
 
         clouds.removeAll { now - it.at >= Smoke.DURATION_MS }
+        booms.removeAll { now - it.at >= BLAST_MS }
         for (c in clouds) f.forEachIndexed { i, e ->
             if (teams[i] != c.team && alive(i) && !e.passive.has(Trait.UNSTOPPABLE) &&
                 hypot(e.x - c.x, e.y - c.y) <= Smoke.RADIUS + PET_RADIUS
@@ -612,7 +619,6 @@ class BattleEngine(
         }
     }
 
-    /** Moves a live projectile along its aim line; it hits the first time it overlaps the target's hurtbox. */
     /** Moves a live projectile along its aim line; it hits the first enemy whose hurtbox it overlaps. */
     private fun flyProjectile(me: Fighter, now: Long, events: MutableList<String>) {
         val m = me.projectile ?: return
@@ -625,10 +631,16 @@ class BattleEngine(
         val hit = enemiesOf(me).firstOrNull { opp ->
             now >= opp.vanishUntil && now >= opp.evadeUntil && hypot(opp.x - px, opp.y - py) <= m.hitSize(range) + PET_RADIUS
         }
-        if (hit != null || travelled >= range) {
-            me.projectile = null
-            strike(me, hit ?: target(me), m, now, events, connected = hit != null)
-        }
+        if (hit == null && travelled < range) return
+        me.projectile = null
+        if (m.explodes) { // blows up where it stopped, catching everyone in the circle
+            booms += Boom(px, py, now)
+            val caught = enemiesOf(me).filter { e ->
+                now >= e.vanishUntil && hypot(e.x - px, e.y - py) <= BLAST_RADIUS + PET_RADIUS
+            }
+            if (caught.isEmpty()) strike(me, target(me), m, now, events, connected = false)
+            else caught.forEach { strike(me, it, m, now, events, connected = true) }
+        } else strike(me, hit ?: target(me), m, now, events, connected = hit != null)
     }
 
     private fun strike(me: Fighter, opp: Fighter, m: Move, now: Long, events: MutableList<String>, connected: Boolean) {
@@ -860,6 +872,7 @@ class BattleEngine(
         winner = winner,
         smokes = clouds.map { SmokeSnap(it.x, it.y, now - it.at) },
         traps = snares.map { TrapSnap(it.x, it.y, now - it.at, it.move.element) },
+        blasts = booms.map { SmokeSnap(it.x, it.y, now - it.at) },
         fighters = f.map { me ->
             var status = 0
             if (now < me.burnUntil) status = status or Status.BURN
