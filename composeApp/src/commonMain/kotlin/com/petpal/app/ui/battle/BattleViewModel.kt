@@ -9,6 +9,7 @@ import com.petpal.app.domain.model.BattleOutcome
 import com.petpal.app.domain.platform.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.flow.*
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.milliseconds
@@ -231,6 +232,10 @@ class BattleViewModel(
             format = format,
         )
         val clock = TimeSource.Monotonic.markNow()
+        // One writer per guest so a slow link (Bluetooth) never stalls the sim; stale states are dropped.
+        val outboxes = remotes.mapValues { (_, c) -> Outbox(c).also { it.start(this) } }
+        var nextTick = 0L
+        withContext(Dispatchers.Default) {
         while (isActive) {
             val now = clock.elapsedNow().inWholeMilliseconds
             val events = mutableListOf<String>()
@@ -258,22 +263,25 @@ class BattleViewModel(
             }
             events += engine.tick(now)
             val snap = engine.snapshot(now)
-            live.values.forEach { remote ->
-                runCatching {
-                    events.forEach { remote.send(Protocol.event(it)) }
-                    remote.send(Protocol.state(snap))
-                }
+            if (live.isNotEmpty()) {
+                val stateLine = Protocol.state(snap)
+                live.keys.forEach { outboxes[it]?.offer(events, stateLine) }
             }
             push(snap, events)
             if (snap.ended) break
             val quit = quitMsg
             if (quit != null) { endEarly(quit); break }
-            delay(50)
+            // Fixed 20 Hz rate: sleep only what's left of this tick.
+            nextTick += TICK_MS
+            val wait = nextTick - clock.elapsedNow().inWholeMilliseconds
+            if (wait > 0) delay(wait) else { nextTick = clock.elapsedNow().inWholeMilliseconds; yield() }
         }
+        } // Default
         readers.forEach { it.cancel() }
         sendMove = {}
         finish(0, engine.snapshot(clock.elapsedNow().inWholeMilliseconds), practice)
         if (remotes.isNotEmpty()) delay(1500) // let the final state reach the guests
+        outboxes.values.forEach { it.stop() }
     }
 
     private suspend fun runGuest(infos: List<FighterInfo>, you: Int, humans: Set<Int>, c: BattleConnection, terrain: Terrain) {
@@ -281,8 +289,8 @@ class BattleViewModel(
         val practice = humans.all { teamOf(it) == teamOf(0) } // every player on one team vs CPUs
         sendMove = { m -> viewModelScope.launch { runCatching { c.send(if (m == null) Protocol.EVADE else Protocol.command(m)) } } }
         var last: BattleSnapshot? = null
-        c.incoming.collect { line ->
-            when (val msg = Protocol.parse(line)) {
+        c.incoming.map { Protocol.parse(it) }.flowOn(Dispatchers.Default).collect { msg ->
+            when (msg) {
                 is Protocol.State -> {
                     if (_state.value.mode != BattleScreenMode.FIGHT) {
                         _state.value = BattleUiState(mode = BattleScreenMode.FIGHT, format = format,
@@ -332,4 +340,38 @@ class BattleViewModel(
         val detail = "+$xp XP${if (practice) " (CPU)" else ""}"
         _state.update { s -> s.copy(fight = s.fight?.copy(snap = snap, result = "$title  $detail")) }
     }
+}
+
+private const val TICK_MS = 50L
+
+/** Latest-state-wins sender: events are kept, but only the newest state is written; one flush per batch. */
+private class Outbox(private val c: BattleConnection) {
+    private val lock = kotlinx.coroutines.sync.Mutex()
+    private val events = mutableListOf<String>()
+    private var state: String? = null
+    private val wake = Channel<Unit>(Channel.CONFLATED)
+    private var job: Job? = null
+
+    suspend fun offer(newEvents: List<String>, stateLine: String) {
+        lock.withLock {
+            newEvents.mapTo(events) { Protocol.event(it) }
+            state = stateLine
+        }
+        wake.trySend(Unit)
+    }
+
+    fun start(scope: CoroutineScope) {
+        job = scope.launch(Dispatchers.Default) {
+            for (u in wake) {
+                val batch = lock.withLock {
+                    val b = events + listOfNotNull(state)
+                    events.clear(); state = null
+                    b
+                }
+                if (batch.isNotEmpty()) runCatching { c.send(batch.joinToString("\n")) }
+            }
+        }
+    }
+
+    suspend fun stop() { wake.close(); job?.join() }
 }

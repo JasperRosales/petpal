@@ -6,7 +6,7 @@ import kotlin.math.roundToInt
 
 /** Line-based wire format shared by the Bluetooth and Wi-Fi links. */
 object Protocol {
-    const val VERSION = 17
+    const val VERSION = 18
 
     sealed interface Msg
     data class Hello(val version: Int, val info: FighterInfo) : Msg
@@ -38,16 +38,14 @@ object Protocol {
         s.traps.forEach { append(",${(it.x * 1000).roundToInt()},${(it.y * 1000).roundToInt()},${it.ageMs},${it.element.ordinal}") }
         s.fighters.forEach { f ->
             append('|')
-            append(
-                listOf(
-                    (f.x * 1000).roundToInt(), (f.y * 1000).roundToInt(), f.hp, f.maxHp,
-                    f.action?.ordinal ?: -1, f.actionAgeMs.coerceAtMost(99_999), f.status,
-                    f.hurtAgeMs.coerceAtMost(99_999), f.facing, f.energy, f.uniqueLeft,
-                    (f.aimX * 1000).roundToInt(), (f.aimY * 1000).roundToInt(),
-                    (f.originX * 1000).roundToInt(), (f.originY * 1000).roundToInt(),
-                    f.projectileAgeMs.coerceIn(-1, 99_999), f.evadeCdMs.coerceIn(0, 99_999),
-                ).joinToString(",")
-            )
+            append((f.x * 1000).roundToInt()).append(',').append((f.y * 1000).roundToInt()).append(',')
+            append(f.hp).append(',').append(f.maxHp).append(',')
+            append(f.action?.ordinal ?: -1).append(',').append(f.actionAgeMs.coerceAtMost(99_999)).append(',')
+            append(f.status).append(',').append(f.hurtAgeMs.coerceAtMost(99_999)).append(',')
+            append(f.facing).append(',').append(f.energy).append(',').append(f.uniqueLeft).append(',')
+            append((f.aimX * 1000).roundToInt()).append(',').append((f.aimY * 1000).roundToInt()).append(',')
+            append((f.originX * 1000).roundToInt()).append(',').append((f.originY * 1000).roundToInt()).append(',')
+            append(f.projectileAgeMs.coerceIn(-1, 99_999)).append(',').append(f.evadeCdMs.coerceIn(0, 99_999))
             f.cooldowns.forEach { append(',').append(it) }
         }
     }

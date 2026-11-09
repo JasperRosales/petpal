@@ -565,60 +565,6 @@ object BattleRules {
     const val MAX_ENERGY = 100
     const val UNIQUE_USES = 2
 }
-enum class Passive(val label: String, val description: String) {
-    PHOTOSYNTHESIS("Photosynthesis", "Regenerates 0.6 HP every second."),
-    NINE_LIVES("Nine Lives", "Survives the first knockout blow with 1 HP."),
-    BLAZE("Blaze", "Fire moves deal 25% more damage and burn twice as long."),
-    QUICK_FEET("Quick Feet", "Moves 25% faster and all cooldowns are 10% shorter."),
-    LOYAL_HEART("Loyal Heart", "Deals 25% more damage while below half HP."),
-    KEEN_EYE("Keen Eye", "All moves reach 20% further."),
-    HARD_SHELL("Hard Shell", "Takes 20% less damage from every hit."),
-    TRICKSTER("Trickster", "20% chance to dodge an attack completely."),
-    SLIPPERY("Slippery", "Immune to slow and stun."),
-    THICK_FUR("Thick Fur", "20% more max HP."),
-    ICE_BODY("Ice Body", "Can't be burned, and Ice moves deal 15% more damage."),
-    SPIKY("Spiky", "Close-range attackers take 20% of the damage back."),
-    VAMPIRE("Vampire", "Heals for 10% of all damage dealt."),
-    FLEET("Fleet", "Evade recharges twice as fast."),
-    PLAYFUL("Playful", "Energy charges 30% faster."),
-    BAMBOO_SNACK("Bamboo Snack", "Once per battle, heals 20% HP when it drops below 40%."),
-    SUN_SCALES("Sun Scales", "Takes 30% less damage from Fire and Ice moves."),
-    STICKY_PAWS("Sticky Paws", "Every hit steals 8 energy from the target."),
-    CHEEK_POUCH("Cheek Pouch", "Starts every battle with 30 extra energy."),
-    CHATTER("Chatter", "Hits have a 25% chance to weaken the target for 3s."),
-    REGROW("Regrow", "Regenerates 1.2 HP every second while below half HP."),
-    BURROWER("Burrower", "Vanishing moves (Dig, Bounce...) recharge 30% faster."),
-    SNOOZE("Snooze", "Regenerates 2 HP every second after 4s without getting hit."),
-    BLOOD_SCENT("Blood Scent", "Deals 30% more damage to targets below half HP."),
-    TORRENT("Torrent", "Water moves deal 20% more damage."),
-    OVERGROW("Overgrow", "Grass moves deal 20% more damage."),
-    FROSTBITE("Frostbite", "Ice moves deal 20% more damage."),
-    VOLTAGE("Voltage", "Electric moves deal 20% more damage."),
-    AERIAL("Aerial", "Flying moves deal 20% more damage."),
-    SAND_FORCE("Sand Force", "Ground moves deal 20% more damage."),
-    MARTIAL("Martial Arts", "Fighting moves deal 20% more damage."),
-    STATIC_FUR("Static Fur", "Close-range attackers have a 25% chance to be paralyzed."),
-    FLAME_BODY("Flame Body", "Close-range attackers have a 25% chance to be burned."),
-    ADRENALINE("Adrenaline", "Below 30% HP: deals 20% more damage and moves 20% faster."),
-    SNIPER("Sniper", "Hits from long range deal 20% more damage."),
-    BRAWLER("Brawler", "Close-range hits deal 15% more damage."),
-    IRON_WILL("Iron Will", "Can't be weakened or disrupted."),
-    MEDIC("Medic", "Healing moves heal 50% more."),
-    FOCUS("Focus", "Special and unique moves deal 20% more damage."),
-    GUTS("Guts", "Deals 30% more damage while burned, slowed or paralyzed."),
-    BERSERK("Berserk", "Deals up to 40% more damage the lower its HP."),
-    LUCKY("Lucky", "10% chance to land a critical hit for 1.5x damage."),
-    SWIFT("Swift", "Moves 15% faster."),
-    GRIT("Grit", "Takes 20% less damage while below half HP."),
-    ENDURANCE("Endurance", "Takes half damage from burn, leech seed and terrain."),
-    IRON_FIST("Iron Fist", "Punching moves deal 25% more damage."),
-    STEADFAST("Steadfast", "Can't be knocked back or pulled."),
-    FIRST_STRIKE("First Strike", "Deals 25% more damage to targets above 70% HP."),
-    BLUBBER("Blubber", "Takes 30% less damage from Water and Ice moves."),
-    COLOR_SHIFT("Color Shift", "Takes 30% less damage from the type it was last hit by."),
-    DAM_BUILDER("Dam Builder", "Starts every battle with a shield, and its shields are 50% stronger."),
-}
-
 data class MoveUnlock(val move: Move, val level: Int)
 
 /**
@@ -631,38 +577,8 @@ object SpeciesKit {
     const val MAX_MOVES = 4
     const val SLOTS = MAX_MOVES + 1
 
-    fun passive(s: Species) = when (s) {
-        Species.SPROUT -> Passive.PHOTOSYNTHESIS
-        Species.KITTY -> Passive.NINE_LIVES
-        Species.DRAKE -> Passive.BLAZE
-        Species.BUNNY -> Passive.QUICK_FEET
-        Species.PUP -> Passive.LOYAL_HEART
-        Species.OWL -> Passive.KEEN_EYE
-        Species.TURTLE -> Passive.HARD_SHELL
-        Species.FOX -> Passive.TRICKSTER
-        Species.FROG -> Passive.SLIPPERY
-        Species.BEAR -> Passive.THICK_FUR
-        Species.PENGUIN -> Passive.ICE_BODY
-        Species.HEDGEHOG -> Passive.SPIKY
-        Species.BAT -> Passive.VAMPIRE
-        Species.DEER -> Passive.FLEET
-        Species.OTTER -> Passive.PLAYFUL
-        Species.PANDA -> Passive.BAMBOO_SNACK
-        Species.MONKEY -> Passive.IRON_FIST
-        Species.KANGAROO -> Passive.STEADFAST
-        Species.EAGLE -> Passive.FIRST_STRIKE
-        Species.SEAL -> Passive.BLUBBER
-        Species.LIZARD -> Passive.SUN_SCALES
-        Species.RACCOON -> Passive.STICKY_PAWS
-        Species.HAMSTER -> Passive.CHEEK_POUCH
-        Species.PARROT -> Passive.CHATTER
-        Species.AXOLOTL -> Passive.REGROW
-        Species.MOLE -> Passive.BURROWER
-        Species.KOALA -> Passive.SNOOZE
-        Species.SHARK -> Passive.BLOOD_SCENT
-        Species.CHAMELEON -> Passive.COLOR_SHIFT
-        Species.BEAVER -> Passive.DAM_BUILDER
-    }
+    /** The species' signature passive: its first Baby option. */
+    fun passive(s: Species) = passiveOptions(s).first().first
 
     /** The species' own types (besides Normal). */
     fun affinity(s: Species): Set<Element> = when (s) {
@@ -914,38 +830,10 @@ object SpeciesKit {
      * Two passive options per stage (Baby, Kid, Teen, Adult). When the pet hatches or evolves,
      * one of the stage's two is rolled at random. The Baby pair starts with the species' signature [passive].
      */
-    fun passiveOptions(s: Species): List<Pair<Passive, Passive>> = when (s) {
-        Species.SPROUT -> listOf(Passive.PHOTOSYNTHESIS to Passive.REGROW, Passive.OVERGROW to Passive.SAND_FORCE, Passive.MEDIC to Passive.THICK_FUR, Passive.SNOOZE to Passive.IRON_WILL)
-        Species.KITTY -> listOf(Passive.NINE_LIVES to Passive.LUCKY, Passive.VOLTAGE to Passive.FROSTBITE, Passive.SWIFT to Passive.TRICKSTER, Passive.BLOOD_SCENT to Passive.FOCUS)
-        Species.DRAKE -> listOf(Passive.BLAZE to Passive.FLAME_BODY, Passive.AERIAL to Passive.SUN_SCALES, Passive.BERSERK to Passive.THICK_FUR, Passive.FOCUS to Passive.ADRENALINE)
-        Species.BUNNY -> listOf(Passive.QUICK_FEET to Passive.LUCKY, Passive.FROSTBITE to Passive.SAND_FORCE, Passive.MARTIAL to Passive.FLEET, Passive.SWIFT to Passive.GUTS)
-        Species.PUP -> listOf(Passive.LOYAL_HEART to Passive.GRIT, Passive.FLAME_BODY to Passive.SAND_FORCE, Passive.GUTS to Passive.BRAWLER, Passive.BLOOD_SCENT to Passive.MEDIC)
-        Species.OWL -> listOf(Passive.KEEN_EYE to Passive.SNIPER, Passive.AERIAL to Passive.VOLTAGE, Passive.FOCUS to Passive.CHATTER, Passive.IRON_WILL to Passive.LUCKY)
-        Species.TURTLE -> listOf(Passive.HARD_SHELL to Passive.GRIT, Passive.TORRENT to Passive.SAND_FORCE, Passive.ENDURANCE to Passive.THICK_FUR, Passive.IRON_WILL to Passive.DAM_BUILDER)
-        Species.FOX -> listOf(Passive.TRICKSTER to Passive.LUCKY, Passive.FROSTBITE to Passive.BLAZE, Passive.FOCUS to Passive.SWIFT, Passive.COLOR_SHIFT to Passive.SNIPER)
-        Species.FROG -> listOf(Passive.SLIPPERY to Passive.REGROW, Passive.TORRENT to Passive.OVERGROW, Passive.MEDIC to Passive.SWIFT, Passive.PLAYFUL to Passive.ENDURANCE)
-        Species.BEAR -> listOf(Passive.THICK_FUR to Passive.GRIT, Passive.BRAWLER to Passive.MARTIAL, Passive.BERSERK to Passive.HARD_SHELL, Passive.LOYAL_HEART to Passive.STEADFAST)
-        Species.PENGUIN -> listOf(Passive.ICE_BODY to Passive.BLUBBER, Passive.FROSTBITE to Passive.TORRENT, Passive.ENDURANCE to Passive.SLIPPERY, Passive.GRIT to Passive.FOCUS)
-        Species.HEDGEHOG -> listOf(Passive.SPIKY to Passive.HARD_SHELL, Passive.OVERGROW to Passive.SAND_FORCE, Passive.STATIC_FUR to Passive.GRIT, Passive.IRON_WILL to Passive.BURROWER)
-        Species.BAT -> listOf(Passive.VAMPIRE to Passive.KEEN_EYE, Passive.AERIAL to Passive.SAND_FORCE, Passive.SNIPER to Passive.BLOOD_SCENT, Passive.ADRENALINE to Passive.TRICKSTER)
-        Species.DEER -> listOf(Passive.FLEET to Passive.SWIFT, Passive.OVERGROW to Passive.FROSTBITE, Passive.MEDIC to Passive.KEEN_EYE, Passive.QUICK_FEET to Passive.LUCKY)
-        Species.OTTER -> listOf(Passive.PLAYFUL to Passive.SLIPPERY, Passive.TORRENT to Passive.VOLTAGE, Passive.SWIFT to Passive.STICKY_PAWS, Passive.MEDIC to Passive.LUCKY)
-        Species.PANDA -> listOf(Passive.BAMBOO_SNACK to Passive.THICK_FUR, Passive.MARTIAL to Passive.OVERGROW, Passive.GRIT to Passive.SNOOZE, Passive.IRON_WILL to Passive.BRAWLER)
-        Species.LIZARD -> listOf(Passive.SUN_SCALES to Passive.REGROW, Passive.FLAME_BODY to Passive.SAND_FORCE, Passive.ENDURANCE to Passive.COLOR_SHIFT, Passive.BLAZE to Passive.ADRENALINE)
-        Species.RACCOON -> listOf(Passive.STICKY_PAWS to Passive.TRICKSTER, Passive.VOLTAGE to Passive.FROSTBITE, Passive.LUCKY to Passive.STATIC_FUR, Passive.CHEEK_POUCH to Passive.FOCUS)
-        Species.HAMSTER -> listOf(Passive.CHEEK_POUCH to Passive.PLAYFUL, Passive.VOLTAGE to Passive.OVERGROW, Passive.STATIC_FUR to Passive.SWIFT, Passive.QUICK_FEET to Passive.GRIT)
-        Species.PARROT -> listOf(Passive.CHATTER to Passive.KEEN_EYE, Passive.AERIAL to Passive.FLAME_BODY, Passive.FOCUS to Passive.SNIPER, Passive.BLAZE to Passive.LUCKY)
-        Species.AXOLOTL -> listOf(Passive.REGROW to Passive.SLIPPERY, Passive.TORRENT to Passive.OVERGROW, Passive.MEDIC to Passive.ENDURANCE, Passive.PHOTOSYNTHESIS to Passive.IRON_WILL)
-        Species.MOLE -> listOf(Passive.BURROWER to Passive.GRIT, Passive.SAND_FORCE to Passive.VOLTAGE, Passive.BRAWLER to Passive.STATIC_FUR, Passive.HARD_SHELL to Passive.STEADFAST)
-        Species.KOALA -> listOf(Passive.SNOOZE to Passive.THICK_FUR, Passive.VOLTAGE to Passive.OVERGROW, Passive.MEDIC to Passive.ENDURANCE, Passive.PHOTOSYNTHESIS to Passive.IRON_WILL)
-        Species.SHARK -> listOf(Passive.BLOOD_SCENT to Passive.BERSERK, Passive.TORRENT to Passive.FROSTBITE, Passive.ADRENALINE to Passive.BRAWLER, Passive.VAMPIRE to Passive.FIRST_STRIKE)
-        Species.CHAMELEON -> listOf(Passive.COLOR_SHIFT to Passive.TRICKSTER, Passive.OVERGROW to Passive.FLAME_BODY, Passive.LUCKY to Passive.KEEN_EYE, Passive.FOCUS to Passive.SLIPPERY)
-        Species.BEAVER -> listOf(Passive.DAM_BUILDER to Passive.HARD_SHELL, Passive.SAND_FORCE to Passive.TORRENT, Passive.IRON_WILL to Passive.GRIT, Passive.STEADFAST to Passive.MEDIC)
-        Species.MONKEY -> listOf(Passive.IRON_FIST to Passive.PLAYFUL, Passive.MARTIAL to Passive.OVERGROW, Passive.SWIFT to Passive.GUTS, Passive.BRAWLER to Passive.LUCKY)
-        Species.KANGAROO -> listOf(Passive.STEADFAST to Passive.GRIT, Passive.MARTIAL to Passive.SAND_FORCE, Passive.BRAWLER to Passive.FLEET, Passive.GUTS to Passive.IRON_FIST)
-        Species.EAGLE -> listOf(Passive.FIRST_STRIKE to Passive.KEEN_EYE, Passive.AERIAL to Passive.MARTIAL, Passive.SNIPER to Passive.FOCUS, Passive.BLOOD_SCENT to Passive.SWIFT)
-        Species.SEAL -> listOf(Passive.BLUBBER to Passive.PLAYFUL, Passive.FROSTBITE to Passive.TORRENT, Passive.GRIT to Passive.SLIPPERY, Passive.THICK_FUR to Passive.ENDURANCE)
-    }
+    fun passiveOptions(s: Species): List<Pair<Passive, Passive>> = PASSIVES.getValue(s)
+
+    private val PASSIVES: Map<Species, List<Pair<Passive, Passive>>> = Passive.entries.groupBy { it.species }
+        .mapValues { (_, ps) -> Stage.entries.drop(1).map { st -> ps.filter { it.stage == st }.let { it[0] to it[1] } } }
 
     fun passiveOptions(s: Species, stage: Stage): Pair<Passive, Passive> =
         passiveOptions(s)[(stage.ordinal - 1).coerceAtLeast(0)]

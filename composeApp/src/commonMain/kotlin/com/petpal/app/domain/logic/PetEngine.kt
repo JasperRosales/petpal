@@ -93,12 +93,17 @@ object PetEngine {
     /** One rolled passive per stage reached: Baby, Kid, Teen, Adult. */
     private fun passivesOwed(stage: Stage) = stage.ordinal
 
-    fun needsPassiveRoll(pet: Pet) = pet.passives.size < passivesOwed(pet.stage)
+    /** Rolled passives that still match their stage's options (older versions shared passives between pets). */
+    private fun validPassives(pet: Pet): List<Passive> = pet.passives.withIndex()
+        .takeWhile { (i, p) -> i < Stage.entries.size - 1 && p in SpeciesKit.passiveOptions(pet.species, Stage.entries[i + 1]).toList() }
+        .map { it.value }
 
-    /** Rolls one of the two options for every stage the pet reached without a roll yet. */
+    fun needsPassiveRoll(pet: Pet) = validPassives(pet).let { it.size < passivesOwed(pet.stage) || it.size != pet.passives.size }
+
+    /** Rolls one of the two options for every stage the pet reached without a valid roll yet. */
     fun rollPassives(pet: Pet, rng: Random = Random.Default): Pet {
         if (!needsPassiveRoll(pet)) return pet
-        val got = pet.passives.toMutableList()
+        val got = validPassives(pet).toMutableList()
         while (got.size < passivesOwed(pet.stage)) {
             val (a, b) = SpeciesKit.passiveOptions(pet.species, Stage.entries[got.size + 1])
             got += if (rng.nextBoolean()) a else b

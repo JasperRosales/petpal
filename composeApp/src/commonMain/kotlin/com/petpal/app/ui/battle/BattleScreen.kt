@@ -671,7 +671,8 @@ private fun Move.coreTint(): Color = when (element) {
 }
 
 @Composable
-internal fun Arena(f: FightState, modifier: Modifier) {
+internal fun Arena(fight: FightState, modifier: Modifier) {
+    val f = fight.copy(snap = rememberSmoothSnap(fight.snap))
     val bob by rememberInfiniteTransition().animateFloat(
         0f, 1f, infiniteRepeatable(tween(500), RepeatMode.Reverse),
     )
@@ -939,4 +940,53 @@ fun MoveCategory.color(): Color = when (this) {
     MoveCategory.NORMAL -> MaterialTheme.colorScheme.outline
     MoveCategory.SPECIAL -> EmberOrangeBright
     MoveCategory.UNIQUE -> EmberGold
+}
+
+
+/**
+ * Snapshots arrive ~20 times a second (over the air, with jitter). Render every frame:
+ * glide positions from the previous snapshot and advance animation clocks between them.
+ */
+@Composable
+private fun rememberSmoothSnap(snap: BattleSnapshot): BattleSnapshot {
+    val clock = remember { kotlin.time.TimeSource.Monotonic.markNow() }
+    var now by remember { mutableLongStateOf(0L) }
+    LaunchedEffect(Unit) { while (true) withFrameMillis { now = clock.elapsedNow().inWholeMilliseconds } }
+    val track = remember { SmoothTrack(snap) }
+    val t = clock.elapsedNow().inWholeMilliseconds
+    if (track.cur !== snap) {
+        track.prev = track.render(t) // glide from where it was drawn, not where it was
+        track.gap = (t - track.at).coerceIn(30, 120).let { (track.gap * 3 + it) / 4 }
+        track.cur = snap
+        track.at = t
+    }
+    return track.render(maxOf(now, t))
+}
+
+private class SmoothTrack(var cur: BattleSnapshot) {
+    var prev: BattleSnapshot = cur
+    var at = 0L
+    var gap = 50L
+
+    fun render(now: Long): BattleSnapshot {
+        if (cur.ended) return cur
+        val dt = (now - at).coerceIn(0, 150) // never extrapolate past a short stall
+        val k = (dt.toFloat() / gap).coerceAtMost(1f)
+        val p = prev.fighters
+        return cur.copy(
+            fighters = cur.fighters.mapIndexed { i, s ->
+                val o = p.getOrNull(i)
+                val glide = o != null && kotlin.math.abs(o.x - s.x) + kotlin.math.abs(o.y - s.y) < 0.3f
+                s.copy(
+                    x = if (glide) o!!.x + (s.x - o.x) * k else s.x,
+                    y = if (glide) o!!.y + (s.y - o.y) * k else s.y,
+                    actionAgeMs = s.actionAgeMs + dt,
+                    hurtAgeMs = s.hurtAgeMs + dt,
+                    projectileAgeMs = if (s.projectileAgeMs < 0) s.projectileAgeMs else s.projectileAgeMs + dt,
+                )
+            },
+            smokes = cur.smokes.map { it.copy(ageMs = it.ageMs + dt) },
+            traps = cur.traps.map { it.copy(ageMs = it.ageMs + dt) },
+        )
+    }
 }

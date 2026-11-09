@@ -9,36 +9,36 @@ Every stage (Baby, Kid, Teen, Adult) has two passive options. When the pet hatch
 
 | Pet | Types | Baby | Kid | Teen | Adult |
 |---|---|---|---|---|---|
-| [Sprout](#sprout) | Normal, Grass, Ground | Photosynthesis / Regrow | Overgrow / Sand Force | Medic / Thick Fur | Snooze / Iron Will |
-| [Kitty](#kitty) | Normal, Electric, Ice | Nine Lives / Lucky | Voltage / Frostbite | Swift / Trickster | Blood Scent / Focus |
-| [Drake](#drake) | Normal, Fire, Flying | Blaze / Flame Body | Aerial / Sun Scales | Berserk / Thick Fur | Focus / Adrenaline |
-| [Bunny](#bunny) | Normal, Ice, Ground, Fighting | Quick Feet / Lucky | Frostbite / Sand Force | Martial Arts / Fleet | Swift / Guts |
-| [Pup](#pup) | Normal, Ground, Fire | Loyal Heart / Grit | Flame Body / Sand Force | Guts / Brawler | Blood Scent / Medic |
-| [Owl](#owl) | Normal, Flying, Electric | Keen Eye / Sniper | Aerial / Voltage | Focus / Chatter | Iron Will / Lucky |
-| [Turtle](#turtle) | Normal, Water, Ground | Hard Shell / Grit | Torrent / Sand Force | Endurance / Thick Fur | Iron Will / Dam Builder |
-| [Fox](#fox) | Normal, Fire, Ice | Trickster / Lucky | Frostbite / Blaze | Focus / Swift | Color Shift / Sniper |
-| [Frog](#frog) | Normal, Water, Grass | Slippery / Regrow | Torrent / Overgrow | Medic / Swift | Playful / Endurance |
-| [Bear](#bear) | Normal, Ground, Water, Fighting | Thick Fur / Grit | Brawler / Martial Arts | Berserk / Hard Shell | Loyal Heart / Steadfast |
-| [Penguin](#penguin) | Normal, Ice, Water | Ice Body / Blubber | Frostbite / Torrent | Endurance / Slippery | Grit / Focus |
-| [Hedgehog](#hedgehog) | Normal, Ground, Grass | Spiky / Hard Shell | Overgrow / Sand Force | Static Fur / Grit | Iron Will / Burrower |
-| [Bat](#bat) | Normal, Flying, Ground | Vampire / Keen Eye | Aerial / Sand Force | Sniper / Blood Scent | Adrenaline / Trickster |
-| [Deer](#deer) | Normal, Grass, Ice | Fleet / Swift | Overgrow / Frostbite | Medic / Keen Eye | Quick Feet / Lucky |
-| [Otter](#otter) | Normal, Water, Electric | Playful / Slippery | Torrent / Voltage | Swift / Sticky Paws | Medic / Lucky |
-| [Panda](#panda) | Normal, Grass, Ground, Fighting | Bamboo Snack / Thick Fur | Martial Arts / Overgrow | Grit / Snooze | Iron Will / Brawler |
-| [Lizard](#lizard) | Normal, Fire, Ground | Sun Scales / Regrow | Flame Body / Sand Force | Endurance / Color Shift | Blaze / Adrenaline |
-| [Raccoon](#raccoon) | Normal, Electric, Ice | Sticky Paws / Trickster | Voltage / Frostbite | Lucky / Static Fur | Cheek Pouch / Focus |
-| [Hamster](#hamster) | Normal, Electric, Grass | Cheek Pouch / Playful | Voltage / Overgrow | Static Fur / Swift | Quick Feet / Grit |
-| [Parrot](#parrot) | Normal, Flying, Fire | Chatter / Keen Eye | Aerial / Flame Body | Focus / Sniper | Blaze / Lucky |
-| [Axolotl](#axolotl) | Normal, Water, Grass | Regrow / Slippery | Torrent / Overgrow | Medic / Endurance | Photosynthesis / Iron Will |
-| [Mole](#mole) | Normal, Ground, Electric | Burrower / Grit | Sand Force / Voltage | Brawler / Static Fur | Hard Shell / Steadfast |
-| [Koala](#koala) | Normal, Grass, Electric | Snooze / Thick Fur | Voltage / Overgrow | Medic / Endurance | Photosynthesis / Iron Will |
-| [Shark](#shark) | Normal, Water, Ice | Blood Scent / Berserk | Torrent / Frostbite | Adrenaline / Brawler | Vampire / First Strike |
-| [Chameleon](#chameleon) | Normal, Grass, Fire | Color Shift / Trickster | Overgrow / Flame Body | Lucky / Keen Eye | Focus / Slippery |
-| [Beaver](#beaver) | Normal, Ground, Water | Dam Builder / Hard Shell | Sand Force / Torrent | Iron Will / Grit | Steadfast / Medic |
-| [Monkey](#monkey) | Normal, Fighting, Grass | Iron Fist / Playful | Martial Arts / Overgrow | Swift / Guts | Brawler / Lucky |
-| [Kangaroo](#kangaroo) | Normal, Fighting, Ground | Steadfast / Grit | Martial Arts / Sand Force | Brawler / Fleet | Guts / Iron Fist |
-| [Eagle](#eagle) | Normal, Flying, Fighting | First Strike / Keen Eye | Aerial / Martial Arts | Sniper / Focus | Blood Scent / Swift |
-| [Seal](#seal) | Normal, Water, Ice | Blubber / Playful | Frostbite / Torrent | Grit / Slippery | Thick Fur / Endurance |
+| [Sprout](#sprout) | Normal, Grass, Ground | Photosynthesis / Seedling Vigor | Deep Roots / Loam Grip | Sap Mender / Bark Skin | Ancient Grove / World Tree |
+| [Kitty](#kitty) | Normal, Electric, Ice | Nine Lives / Curious Paws | Static Whiskers / Frost Purr | Cats Grace / Pounce | Prowler / Purrfect Form |
+| [Drake](#drake) | Normal, Fire, Flying | Blaze / Ember Scales | Updraft / Kindled Wings | Dragon Hide / Fury Flame | Inferno Lord / Sky Tyrant |
+| [Bunny](#bunny) | Normal, Ice, Ground, Fighting | Quick Feet / Bunny Hop | Snowbound / Burrow Kick | Spring Legs / Lucky Foot | Moonleap / Thumper |
+| [Pup](#pup) | Normal, Ground, Fire | Loyal Heart / Wagging Tail | Digger / Warm Coat | Pack Spirit / Tug Of War | Guardian Hound / Howl |
+| [Owl](#owl) | Normal, Flying, Electric | Keen Eye / Night Vision | Silent Wings / Storm Feathers | Sage Mind / Hoot | Elder Owl / Moonlit Hunter |
+| [Turtle](#turtle) | Normal, Water, Ground | Hard Shell / Shell Tuck | Tide Shell / Mud Shell | Slow And Steady / Mossy Back | Fortress / Ancient Shell |
+| [Fox](#fox) | Normal, Fire, Ice | Trickster / Sly Grin | Foxfire / Frost Tail | Illusion / Cunning | Nine Tails / Fox Guile |
+| [Frog](#frog) | Normal, Water, Grass | Slippery / Damp Skin | Lily Pad / Raincaller | Long Tongue / Pond Hopper | Toad King / Mucus Coat |
+| [Bear](#bear) | Normal, Ground, Water, Fighting | Thick Fur / Cub Hug | Salmon Swipe / Mauler | Hibernate / Mama Bear | Grizzly / Kodiak |
+| [Penguin](#penguin) | Normal, Ice, Water | Ice Body / Waddle | Belly Slide / Deep Diver | Huddle / Tuxedo | Emperor / Blizzard Heart |
+| [Hedgehog](#hedgehog) | Normal, Ground, Grass | Spiky / Curl Up | Bramble Quills / Burrow Nose | Static Quills / Prickly Mood | Pincushion / Spine Storm |
+| [Bat](#bat) | Normal, Flying, Ground | Vampire / Echolocation | Night Wings / Cave Dweller | Sonar Ping / Bloodlust | Nosferatu / Night Terror |
+| [Deer](#deer) | Normal, Grass, Ice | Fleet / Fawn Step | Meadow Graze / Frost Antler | Forest Spirit / Watchful | Stag Charge / Spirit Deer |
+| [Otter](#otter) | Normal, Water, Electric | Playful / Rock Cracker | River Dance / Eel Friend | Slick Fur / Float Nap | Tide Trickster / River King |
+| [Panda](#panda) | Normal, Grass, Ground, Fighting | Bamboo Snack / Roly Poly | Bamboo Staff / Kung Fu | Lazy Day / Big Appetite | Zen Master / Dragon Panda |
+| [Lizard](#lizard) | Normal, Fire, Ground | Sun Scales / Tail Drop | Sunbath / Sand Runner | Cold Blood / Basking | Magma Skin / Komodo |
+| [Raccoon](#raccoon) | Normal, Electric, Ice | Sticky Paws / Masked Bandit | Wire Chewer / Icebox Raider | Trash Panda / Nimble Fingers | Master Thief / Scavenger |
+| [Hamster](#hamster) | Normal, Electric, Grass | Cheek Pouch / Wheel Runner | Spark Wheel / Seed Hoard | Fluffball / Stash | Hamster Dash / Big Cheeks |
+| [Parrot](#parrot) | Normal, Flying, Fire | Chatter / Mimic | Tropic Wings / Phoenix Plume | Squawk / Bright Feathers | Echo Song / Sunbird |
+| [Axolotl](#axolotl) | Normal, Water, Grass | Regrow / Gill Frills | Stream Smile / Algae Coat | Limb Regen / Neoteny | Endless Smile / Lake Guardian |
+| [Mole](#mole) | Normal, Ground, Electric | Burrower / Digging Claws | Tunneler / Fuse Box | Earthen Hide / Blind Fury | Deep Delver / Seismic Sense |
+| [Koala](#koala) | Normal, Grass, Electric | Snooze / Eucalyptus | Gum Leaf / Static Nap | Tree Hugger / Drowsy | Deep Sleep / Power Nap |
+| [Shark](#shark) | Normal, Water, Ice | Blood Scent / Rough Skin | Riptide / Cold Deep | Feeding Frenzy / Apex Predator | Megalodon / Jaws |
+| [Chameleon](#chameleon) | Normal, Grass, Fire | Color Shift / Camouflage | Leaf Skin / Ember Tongue | Slow Stalk / Prism Scales | Vanishing Act / Master Of Hues |
+| [Beaver](#beaver) | Normal, Ground, Water | Dam Builder / Timber Teeth | Mud Pack / River Dam | Lodge / Tail Slap | Master Builder / Floodgate |
+| [Monkey](#monkey) | Normal, Fighting, Grass | Iron Fist / Banana Break | Jungle Swing / Monkey Fist | Mischief / Showoff | Simian King / Jungle Lord |
+| [Kangaroo](#kangaroo) | Normal, Fighting, Ground | Steadfast / Pouch Guard | Boxer / Outback | Big Leap / Tail Balance | Champion Boxer / Mob Boss |
+| [Eagle](#eagle) | Normal, Flying, Fighting | First Strike / Talon Grip | Thermal Rider / Dive Bomb | Eagle Eye / Sky Sovereign | Apex Talons / Storm Crown |
+| [Seal](#seal) | Normal, Water, Ice | Blubber / Flipper Flop | Ice Floe / Wave Rider | Beach Nap / Whisker Sense | Walrus Hide / Circus Star |
 
 ## Sprout
 
@@ -46,10 +46,10 @@ _Gentle and patient. You grow a little every day and help others do the same._
 
 - **Types:** Normal, Grass, Ground
 - **Passive options by stage (one is rolled):**
-  - Baby: **Photosynthesis** (Regenerates 0.6 HP every second.) or **Regrow** (Regenerates 1.2 HP every second while below half HP.)
-  - Kid: **Overgrow** (Grass moves deal 20% more damage.) or **Sand Force** (Ground moves deal 20% more damage.)
-  - Teen: **Medic** (Healing moves heal 50% more.) or **Thick Fur** (20% more max HP.)
-  - Adult: **Snooze** (Regenerates 2 HP every second after 4s without getting hit.) or **Iron Will** (Can't be weakened or disrupted.)
+  - Baby: **Photosynthesis** (Regenerates 0.6 HP every second.) or **Seedling Vigor** (Regenerates 1 HP every second while below half HP. 5% more max HP.)
+  - Kid: **Deep Roots** (Grass moves deal 20% more damage. Can't be knocked back or pulled.) or **Loam Grip** (Ground moves deal 20% more damage. Takes 30% less damage from burn, leech seed and terrain.)
+  - Teen: **Sap Mender** (Healing moves heal 40% more. Regenerates 0.3 HP every second.) or **Bark Skin** (Takes 12% less damage from every hit. 8% more max HP.)
+  - Adult: **Ancient Grove** (Regenerates 2.5 HP every second after 4s without getting hit. Can't be weakened or disrupted.) or **World Tree** (20% more max HP. Regenerates 0.4 HP every second.)
 - **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 130
 - **Starters:** Tackle, Leaf Toss
 - **Unique options by stage (pick one):**
@@ -146,10 +146,10 @@ _Independent and curious. You do things your own way and land on your feet._
 
 - **Types:** Normal, Electric, Ice
 - **Passive options by stage (one is rolled):**
-  - Baby: **Nine Lives** (Survives the first knockout blow with 1 HP.) or **Lucky** (10% chance to land a critical hit for 1.5x damage.)
-  - Kid: **Voltage** (Electric moves deal 20% more damage.) or **Frostbite** (Ice moves deal 20% more damage.)
-  - Teen: **Swift** (Moves 15% faster.) or **Trickster** (20% chance to dodge an attack completely.)
-  - Adult: **Blood Scent** (Deals 30% more damage to targets below half HP.) or **Focus** (Special and unique moves deal 20% more damage.)
+  - Baby: **Nine Lives** (Survives the first knockout blow with 1 HP.) or **Curious Paws** (10% chance to land a critical hit for 1.5x damage. Moves 5% faster.)
+  - Kid: **Static Whiskers** (Electric moves deal 20% more damage. Close-range attackers have a 15% chance to be paralyzed.) or **Frost Purr** (Ice moves deal 20% more damage. 5% chance to dodge an attack completely.)
+  - Teen: **Cats Grace** (12% chance to dodge an attack completely. Evade recharges 25% sooner.) or **Pounce** (Deals 25% more damage to targets above 70% HP. Moves 8% faster.)
+  - Adult: **Prowler** (Deals 25% more damage to targets below half HP. 8% chance to land a critical hit for 1.5x damage.) or **Purrfect Form** (Survives the first knockout blow with 1 HP. Special and unique moves deal 15% more damage.)
 - **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 130
 - **Starters:** Tackle, Spark
 - **Unique options by stage (pick one):**
@@ -248,11 +248,11 @@ _Bold and driven. You take charge and bring the fire._
 
 - **Types:** Normal, Fire, Flying
 - **Passive options by stage (one is rolled):**
-  - Baby: **Blaze** (Fire moves deal 25% more damage and burn twice as long.) or **Flame Body** (Close-range attackers have a 25% chance to be burned.)
-  - Kid: **Aerial** (Flying moves deal 20% more damage.) or **Sun Scales** (Takes 30% less damage from Fire and Ice moves.)
-  - Teen: **Berserk** (Deals up to 40% more damage the lower its HP.) or **Thick Fur** (20% more max HP.)
-  - Adult: **Focus** (Special and unique moves deal 20% more damage.) or **Adrenaline** (Below 30% HP: deals 20% more damage and moves 20% faster.)
-- **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 130
+  - Baby: **Blaze** (Fire moves deal 25% more damage. Its burns last 100% longer.) or **Ember Scales** (Close-range attackers have a 25% chance to be burned. Takes 5% less damage from every hit.)
+  - Kid: **Updraft** (Flying moves deal 20% more damage. Moves 8% faster.) or **Kindled Wings** (Fire and Flying moves deal 15% more damage. Its burns last 50% longer.)
+  - Teen: **Dragon Hide** (Takes 25% less damage from Fire and Ice moves. 10% more max HP.) or **Fury Flame** (Deals up to 30% more damage the lower its HP. Fire moves deal 10% more damage.)
+  - Adult: **Inferno Lord** (Special and unique moves deal 20% more damage. Its burns last 100% longer.) or **Sky Tyrant** (Below 30% HP: deals 25% more damage and moves 25% faster. All moves reach 10% further.)
+- **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 134 / Adult 130
 - **Starters:** Tackle, Ember
 - **Unique options by stage (pick one):**
   - Baby: Flame Burst or Smoke Puff
@@ -351,10 +351,10 @@ _Energetic and free. You're always on the move and quick to bounce back._
 
 - **Types:** Normal, Ice, Ground, Fighting
 - **Passive options by stage (one is rolled):**
-  - Baby: **Quick Feet** (Moves 25% faster and all cooldowns are 10% shorter.) or **Lucky** (10% chance to land a critical hit for 1.5x damage.)
-  - Kid: **Frostbite** (Ice moves deal 20% more damage.) or **Sand Force** (Ground moves deal 20% more damage.)
-  - Teen: **Martial Arts** (Fighting moves deal 20% more damage.) or **Fleet** (Evade recharges twice as fast.)
-  - Adult: **Swift** (Moves 15% faster.) or **Guts** (Deals 30% more damage while burned, slowed or paralyzed.)
+  - Baby: **Quick Feet** (Moves 25% faster. All cooldowns are 10% shorter.) or **Bunny Hop** (Evade recharges 30% sooner. 5% chance to dodge an attack completely.)
+  - Kid: **Snowbound** (Ice moves deal 20% more damage. Moves 5% faster.) or **Burrow Kick** (Ground and Fighting moves deal 15% more damage. Vanishing moves (Dig, Bounce...) recharge 20% faster.)
+  - Teen: **Spring Legs** (Close-range hits deal 15% more damage. Evade recharges 20% sooner.) or **Lucky Foot** (12% chance to land a critical hit for 1.5x damage. 6% chance to dodge an attack completely.)
+  - Adult: **Moonleap** (Moves 20% faster. Deals 20% more damage to targets above 70% HP.) or **Thumper** (Fighting moves deal 20% more damage. Deals 20% more damage while burned, slowed or paralyzed.)
 - **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 130
 - **Starters:** Tackle, Powder Snow
 - **Unique options by stage (pick one):**
@@ -467,10 +467,10 @@ _Loyal and warm. Your friends know you'll always show up for them._
 
 - **Types:** Normal, Ground, Fire
 - **Passive options by stage (one is rolled):**
-  - Baby: **Loyal Heart** (Deals 25% more damage while below half HP.) or **Grit** (Takes 20% less damage while below half HP.)
-  - Kid: **Flame Body** (Close-range attackers have a 25% chance to be burned.) or **Sand Force** (Ground moves deal 20% more damage.)
-  - Teen: **Guts** (Deals 30% more damage while burned, slowed or paralyzed.) or **Brawler** (Close-range hits deal 15% more damage.)
-  - Adult: **Blood Scent** (Deals 30% more damage to targets below half HP.) or **Medic** (Healing moves heal 50% more.)
+  - Baby: **Loyal Heart** (Deals 25% more damage while below half HP.) or **Wagging Tail** (Energy charges 15% faster. Regenerates 0.2 HP every second.)
+  - Kid: **Digger** (Ground moves deal 20% more damage. Vanishing moves (Dig, Bounce...) recharge 15% faster.) or **Warm Coat** (Fire moves deal 20% more damage. Takes 30% less damage from burn, leech seed and terrain.)
+  - Teen: **Pack Spirit** (Healing moves heal 30% more. Takes 15% less damage while below half HP.) or **Tug Of War** (Close-range hits deal 12% more damage. Can't be knocked back or pulled.)
+  - Adult: **Guardian Hound** (Takes 20% less damage while below half HP. Deals 20% more damage while below half HP.) or **Howl** (Hits have a 20% chance to weaken the target for 3s. Deals 15% more damage to targets above 70% HP.)
 - **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 130
 - **Starters:** Tackle, Mud Slap
 - **Unique options by stage (pick one):**
@@ -567,10 +567,10 @@ _Thoughtful and wise. You notice what others miss._
 
 - **Types:** Normal, Flying, Electric
 - **Passive options by stage (one is rolled):**
-  - Baby: **Keen Eye** (All moves reach 20% further.) or **Sniper** (Hits from long range deal 20% more damage.)
-  - Kid: **Aerial** (Flying moves deal 20% more damage.) or **Voltage** (Electric moves deal 20% more damage.)
-  - Teen: **Focus** (Special and unique moves deal 20% more damage.) or **Chatter** (Hits have a 25% chance to weaken the target for 3s.)
-  - Adult: **Iron Will** (Can't be weakened or disrupted.) or **Lucky** (10% chance to land a critical hit for 1.5x damage.)
+  - Baby: **Keen Eye** (All moves reach 20% further.) or **Night Vision** (Hits from long range deal 15% more damage. 5% chance to land a critical hit for 1.5x damage.)
+  - Kid: **Silent Wings** (Flying moves deal 20% more damage. 6% chance to dodge an attack completely.) or **Storm Feathers** (Electric moves deal 20% more damage. All moves reach 8% further.)
+  - Teen: **Sage Mind** (Special and unique moves deal 20% more damage. Can't be weakened or disrupted.) or **Hoot** (Hits have a 20% chance to weaken the target for 3s. All moves reach 10% further.)
+  - Adult: **Elder Owl** (Hits from long range deal 25% more damage. All cooldowns are 10% shorter.) or **Moonlit Hunter** (12% chance to land a critical hit for 1.5x damage. Deals 20% more damage to targets below half HP.)
 - **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 130
 - **Starters:** Tackle, Peck
 - **Unique options by stage (pick one):**
@@ -665,11 +665,11 @@ _Calm and steady. You finish what you start, at your own pace._
 
 - **Types:** Normal, Water, Ground
 - **Passive options by stage (one is rolled):**
-  - Baby: **Hard Shell** (Takes 20% less damage from every hit.) or **Grit** (Takes 20% less damage while below half HP.)
-  - Kid: **Torrent** (Water moves deal 20% more damage.) or **Sand Force** (Ground moves deal 20% more damage.)
-  - Teen: **Endurance** (Takes half damage from burn, leech seed and terrain.) or **Thick Fur** (20% more max HP.)
-  - Adult: **Iron Will** (Can't be weakened or disrupted.) or **Dam Builder** (Starts every battle with a shield, and its shields are 50% stronger.)
-- **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 130
+  - Baby: **Hard Shell** (Takes 20% less damage from every hit.) or **Shell Tuck** (Takes 20% less damage while below half HP. Regenerates 1 HP every second after 4s without getting hit.)
+  - Kid: **Tide Shell** (Water moves deal 20% more damage. Takes 5% less damage from every hit.) or **Mud Shell** (Ground moves deal 20% more damage. Can't be knocked back or pulled.)
+  - Teen: **Slow And Steady** (Takes 50% less damage from burn, leech seed and terrain. 10% more max HP.) or **Mossy Back** (Regenerates 0.4 HP every second. Takes 8% less damage from every hit.)
+  - Adult: **Fortress** (Starts every battle with a shield worth 20% of its max HP. Can't be weakened or disrupted.) or **Ancient Shell** (Takes 15% less damage from every hit. 15% more max HP.)
+- **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 134 / Adult 130
 - **Starters:** Tackle, Bubble
 - **Unique options by stage (pick one):**
   - Baby: Shell Up or Shell Bash
@@ -768,10 +768,10 @@ _Clever and playful. There's always a trick up your sleeve._
 
 - **Types:** Normal, Fire, Ice
 - **Passive options by stage (one is rolled):**
-  - Baby: **Trickster** (20% chance to dodge an attack completely.) or **Lucky** (10% chance to land a critical hit for 1.5x damage.)
-  - Kid: **Frostbite** (Ice moves deal 20% more damage.) or **Blaze** (Fire moves deal 25% more damage and burn twice as long.)
-  - Teen: **Focus** (Special and unique moves deal 20% more damage.) or **Swift** (Moves 15% faster.)
-  - Adult: **Color Shift** (Takes 30% less damage from the type it was last hit by.) or **Sniper** (Hits from long range deal 20% more damage.)
+  - Baby: **Trickster** (20% chance to dodge an attack completely.) or **Sly Grin** (Every hit steals 5 energy from the target. 5% chance to land a critical hit for 1.5x damage.)
+  - Kid: **Foxfire** (Fire moves deal 20% more damage. 5% chance to dodge an attack completely.) or **Frost Tail** (Ice moves deal 20% more damage. Hits have a 10% chance to weaken the target for 3s.)
+  - Teen: **Illusion** (10% chance to dodge an attack completely. Takes 20% less damage from the type it was last hit by.) or **Cunning** (Special and unique moves deal 15% more damage. Energy charges 10% faster.)
+  - Adult: **Nine Tails** (Fire and Ice moves deal 15% more damage. 10% chance to dodge an attack completely.) or **Fox Guile** (10% chance to land a critical hit for 1.5x damage. Every hit steals 8 energy from the target.)
 - **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 130
 - **Starters:** Tackle, Ember
 - **Unique options by stage (pick one):**
@@ -864,11 +864,11 @@ _Easygoing and fun. You adapt to anything life throws at you._
 
 - **Types:** Normal, Water, Grass
 - **Passive options by stage (one is rolled):**
-  - Baby: **Slippery** (Immune to slow and stun.) or **Regrow** (Regenerates 1.2 HP every second while below half HP.)
-  - Kid: **Torrent** (Water moves deal 20% more damage.) or **Overgrow** (Grass moves deal 20% more damage.)
-  - Teen: **Medic** (Healing moves heal 50% more.) or **Swift** (Moves 15% faster.)
-  - Adult: **Playful** (Energy charges 30% faster.) or **Endurance** (Takes half damage from burn, leech seed and terrain.)
-- **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 130
+  - Baby: **Slippery** (Immune to slow and stun.) or **Damp Skin** (Regenerates 0.8 HP every second while below half HP. Takes 20% less damage from Fire moves.)
+  - Kid: **Lily Pad** (Grass moves deal 20% more damage. Regenerates 0.3 HP every second.) or **Raincaller** (Water moves deal 20% more damage. Energy charges 10% faster.)
+  - Teen: **Long Tongue** (All moves reach 15% further. Every hit steals 4 energy from the target.) or **Pond Hopper** (Evade recharges 30% sooner. Moves 8% faster.)
+  - Adult: **Toad King** (15% more max HP. Close-range attackers take 10% of the damage back.) or **Mucus Coat** (Immune to slow and stun. Takes 40% less damage from burn, leech seed and terrain.)
+- **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 150
 - **Starters:** Tackle, Bubble
 - **Unique options by stage (pick one):**
   - Baby: Splash Wave or Croak
@@ -965,11 +965,11 @@ _Strong and caring. You protect the people you love._
 
 - **Types:** Normal, Ground, Water, Fighting
 - **Passive options by stage (one is rolled):**
-  - Baby: **Thick Fur** (20% more max HP.) or **Grit** (Takes 20% less damage while below half HP.)
-  - Kid: **Brawler** (Close-range hits deal 15% more damage.) or **Martial Arts** (Fighting moves deal 20% more damage.)
-  - Teen: **Berserk** (Deals up to 40% more damage the lower its HP.) or **Hard Shell** (Takes 20% less damage from every hit.)
-  - Adult: **Loyal Heart** (Deals 25% more damage while below half HP.) or **Steadfast** (Can't be knocked back or pulled.)
-- **Max HP:** Egg 102 / Baby 120 / Kid 115 / Teen 122 / Adult 130
+  - Baby: **Thick Fur** (20% more max HP.) or **Cub Hug** (Close-range hits deal 10% more damage. Takes 10% less damage while below half HP.)
+  - Kid: **Salmon Swipe** (Water moves deal 20% more damage. Close-range hits deal 8% more damage.) or **Mauler** (Fighting moves deal 20% more damage. Deals up to 15% more damage the lower its HP.)
+  - Teen: **Hibernate** (Regenerates 2 HP every second after 4s without getting hit. 10% more max HP.) or **Mama Bear** (Deals 20% more damage while below half HP. Takes 15% less damage while below half HP.)
+  - Adult: **Grizzly** (Deals up to 35% more damage the lower its HP. Can't be knocked back or pulled.) or **Kodiak** (25% more max HP. Takes 8% less damage from every hit.)
+- **Max HP:** Egg 102 / Baby 120 / Kid 115 / Teen 134 / Adult 130
 - **Starters:** Tackle, Mud Slap
 - **Unique options by stage (pick one):**
   - Baby: Bear Swipe or Bear Hug
@@ -1083,11 +1083,11 @@ _Cool and dependable. You stay steady when things get icy._
 
 - **Types:** Normal, Ice, Water
 - **Passive options by stage (one is rolled):**
-  - Baby: **Ice Body** (Can't be burned, and Ice moves deal 15% more damage.) or **Blubber** (Takes 30% less damage from Water and Ice moves.)
-  - Kid: **Frostbite** (Ice moves deal 20% more damage.) or **Torrent** (Water moves deal 20% more damage.)
-  - Teen: **Endurance** (Takes half damage from burn, leech seed and terrain.) or **Slippery** (Immune to slow and stun.)
-  - Adult: **Grit** (Takes 20% less damage while below half HP.) or **Focus** (Special and unique moves deal 20% more damage.)
-- **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 130
+  - Baby: **Ice Body** (Can't be burned. Ice moves deal 15% more damage.) or **Waddle** (Can't be knocked back or pulled. Takes 20% less damage from Ice moves.)
+  - Kid: **Belly Slide** (Ice moves deal 20% more damage. Moves 10% faster.) or **Deep Diver** (Water moves deal 20% more damage. Vanishing moves (Dig, Bounce...) recharge 20% faster.)
+  - Teen: **Huddle** (Takes 40% less damage from burn, leech seed and terrain. Healing moves heal 25% more.) or **Tuxedo** (Takes 10% less damage from every hit. Can't be weakened or disrupted.)
+  - Adult: **Emperor** (15% more max HP. Takes 15% less damage while below half HP.) or **Blizzard Heart** (Ice and Water moves deal 20% more damage. Immune to slow and stun.)
+- **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 150
 - **Starters:** Tackle, Powder Snow
 - **Unique options by stage (pick one):**
   - Baby: Frost Slide or Huddle
@@ -1182,10 +1182,10 @@ _Shy but tough. Soft on the inside, prickly when it counts._
 
 - **Types:** Normal, Ground, Grass
 - **Passive options by stage (one is rolled):**
-  - Baby: **Spiky** (Close-range attackers take 20% of the damage back.) or **Hard Shell** (Takes 20% less damage from every hit.)
-  - Kid: **Overgrow** (Grass moves deal 20% more damage.) or **Sand Force** (Ground moves deal 20% more damage.)
-  - Teen: **Static Fur** (Close-range attackers have a 25% chance to be paralyzed.) or **Grit** (Takes 20% less damage while below half HP.)
-  - Adult: **Iron Will** (Can't be weakened or disrupted.) or **Burrower** (Vanishing moves (Dig, Bounce...) recharge 30% faster.)
+  - Baby: **Spiky** (Close-range attackers take 20% of the damage back.) or **Curl Up** (Takes 10% less damage from every hit. Close-range attackers take 8% of the damage back.)
+  - Kid: **Bramble Quills** (Grass moves deal 20% more damage. Close-range attackers take 10% of the damage back.) or **Burrow Nose** (Ground moves deal 20% more damage. Vanishing moves (Dig, Bounce...) recharge 25% faster.)
+  - Teen: **Static Quills** (Close-range attackers have a 20% chance to be paralyzed. Close-range attackers take 10% of the damage back.) or **Prickly Mood** (Deals 25% more damage while burned, slowed or paralyzed. Takes 5% less damage from every hit.)
+  - Adult: **Pincushion** (Close-range attackers take 30% of the damage back. Takes 10% less damage while below half HP.) or **Spine Storm** (Close-range hits deal 15% more damage. Close-range attackers take 15% of the damage back.)
 - **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 130
 - **Starters:** Tackle, Mud Slap
 - **Unique options by stage (pick one):**
@@ -1281,10 +1281,10 @@ _A night owl with a big heart. You see things nobody else does._
 
 - **Types:** Normal, Flying, Ground
 - **Passive options by stage (one is rolled):**
-  - Baby: **Vampire** (Heals for 10% of all damage dealt.) or **Keen Eye** (All moves reach 20% further.)
-  - Kid: **Aerial** (Flying moves deal 20% more damage.) or **Sand Force** (Ground moves deal 20% more damage.)
-  - Teen: **Sniper** (Hits from long range deal 20% more damage.) or **Blood Scent** (Deals 30% more damage to targets below half HP.)
-  - Adult: **Adrenaline** (Below 30% HP: deals 20% more damage and moves 20% faster.) or **Trickster** (20% chance to dodge an attack completely.)
+  - Baby: **Vampire** (Heals for 10% of all damage dealt.) or **Echolocation** (All moves reach 10% further. 8% chance to dodge an attack completely.)
+  - Kid: **Night Wings** (Flying moves deal 20% more damage. Heals for 4% of all damage dealt.) or **Cave Dweller** (Ground moves deal 20% more damage. Regenerates 1 HP every second after 4s without getting hit.)
+  - Teen: **Sonar Ping** (Hits from long range deal 20% more damage. Hits have a 10% chance to weaken the target for 3s.) or **Bloodlust** (Deals 20% more damage to targets below half HP. Heals for 6% of all damage dealt.)
+  - Adult: **Nosferatu** (Heals for 15% of all damage dealt. Below 30% HP: deals 15% more damage and moves 15% faster.) or **Night Terror** (Hits have a 25% chance to weaken the target for 3s. 8% chance to land a critical hit for 1.5x damage.)
 - **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 130
 - **Starters:** Tackle, Peck
 - **Unique options by stage (pick one):**
@@ -1377,10 +1377,10 @@ _Graceful and gentle. Quick on your feet and kind to everyone._
 
 - **Types:** Normal, Grass, Ice
 - **Passive options by stage (one is rolled):**
-  - Baby: **Fleet** (Evade recharges twice as fast.) or **Swift** (Moves 15% faster.)
-  - Kid: **Overgrow** (Grass moves deal 20% more damage.) or **Frostbite** (Ice moves deal 20% more damage.)
-  - Teen: **Medic** (Healing moves heal 50% more.) or **Keen Eye** (All moves reach 20% further.)
-  - Adult: **Quick Feet** (Moves 25% faster and all cooldowns are 10% shorter.) or **Lucky** (10% chance to land a critical hit for 1.5x damage.)
+  - Baby: **Fleet** (Evade recharges 50% sooner.) or **Fawn Step** (Moves 10% faster. 5% chance to dodge an attack completely.)
+  - Kid: **Meadow Graze** (Grass moves deal 20% more damage. Regenerates 0.3 HP every second.) or **Frost Antler** (Ice moves deal 20% more damage. Close-range hits deal 8% more damage.)
+  - Teen: **Forest Spirit** (Healing moves heal 50% more. Regenerates 0.6 HP every second while below half HP.) or **Watchful** (All moves reach 12% further. Evade recharges 20% sooner.)
+  - Adult: **Stag Charge** (Deals 30% more damage to targets above 70% HP. Can't be knocked back or pulled.) or **Spirit Deer** (Regenerates 0.5 HP every second. 8% chance to dodge an attack completely.)
 - **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 130
 - **Starters:** Tackle, Leaf Toss
 - **Unique options by stage (pick one):**
@@ -1470,10 +1470,10 @@ _Playful and social. You turn any chore into a game._
 
 - **Types:** Normal, Water, Electric
 - **Passive options by stage (one is rolled):**
-  - Baby: **Playful** (Energy charges 30% faster.) or **Slippery** (Immune to slow and stun.)
-  - Kid: **Torrent** (Water moves deal 20% more damage.) or **Voltage** (Electric moves deal 20% more damage.)
-  - Teen: **Swift** (Moves 15% faster.) or **Sticky Paws** (Every hit steals 8 energy from the target.)
-  - Adult: **Medic** (Healing moves heal 50% more.) or **Lucky** (10% chance to land a critical hit for 1.5x damage.)
+  - Baby: **Playful** (Energy charges 30% faster.) or **Rock Cracker** (Close-range hits deal 10% more damage. Energy charges 10% faster.)
+  - Kid: **River Dance** (Water moves deal 20% more damage. Moves 6% faster.) or **Eel Friend** (Electric moves deal 20% more damage. Every hit steals 4 energy from the target.)
+  - Teen: **Slick Fur** (Immune to slow and stun. Moves 5% faster.) or **Float Nap** (Regenerates 1.5 HP every second after 4s without getting hit. Energy charges 10% faster.)
+  - Adult: **Tide Trickster** (Every hit steals 6 energy from the target. 8% chance to dodge an attack completely.) or **River King** (Special and unique moves deal 20% more damage. Energy charges 15% faster.)
 - **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 130
 - **Starters:** Tackle, Bubble
 - **Unique options by stage (pick one):**
@@ -1574,10 +1574,10 @@ _Laid-back and lovable. You take life one snack at a time._
 
 - **Types:** Normal, Grass, Ground, Fighting
 - **Passive options by stage (one is rolled):**
-  - Baby: **Bamboo Snack** (Once per battle, heals 20% HP when it drops below 40%.) or **Thick Fur** (20% more max HP.)
-  - Kid: **Martial Arts** (Fighting moves deal 20% more damage.) or **Overgrow** (Grass moves deal 20% more damage.)
-  - Teen: **Grit** (Takes 20% less damage while below half HP.) or **Snooze** (Regenerates 2 HP every second after 4s without getting hit.)
-  - Adult: **Iron Will** (Can't be weakened or disrupted.) or **Brawler** (Close-range hits deal 15% more damage.)
+  - Baby: **Bamboo Snack** (Once per battle, heals 20% HP when it drops below 40%.) or **Roly Poly** (10% more max HP. Can't be knocked back or pulled.)
+  - Kid: **Bamboo Staff** (Grass moves deal 20% more damage. Close-range hits deal 6% more damage.) or **Kung Fu** (Fighting moves deal 20% more damage. Evade recharges 20% sooner.)
+  - Teen: **Lazy Day** (Regenerates 2 HP every second after 4s without getting hit. Takes 30% less damage from burn, leech seed and terrain.) or **Big Appetite** (Once per battle, heals 30% HP when it drops below 40%. 5% more max HP.)
+  - Adult: **Zen Master** (Can't be weakened or disrupted. Special and unique moves deal 15% more damage.) or **Dragon Panda** (Punching moves deal 25% more damage. Once per battle, heals 20% HP when it drops below 40%.)
 - **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 130
 - **Starters:** Tackle, Leaf Toss
 - **Unique options by stage (pick one):**
@@ -1690,10 +1690,10 @@ _Patient and sun-loving. You soak up the good moments._
 
 - **Types:** Normal, Fire, Ground
 - **Passive options by stage (one is rolled):**
-  - Baby: **Sun Scales** (Takes 30% less damage from Fire and Ice moves.) or **Regrow** (Regenerates 1.2 HP every second while below half HP.)
-  - Kid: **Flame Body** (Close-range attackers have a 25% chance to be burned.) or **Sand Force** (Ground moves deal 20% more damage.)
-  - Teen: **Endurance** (Takes half damage from burn, leech seed and terrain.) or **Color Shift** (Takes 30% less damage from the type it was last hit by.)
-  - Adult: **Blaze** (Fire moves deal 25% more damage and burn twice as long.) or **Adrenaline** (Below 30% HP: deals 20% more damage and moves 20% faster.)
+  - Baby: **Sun Scales** (Takes 30% less damage from Fire and Ice moves.) or **Tail Drop** (10% chance to dodge an attack completely. Regenerates 0.6 HP every second while below half HP.)
+  - Kid: **Sunbath** (Fire moves deal 20% more damage. Regenerates 0.3 HP every second.) or **Sand Runner** (Ground moves deal 20% more damage. Moves 8% faster.)
+  - Teen: **Cold Blood** (Takes 50% less damage from burn, leech seed and terrain. Can't be burned.) or **Basking** (Starts every battle with 20 extra energy. Regenerates 0.2 HP every second.)
+  - Adult: **Magma Skin** (Close-range attackers have a 30% chance to be burned. Takes 20% less damage from Fire and Ice moves.) or **Komodo** (Deals 25% more damage to targets below half HP. Hits have a 15% chance to weaken the target for 3s.)
 - **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 130
 - **Starters:** Tackle, Ember
 - **Unique options by stage (pick one):**
@@ -1790,10 +1790,10 @@ _Resourceful and sneaky. You can make something out of anything._
 
 - **Types:** Normal, Electric, Ice
 - **Passive options by stage (one is rolled):**
-  - Baby: **Sticky Paws** (Every hit steals 8 energy from the target.) or **Trickster** (20% chance to dodge an attack completely.)
-  - Kid: **Voltage** (Electric moves deal 20% more damage.) or **Frostbite** (Ice moves deal 20% more damage.)
-  - Teen: **Lucky** (10% chance to land a critical hit for 1.5x damage.) or **Static Fur** (Close-range attackers have a 25% chance to be paralyzed.)
-  - Adult: **Cheek Pouch** (Starts every battle with 30 extra energy.) or **Focus** (Special and unique moves deal 20% more damage.)
+  - Baby: **Sticky Paws** (Every hit steals 8 energy from the target.) or **Masked Bandit** (8% chance to dodge an attack completely. Every hit steals 3 energy from the target.)
+  - Kid: **Wire Chewer** (Electric moves deal 20% more damage. Every hit steals 3 energy from the target.) or **Icebox Raider** (Ice moves deal 20% more damage. Starts every battle with 15 extra energy.)
+  - Teen: **Trash Panda** (Regenerates 0.8 HP every second while below half HP. 6% chance to land a critical hit for 1.5x damage.) or **Nimble Fingers** (All cooldowns are 10% shorter. Every hit steals 4 energy from the target.)
+  - Adult: **Master Thief** (Every hit steals 12 energy from the target. Moves 5% faster.) or **Scavenger** (Heals for 8% of all damage dealt. Energy charges 15% faster.)
 - **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 130
 - **Starters:** Tackle, Spark
 - **Unique options by stage (pick one):**
@@ -1892,11 +1892,11 @@ _Busy and cheerful. You always have something stashed away for later._
 
 - **Types:** Normal, Electric, Grass
 - **Passive options by stage (one is rolled):**
-  - Baby: **Cheek Pouch** (Starts every battle with 30 extra energy.) or **Playful** (Energy charges 30% faster.)
-  - Kid: **Voltage** (Electric moves deal 20% more damage.) or **Overgrow** (Grass moves deal 20% more damage.)
-  - Teen: **Static Fur** (Close-range attackers have a 25% chance to be paralyzed.) or **Swift** (Moves 15% faster.)
-  - Adult: **Quick Feet** (Moves 25% faster and all cooldowns are 10% shorter.) or **Grit** (Takes 20% less damage while below half HP.)
-- **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 130
+  - Baby: **Cheek Pouch** (Starts every battle with 30 extra energy.) or **Wheel Runner** (Energy charges 20% faster. Moves 5% faster.)
+  - Kid: **Spark Wheel** (Electric moves deal 20% more damage. Energy charges 10% faster.) or **Seed Hoard** (Grass moves deal 20% more damage. Starts every battle with 15 extra energy.)
+  - Teen: **Fluffball** (10% more max HP. 6% chance to dodge an attack completely.) or **Stash** (Once per battle, heals 25% HP when it drops below 40%. Starts every battle with 10 extra energy.)
+  - Adult: **Hamster Dash** (Moves 15% faster. All cooldowns are 10% shorter.) or **Big Cheeks** (Starts every battle with 40 extra energy. Energy charges 10% faster.)
+- **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 134 / Adult 130
 - **Starters:** Tackle, Spark
 - **Unique options by stage (pick one):**
   - Baby: Seed Spit or Cheek Stuff
@@ -1993,10 +1993,10 @@ _Chatty and bright. You light up a room and never run out of things to say._
 
 - **Types:** Normal, Flying, Fire
 - **Passive options by stage (one is rolled):**
-  - Baby: **Chatter** (Hits have a 25% chance to weaken the target for 3s.) or **Keen Eye** (All moves reach 20% further.)
-  - Kid: **Aerial** (Flying moves deal 20% more damage.) or **Flame Body** (Close-range attackers have a 25% chance to be burned.)
-  - Teen: **Focus** (Special and unique moves deal 20% more damage.) or **Sniper** (Hits from long range deal 20% more damage.)
-  - Adult: **Blaze** (Fire moves deal 25% more damage and burn twice as long.) or **Lucky** (10% chance to land a critical hit for 1.5x damage.)
+  - Baby: **Chatter** (Hits have a 25% chance to weaken the target for 3s.) or **Mimic** (Takes 20% less damage from the type it was last hit by. Special and unique moves deal 10% more damage.)
+  - Kid: **Tropic Wings** (Flying moves deal 20% more damage. Hits have a 10% chance to weaken the target for 3s.) or **Phoenix Plume** (Fire moves deal 20% more damage. Regenerates 0.6 HP every second while below half HP.)
+  - Teen: **Squawk** (Hits have a 20% chance to weaken the target for 3s. Moves 6% faster.) or **Bright Feathers** (8% chance to land a critical hit for 1.5x damage. 8% chance to dodge an attack completely.)
+  - Adult: **Echo Song** (Hits have a 30% chance to weaken the target for 3s. Can't be weakened or disrupted.) or **Sunbird** (Fire and Flying moves deal 15% more damage. Healing moves heal 30% more.)
 - **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 130
 - **Starters:** Tackle, Peck
 - **Unique options by stage (pick one):**
@@ -2089,10 +2089,10 @@ _Gentle and resilient. No matter what happens, you bounce back._
 
 - **Types:** Normal, Water, Grass
 - **Passive options by stage (one is rolled):**
-  - Baby: **Regrow** (Regenerates 1.2 HP every second while below half HP.) or **Slippery** (Immune to slow and stun.)
-  - Kid: **Torrent** (Water moves deal 20% more damage.) or **Overgrow** (Grass moves deal 20% more damage.)
-  - Teen: **Medic** (Healing moves heal 50% more.) or **Endurance** (Takes half damage from burn, leech seed and terrain.)
-  - Adult: **Photosynthesis** (Regenerates 0.6 HP every second.) or **Iron Will** (Can't be weakened or disrupted.)
+  - Baby: **Regrow** (Regenerates 1.2 HP every second while below half HP.) or **Gill Frills** (Regenerates 0.3 HP every second. Takes 20% less damage from Water moves.)
+  - Kid: **Stream Smile** (Water moves deal 20% more damage. Regenerates 0.5 HP every second while below half HP.) or **Algae Coat** (Grass moves deal 20% more damage. Takes 30% less damage from burn, leech seed and terrain.)
+  - Teen: **Limb Regen** (Regenerates 1.5 HP every second while below half HP. Healing moves heal 20% more.) or **Neoteny** (12% more max HP. Regenerates 0.3 HP every second.)
+  - Adult: **Endless Smile** (Survives the first knockout blow with 1 HP. Regenerates 1 HP every second while below half HP.) or **Lake Guardian** (Regenerates 0.6 HP every second. Can't be weakened or disrupted.)
 - **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 130
 - **Starters:** Tackle, Bubble
 - **Unique options by stage (pick one):**
@@ -2185,10 +2185,10 @@ _Hardworking and curious. You dig deep until you find the answer._
 
 - **Types:** Normal, Ground, Electric
 - **Passive options by stage (one is rolled):**
-  - Baby: **Burrower** (Vanishing moves (Dig, Bounce...) recharge 30% faster.) or **Grit** (Takes 20% less damage while below half HP.)
-  - Kid: **Sand Force** (Ground moves deal 20% more damage.) or **Voltage** (Electric moves deal 20% more damage.)
-  - Teen: **Brawler** (Close-range hits deal 15% more damage.) or **Static Fur** (Close-range attackers have a 25% chance to be paralyzed.)
-  - Adult: **Hard Shell** (Takes 20% less damage from every hit.) or **Steadfast** (Can't be knocked back or pulled.)
+  - Baby: **Burrower** (Vanishing moves (Dig, Bounce...) recharge 30% faster.) or **Digging Claws** (Close-range hits deal 12% more damage. Vanishing moves (Dig, Bounce...) recharge 10% faster.)
+  - Kid: **Tunneler** (Ground moves deal 20% more damage. Takes 5% less damage from every hit.) or **Fuse Box** (Electric moves deal 20% more damage. Close-range attackers have a 10% chance to be paralyzed.)
+  - Teen: **Earthen Hide** (Takes 12% less damage from every hit. Can't be knocked back or pulled.) or **Blind Fury** (Deals up to 30% more damage the lower its HP. Can't be weakened or disrupted.)
+  - Adult: **Deep Delver** (Vanishing moves (Dig, Bounce...) recharge 40% faster. Deals 20% more damage to targets above 70% HP.) or **Seismic Sense** (10% chance to dodge an attack completely. Close-range hits deal 10% more damage.)
 - **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 130
 - **Starters:** Tackle, Mud Slap
 - **Unique options by stage (pick one):**
@@ -2290,10 +2290,10 @@ _Easygoing and cozy. You recharge fully, then give it your all._
 
 - **Types:** Normal, Grass, Electric
 - **Passive options by stage (one is rolled):**
-  - Baby: **Snooze** (Regenerates 2 HP every second after 4s without getting hit.) or **Thick Fur** (20% more max HP.)
-  - Kid: **Voltage** (Electric moves deal 20% more damage.) or **Overgrow** (Grass moves deal 20% more damage.)
-  - Teen: **Medic** (Healing moves heal 50% more.) or **Endurance** (Takes half damage from burn, leech seed and terrain.)
-  - Adult: **Photosynthesis** (Regenerates 0.6 HP every second.) or **Iron Will** (Can't be weakened or disrupted.)
+  - Baby: **Snooze** (Regenerates 2 HP every second after 4s without getting hit.) or **Eucalyptus** (Regenerates 0.3 HP every second. Takes 20% less damage from burn, leech seed and terrain.)
+  - Kid: **Gum Leaf** (Grass moves deal 20% more damage. Regenerates 1 HP every second after 4s without getting hit.) or **Static Nap** (Electric moves deal 20% more damage. Regenerates 1 HP every second after 4s without getting hit.)
+  - Teen: **Tree Hugger** (Can't be knocked back or pulled. Takes 15% less damage while below half HP.) or **Drowsy** (Starts every battle with a shield worth 10% of its max HP. Regenerates 1.5 HP every second after 4s without getting hit.)
+  - Adult: **Deep Sleep** (Regenerates 3.5 HP every second after 4s without getting hit.) or **Power Nap** (Energy charges 25% faster. Regenerates 1 HP every second after 4s without getting hit.)
 - **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 130
 - **Starters:** Tackle, Leaf Toss
 - **Unique options by stage (pick one):**
@@ -2389,11 +2389,11 @@ _Focused and fearless. Once you set a goal, you never let it go._
 
 - **Types:** Normal, Water, Ice
 - **Passive options by stage (one is rolled):**
-  - Baby: **Blood Scent** (Deals 30% more damage to targets below half HP.) or **Berserk** (Deals up to 40% more damage the lower its HP.)
-  - Kid: **Torrent** (Water moves deal 20% more damage.) or **Frostbite** (Ice moves deal 20% more damage.)
-  - Teen: **Adrenaline** (Below 30% HP: deals 20% more damage and moves 20% faster.) or **Brawler** (Close-range hits deal 15% more damage.)
-  - Adult: **Vampire** (Heals for 10% of all damage dealt.) or **First Strike** (Deals 25% more damage to targets above 70% HP.)
-- **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 130
+  - Baby: **Blood Scent** (Deals 30% more damage to targets below half HP.) or **Rough Skin** (Close-range attackers take 10% of the damage back. Takes 5% less damage from every hit.)
+  - Kid: **Riptide** (Water moves deal 20% more damage. Deals 10% more damage to targets below half HP.) or **Cold Deep** (Ice moves deal 20% more damage. Takes 5% less damage from every hit.)
+  - Teen: **Feeding Frenzy** (Deals up to 25% more damage the lower its HP. Heals for 5% of all damage dealt.) or **Apex Predator** (Deals 20% more damage to targets above 70% HP. Close-range hits deal 10% more damage.)
+  - Adult: **Megalodon** (Deals 35% more damage to targets below half HP. 10% more max HP.) or **Jaws** (Close-range hits deal 20% more damage. Heals for 8% of all damage dealt.)
+- **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 143
 - **Starters:** Tackle, Bubble
 - **Unique options by stage (pick one):**
   - Baby: Fin Slice or Blood Trail
@@ -2482,10 +2482,10 @@ _Adaptable and observant. You fit in anywhere and surprise everyone._
 
 - **Types:** Normal, Grass, Fire
 - **Passive options by stage (one is rolled):**
-  - Baby: **Color Shift** (Takes 30% less damage from the type it was last hit by.) or **Trickster** (20% chance to dodge an attack completely.)
-  - Kid: **Overgrow** (Grass moves deal 20% more damage.) or **Flame Body** (Close-range attackers have a 25% chance to be burned.)
-  - Teen: **Lucky** (10% chance to land a critical hit for 1.5x damage.) or **Keen Eye** (All moves reach 20% further.)
-  - Adult: **Focus** (Special and unique moves deal 20% more damage.) or **Slippery** (Immune to slow and stun.)
+  - Baby: **Color Shift** (Takes 30% less damage from the type it was last hit by.) or **Camouflage** (12% chance to dodge an attack completely.)
+  - Kid: **Leaf Skin** (Grass moves deal 20% more damage. Takes 10% less damage from the type it was last hit by.) or **Ember Tongue** (Fire moves deal 20% more damage. All moves reach 10% further.)
+  - Teen: **Slow Stalk** (Deals 20% more damage to targets above 70% HP. 6% chance to dodge an attack completely.) or **Prism Scales** (Takes 20% less damage from the type it was last hit by. Takes 8% less damage from every hit.)
+  - Adult: **Vanishing Act** (15% chance to dodge an attack completely. Vanishing moves (Dig, Bounce...) recharge 20% faster.) or **Master Of Hues** (Takes 35% less damage from the type it was last hit by. Special and unique moves deal 10% more damage.)
 - **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 130
 - **Starters:** Tackle, Leaf Toss
 - **Unique options by stage (pick one):**
@@ -2581,10 +2581,10 @@ _Industrious and protective. You build things that keep others safe._
 
 - **Types:** Normal, Ground, Water
 - **Passive options by stage (one is rolled):**
-  - Baby: **Dam Builder** (Starts every battle with a shield, and its shields are 50% stronger.) or **Hard Shell** (Takes 20% less damage from every hit.)
-  - Kid: **Sand Force** (Ground moves deal 20% more damage.) or **Torrent** (Water moves deal 20% more damage.)
-  - Teen: **Iron Will** (Can't be weakened or disrupted.) or **Grit** (Takes 20% less damage while below half HP.)
-  - Adult: **Steadfast** (Can't be knocked back or pulled.) or **Medic** (Healing moves heal 50% more.)
+  - Baby: **Dam Builder** (Starts every battle with a shield worth 15% of its max HP. Its shields are 50% stronger.) or **Timber Teeth** (Close-range hits deal 10% more damage. Takes 5% less damage from every hit.)
+  - Kid: **Mud Pack** (Ground moves deal 20% more damage. Starts every battle with a shield worth 5% of its max HP.) or **River Dam** (Water moves deal 20% more damage. Its shields are 30% stronger.)
+  - Teen: **Lodge** (Takes 10% less damage from every hit. Its shields are 30% stronger.) or **Tail Slap** (Can't be knocked back or pulled. Hits have a 10% chance to weaken the target for 3s.)
+  - Adult: **Master Builder** (Starts every battle with a shield worth 25% of its max HP. Can't be weakened or disrupted.) or **Floodgate** (Its shields are 50% stronger. Healing moves heal 30% more.)
 - **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 130
 - **Starters:** Tackle, Mud Slap
 - **Unique options by stage (pick one):**
@@ -2684,10 +2684,10 @@ _Playful and quick-witted. You swing into every adventure with a grin._
 
 - **Types:** Normal, Fighting, Grass
 - **Passive options by stage (one is rolled):**
-  - Baby: **Iron Fist** (Punching moves deal 25% more damage.) or **Playful** (Energy charges 30% faster.)
-  - Kid: **Martial Arts** (Fighting moves deal 20% more damage.) or **Overgrow** (Grass moves deal 20% more damage.)
-  - Teen: **Swift** (Moves 15% faster.) or **Guts** (Deals 30% more damage while burned, slowed or paralyzed.)
-  - Adult: **Brawler** (Close-range hits deal 15% more damage.) or **Lucky** (10% chance to land a critical hit for 1.5x damage.)
+  - Baby: **Iron Fist** (Punching moves deal 25% more damage.) or **Banana Break** (Once per battle, heals 15% HP when it drops below 40%. Energy charges 10% faster.)
+  - Kid: **Jungle Swing** (Grass moves deal 20% more damage. Moves 8% faster.) or **Monkey Fist** (Fighting moves deal 20% more damage. 5% chance to land a critical hit for 1.5x damage.)
+  - Teen: **Mischief** (Every hit steals 5 energy from the target. 6% chance to dodge an attack completely.) or **Showoff** (10% chance to land a critical hit for 1.5x damage. Deals 20% more damage while burned, slowed or paralyzed.)
+  - Adult: **Simian King** (Punching moves deal 30% more damage. All cooldowns are 8% shorter.) or **Jungle Lord** (Fighting and Grass moves deal 15% more damage. Evade recharges 30% sooner.)
 - **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 130
 - **Starters:** Tackle, Karate Chop
 - **Unique options by stage (pick one):**
@@ -2784,10 +2784,10 @@ _Strong and spirited. You leap at challenges and never back down._
 
 - **Types:** Normal, Fighting, Ground
 - **Passive options by stage (one is rolled):**
-  - Baby: **Steadfast** (Can't be knocked back or pulled.) or **Grit** (Takes 20% less damage while below half HP.)
-  - Kid: **Martial Arts** (Fighting moves deal 20% more damage.) or **Sand Force** (Ground moves deal 20% more damage.)
-  - Teen: **Brawler** (Close-range hits deal 15% more damage.) or **Fleet** (Evade recharges twice as fast.)
-  - Adult: **Guts** (Deals 30% more damage while burned, slowed or paralyzed.) or **Iron Fist** (Punching moves deal 25% more damage.)
+  - Baby: **Steadfast** (Can't be knocked back or pulled.) or **Pouch Guard** (Takes 20% less damage while below half HP. Starts every battle with 10 extra energy.)
+  - Kid: **Boxer** (Fighting moves deal 20% more damage. Punching moves deal 10% more damage.) or **Outback** (Ground moves deal 20% more damage. Deals 15% more damage while burned, slowed or paralyzed.)
+  - Teen: **Big Leap** (Evade recharges 35% sooner. Deals 10% more damage to targets above 70% HP.) or **Tail Balance** (Can't be knocked back or pulled. Punching moves deal 15% more damage.)
+  - Adult: **Champion Boxer** (Punching moves deal 20% more damage. Deals 25% more damage while burned, slowed or paralyzed.) or **Mob Boss** (15% more max HP. Close-range hits deal 15% more damage.)
 - **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 130
 - **Starters:** Tackle, Karate Chop
 - **Unique options by stage (pick one):**
@@ -2884,10 +2884,10 @@ _Proud and sharp-eyed. You see the big picture and strike when it counts._
 
 - **Types:** Normal, Flying, Fighting
 - **Passive options by stage (one is rolled):**
-  - Baby: **First Strike** (Deals 25% more damage to targets above 70% HP.) or **Keen Eye** (All moves reach 20% further.)
-  - Kid: **Aerial** (Flying moves deal 20% more damage.) or **Martial Arts** (Fighting moves deal 20% more damage.)
-  - Teen: **Sniper** (Hits from long range deal 20% more damage.) or **Focus** (Special and unique moves deal 20% more damage.)
-  - Adult: **Blood Scent** (Deals 30% more damage to targets below half HP.) or **Swift** (Moves 15% faster.)
+  - Baby: **First Strike** (Deals 25% more damage to targets above 70% HP.) or **Talon Grip** (Close-range hits deal 10% more damage. 5% chance to land a critical hit for 1.5x damage.)
+  - Kid: **Thermal Rider** (Flying moves deal 20% more damage. All moves reach 8% further.) or **Dive Bomb** (Fighting moves deal 20% more damage. Deals 10% more damage to targets above 70% HP.)
+  - Teen: **Eagle Eye** (Hits from long range deal 25% more damage. All moves reach 10% further.) or **Sky Sovereign** (Moves 10% faster. Special and unique moves deal 15% more damage.)
+  - Adult: **Apex Talons** (Deals 25% more damage to targets below half HP. Deals 15% more damage to targets above 70% HP.) or **Storm Crown** (12% chance to land a critical hit for 1.5x damage. Hits from long range deal 15% more damage.)
 - **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 130
 - **Starters:** Tackle, Peck
 - **Unique options by stage (pick one):**
@@ -2969,11 +2969,11 @@ _Friendly and easygoing. You bring smiles wherever you go, even on cold days._
 
 - **Types:** Normal, Water, Ice
 - **Passive options by stage (one is rolled):**
-  - Baby: **Blubber** (Takes 30% less damage from Water and Ice moves.) or **Playful** (Energy charges 30% faster.)
-  - Kid: **Frostbite** (Ice moves deal 20% more damage.) or **Torrent** (Water moves deal 20% more damage.)
-  - Teen: **Grit** (Takes 20% less damage while below half HP.) or **Slippery** (Immune to slow and stun.)
-  - Adult: **Thick Fur** (20% more max HP.) or **Endurance** (Takes half damage from burn, leech seed and terrain.)
-- **Max HP:** Egg 85 / Baby 100 / Kid 115 / Teen 122 / Adult 156
+  - Baby: **Blubber** (Takes 30% less damage from Water and Ice moves.) or **Flipper Flop** (Energy charges 15% faster. 5% more max HP.)
+  - Kid: **Ice Floe** (Ice moves deal 20% more damage. 5% more max HP.) or **Wave Rider** (Water moves deal 20% more damage. 5% chance to dodge an attack completely.)
+  - Teen: **Beach Nap** (Regenerates 1.8 HP every second after 4s without getting hit. 8% more max HP.) or **Whisker Sense** (8% chance to dodge an attack completely. All moves reach 8% further.)
+  - Adult: **Walrus Hide** (20% more max HP. Takes 40% less damage from burn, leech seed and terrain.) or **Circus Star** (Energy charges 20% faster. 8% chance to land a critical hit for 1.5x damage.)
+- **Max HP:** Egg 85 / Baby 100 / Kid 121 / Teen 132 / Adult 156
 - **Starters:** Tackle, Bubble
 - **Unique options by stage (pick one):**
   - Baby: Flipper Slap or Bark Bark

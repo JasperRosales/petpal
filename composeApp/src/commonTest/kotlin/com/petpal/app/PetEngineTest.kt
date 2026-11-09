@@ -73,6 +73,30 @@ class PetEngineTest {
         }
     }
 
+    @Test fun everyPassiveIsUniqueToOnePetAndStage() {
+        val all = Species.entries.flatMap { s -> SpeciesKit.passiveOptions(s).flatMap { it.toList() } }
+        assertEquals(Passive.entries.size, all.size)
+        assertEquals(all.size, all.toSet().size)
+        val combos = Passive.entries.groupBy { it.perks.toSet() }.filterValues { it.size > 1 }
+        assertTrue(combos.isEmpty(), "same effects: $combos")
+        assertEquals(all.size, all.map { it.label }.toSet().size)
+        Species.entries.forEach { s ->
+            listOf(Stage.BABY, Stage.KID, Stage.TEEN, Stage.ADULT).forEach { st ->
+                SpeciesKit.passiveOptions(s, st).toList().forEach { assertTrue(it.species == s && it.stage == st, it.name) }
+            }
+        }
+    }
+
+    @Test fun passivesFromOlderVersionsAreRerolled() {
+        val adult = PetEngine.addXp(base.copy(species = Species.DRAKE), PetEngine.xpForLevel(PetEngine.ADULT_LEVEL), kotlin.random.Random(1))
+        val stale = adult.copy(passives = listOf(adult.passives[0], Passive.VAMPIRE) + adult.passives.drop(2))
+        assertTrue(PetEngine.needsPassiveRoll(stale))
+        val fixed = PetEngine.rollPassives(stale, kotlin.random.Random(2))
+        assertEquals(4, fixed.passives.size)
+        assertEquals(adult.passives[0], fixed.passives[0])
+        assertTrue(fixed.passives[1] in SpeciesKit.passiveOptions(Species.DRAKE, Stage.KID).toList())
+    }
+
     @Test fun teenStageSitsBetweenKidAndAdult() {
         assertEquals(Stage.KID, PetEngine.stageFor(PetEngine.xpForLevel(PetEngine.TEEN_LEVEL - 1)))
         assertEquals(Stage.TEEN, PetEngine.stageFor(PetEngine.xpForLevel(PetEngine.TEEN_LEVEL)))
