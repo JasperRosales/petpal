@@ -32,7 +32,7 @@ class StepService : Service() {
     override fun onBind(intent: Intent?) = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (!canTrack(this)) { stopSelf(); return START_NOT_STICKY }
+        if (!canTrack(this) || !AndroidStepTracking.isEnabled(this)) { stopSelf(); return START_NOT_STICKY }
         val type = if (Build.VERSION.SDK_INT >= 34) ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH else 0
         try {
             ServiceCompat.startForeground(this, NOTIF_ID, notification(), type)
@@ -54,10 +54,15 @@ class StepService : Service() {
         val open = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE,
         )
+        val pause = PendingIntent.getBroadcast(
+            this, 1, Intent(this, StepPauseReceiver::class.java), PendingIntent.FLAG_IMMUTABLE,
+        )
         return NotificationCompat.Builder(this, CHANNEL)
             .setSmallIcon(R.drawable.ic_launcher)
             .setContentTitle("PetPal is counting your steps")
+            .setContentText("Tap \"Don't track now\" to pause. Turn it back on in the app.")
             .setContentIntent(open)
+            .addAction(0, "Don't track now", pause)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
@@ -74,7 +79,7 @@ class StepService : Service() {
                 PackageManager.PERMISSION_GRANTED)
 
         fun start(ctx: Context) {
-            if (!canTrack(ctx)) return
+            if (!canTrack(ctx) || !AndroidStepTracking.isEnabled(ctx)) return
             try {
                 ContextCompat.startForegroundService(ctx, Intent(ctx, StepService::class.java))
             } catch (_: Exception) { }

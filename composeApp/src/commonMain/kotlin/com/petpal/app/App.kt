@@ -13,12 +13,12 @@ import com.petpal.app.ui.theme.PetPalTheme
 import org.koin.compose.KoinContext
 
 @Composable
-fun App(stepPermissionGranted: Boolean = false) {
+fun App(stepPermissionGranted: Boolean = false, requestStepPermission: () -> Unit = {}) {
     var splash by rememberSaveable { mutableStateOf(true) }
     PetPalTheme {
         KoinContext {
             Box {
-                PetPalNavHost(stepPermissionGranted)
+                PetPalNavHost(stepPermissionGranted, requestStepPermission)
                 AnimatedVisibility(splash, exit = fadeOut(tween(400))) {
                     SplashScreen { splash = false }
                 }

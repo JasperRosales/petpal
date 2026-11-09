@@ -26,7 +26,7 @@ Only verifiable activity pays, so shaking the phone or farming the CPU won't get
 - A new pet knows 2 moves: Tackle and its first own-type attack.
 - Leveling up unlocks more of its learnset. A pet keeps 4 moves. When a new one unlocks with all 4 slots full, you pick which one to forget.
 - **Slot 5 is the unique.** Each stage (Baby, Kid, Teen, Adult) offers two unique options; when the pet reaches the stage you pick one and keep it for good (the first option is used until you pick). Uniques can be attacks, buffs or debuffs, and can be used twice per battle.
-- **Stage passives.** Every stage (Baby, Kid, Teen, Adult) has two passive options per species. When the pet hatches or evolves, one of the two is rolled at random and replaces the previous stage's passive. The roll is saved and never changes.
+- **Stage passives.** Every species has exactly one passive per stage (Baby, Kid, Teen, Adult). Hatching or evolving swaps in the new stage's passive.
 - Each species learns Normal moves, its own types (Bunny, Bear and Panda also have Fighting), and a few off-type moves. Some moves are banned for the body type (no punches without fists, no flying without wings).
 - Combo moves have two types (Thunder Punch is Electric/Fighting, also Fire Punch, Ice Punch, Aqua Fist, Rock Smash, Sky Uppercut) and can be learned by a pet of either type.
 - **Categories:** Normal moves just have a cooldown. Specials also need a full energy bar, which they empty. Uniques are slot 5.

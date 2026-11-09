@@ -17,10 +17,8 @@ data class FighterInfo(
     val stage: Stage,
     val level: Int = 1,
     val moves: List<Move> = emptyList(),
-    /** Passive rolled for this stage; anything that isn't one of the stage's two options falls back to the first. */
-    val stagePassive: Passive? = null,
 ) {
-    val passive get() = SpeciesKit.passiveFor(species, stage, stagePassive)
+    val passive get() = SpeciesKit.passive(species, stage)
     /** Learned moves the species can really use at this level, plus the stage's unique. */
     val loadout: List<Move> = SpeciesKit.loadout(species, stage, level, moves)
 }

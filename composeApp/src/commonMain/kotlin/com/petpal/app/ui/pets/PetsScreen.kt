@@ -170,7 +170,7 @@ private fun ChoosePetDialog(owned: Set<Species>, onDismiss: () -> Unit, onPick: 
                         Spacer(Modifier.width(8.dp))
                         Column(Modifier.weight(1f)) {
                             Text(s.label, style = MaterialTheme.typography.bodyMedium)
-                            Text("${SpeciesKit.affinity(s).joinToString("/") { it.label }} · ${SpeciesKit.passiveOptions(s, Stage.BABY).let { (a, b) -> "${a.label} or ${b.label}" }}",
+                            Text("${SpeciesKit.affinity(s).joinToString("/") { it.label }} · ${SpeciesKit.passive(s).label}",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }

@@ -23,9 +23,9 @@ val sharedModule = module {
 
     single { PetRepository(get(), get(), get(), get(), get()) }
     single { HabitRepository(get(), get()) }
-    single { StepRepository(get(), get(), get(), get()) }
+    single { StepRepository(get(), get(), get(), get(), get()) }
 
-    viewModel { HomeViewModel(get(), get(), get(), get()) }
+    viewModel { HomeViewModel(get(), get(), get(), get(), get()) }
     viewModel { HabitsViewModel(get(), get()) }
     viewModel { StatsViewModel(get(), get(), get()) }
     viewModel { BattleViewModel(get(), get()) }

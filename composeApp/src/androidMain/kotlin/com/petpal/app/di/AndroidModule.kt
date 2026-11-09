@@ -17,6 +17,7 @@ import org.koin.dsl.module
 val androidModule = module {
     single { buildDatabase(databaseBuilder(androidContext())) }
     single<StepCounter> { AndroidStepCounter(androidContext()) }
+    single<com.petpal.app.domain.platform.StepTracking> { com.petpal.app.platform.AndroidStepTracking(androidContext()) }
     single<SoundPlayer> { AndroidSoundPlayer(androidContext()) }
     single<AppUpdater> { AndroidAppUpdater(androidContext()) }
     single { BattleLinks(listOf(BluetoothTransport(androidContext()), LanTransport(androidContext()))) }

@@ -6,7 +6,7 @@ import kotlin.math.roundToInt
 
 /** Line-based wire format shared by the Bluetooth and Wi-Fi links. */
 object Protocol {
-    const val VERSION = 19
+    const val VERSION = 20
 
     sealed interface Msg
     data class Hello(val version: Int, val info: FighterInfo) : Msg
@@ -30,7 +30,7 @@ object Protocol {
     data class RoomEntry(val name: String, val level: Int, val team: Int)
 
     fun hello(info: FighterInfo) = "H|$VERSION|${clean(info.name)}|${info.species.name}|${info.stage.name}|${info.level}|" +
-        info.moves.joinToString(",") { it.name } + "|${info.stagePassive?.name.orEmpty()}"
+        info.moves.joinToString(",") { it.name }
     fun command(m: Move) = "C|${m.ordinal}"
     const val EVADE = "E"
     const val SWITCH_TEAM = "W"
@@ -43,7 +43,7 @@ object Protocol {
     ) =
         "T|$you|" + infos.joinToString("#") {
             listOf(clean(it.name).replace(Regex("[#~]"), " "), it.species.name, it.stage.name, it.level,
-                it.moves.joinToString(",") { m -> m.name }, it.stagePassive?.name.orEmpty()).joinToString("~")
+                it.moves.joinToString(",") { m -> m.name }).joinToString("~")
         } + "|${terrain.name}|${humans.sorted().joinToString(",")}|${teams.joinToString(",")}"
 
     fun state(s: BattleSnapshot) = buildString {
@@ -64,9 +64,6 @@ object Protocol {
         }
     }
 
-    /** FighterInfo ignores any passive that isn't one of its species' options for the stage. */
-    private fun passiveOf(name: String?) = Passive.entries.firstOrNull { it.name == name }
-
     fun parse(line: String): Msg? = runCatching {
         val p = line.split('|')
         when (p[0]) {
@@ -76,7 +73,6 @@ object Protocol {
                     p[2], Species.valueOf(p[3]), Stage.valueOf(p[4]),
                     (p.getOrNull(5)?.toIntOrNull() ?: 1).coerceIn(1, 100),
                     p.getOrNull(6).orEmpty().split(',').mapNotNull { n -> Move.entries.firstOrNull { it.name == n } },
-                    passiveOf(p.getOrNull(7)),
                 ),
             )
             "C" -> Command(Move.entries[p[1].toInt()])
@@ -92,8 +88,7 @@ object Protocol {
                 val infos = p[2].split('#').map { fs ->
                     val v = fs.split('~')
                     FighterInfo(v[0], Species.valueOf(v[1]), Stage.valueOf(v[2]), v[3].toInt().coerceIn(1, 100),
-                        v.getOrNull(4).orEmpty().split(',').mapNotNull { n -> Move.entries.firstOrNull { it.name == n } },
-                        passiveOf(v.getOrNull(5)))
+                        v.getOrNull(4).orEmpty().split(',').mapNotNull { n -> Move.entries.firstOrNull { it.name == n } })
                 }
                 Setup(you, infos, Terrain.entries.firstOrNull { it.name == p.getOrNull(3) } ?: Terrain.ARENA,
                     p.getOrNull(4)?.split(',')?.mapNotNull { it.toIntOrNull() }?.toSet()?.plus(setOf(0, you)) ?: setOf(0, you),

@@ -109,7 +109,7 @@ private fun Question(step: Int, vm: OnboardingViewModel) {
 private fun Result(result: PersonalityQuiz.Result, onAdopt: (String) -> Unit) {
     val species = result.species
     var name by remember { mutableStateOf("") }
-    val (passive, passive2) = SpeciesKit.passiveOptions(species, Stage.BABY)
+    val passive = SpeciesKit.passive(species)
     Column(
         Modifier.fillMaxSize().padding(24.dp).systemBarsPadding().verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -156,11 +156,10 @@ private fun Result(result: PersonalityQuiz.Result, onAdopt: (String) -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Rounded.AutoAwesome, null, tint = MaterialTheme.colorScheme.tertiary)
                     Spacer(Modifier.width(8.dp))
-                    Text("Passive: ${passive.label} or ${passive2.label}", style = MaterialTheme.typography.titleSmall)
+                    Text("Passive: ${passive.label}", style = MaterialTheme.typography.titleSmall)
                 }
                 Text("One is rolled at random when it hatches, and again at each evolution.", style = MaterialTheme.typography.labelSmall)
                 Text("${passive.label}: ${passive.description}", style = MaterialTheme.typography.bodySmall)
-                Text("${passive2.label}: ${passive2.description}", style = MaterialTheme.typography.bodySmall)
                 Text("Moves", style = MaterialTheme.typography.titleSmall)
                 val learnset = SpeciesKit.learnset(species)
                 val (babyA, babyB) = SpeciesKit.uniqueOptions(species).first()

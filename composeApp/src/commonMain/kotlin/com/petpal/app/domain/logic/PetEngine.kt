@@ -87,38 +87,14 @@ object PetEngine {
 
     /** Pets never devolve, even if an older version evolved them earlier. */
     fun addXp(pet: Pet, xp: Int, rng: Random = Random.Default): Pet = (pet.xp + xp).let {
-        rollPassives(syncMoves(pet.copy(xp = it, stage = maxOf(pet.stage, stageFor(it)))), rng)
+        syncMoves(pet.copy(xp = it, stage = maxOf(pet.stage, stageFor(it))))
     }
 
-    /** One rolled passive per stage reached: Baby, Kid, Teen, Adult. */
-    private fun passivesOwed(stage: Stage) = stage.ordinal
-
-    /** Rolled passives that still match their stage's options (older versions shared passives between pets). */
-    private fun validPassives(pet: Pet): List<Passive> = pet.passives.withIndex()
-        .takeWhile { (i, p) -> i < Stage.entries.size - 1 && p in SpeciesKit.passiveOptions(pet.species, Stage.entries[i + 1]).toList() }
-        .map { it.value }
-
-    fun needsPassiveRoll(pet: Pet) = validPassives(pet).let { it.size < passivesOwed(pet.stage) || it.size != pet.passives.size }
-
-    /** Rolls one of the two options for every stage the pet reached without a valid roll yet. */
-    fun rollPassives(pet: Pet, rng: Random = Random.Default): Pet {
-        if (!needsPassiveRoll(pet)) return pet
-        val got = validPassives(pet).toMutableList()
-        while (got.size < passivesOwed(pet.stage)) {
-            val (a, b) = SpeciesKit.passiveOptions(pet.species, Stage.entries[got.size + 1])
-            got += if (rng.nextBoolean()) a else b
-        }
-        return pet.copy(passives = got)
-    }
-
-    /** The pet's passive right now. */
-    fun passive(pet: Pet): Passive = SpeciesKit.passiveFor(pet.species, pet.stage, passiveAt(pet, pet.stage))
-
-    /** Passive rolled at [stage], or null if the pet hasn't reached it (Egg shows its Baby options). */
-    fun passiveAt(pet: Pet, stage: Stage): Passive? = pet.passives.getOrNull((stage.ordinal - 1).coerceAtLeast(0))
+    /** The pet's passive right now: one fixed passive per stage. */
+    fun passive(pet: Pet): Passive = SpeciesKit.passive(pet.species, pet.stage)
 
     fun fighterInfo(pet: Pet, stage: Stage = pet.stage) = com.petpal.app.domain.battle.FighterInfo(
-        pet.name, pet.species, stage, levelFor(pet.xp), battleMoves(pet), passiveAt(pet, stage),
+        pet.name, pet.species, stage, levelFor(pet.xp), battleMoves(pet),
     )
 
     /** Moves unlocked by the pet's level that it hasn't been offered yet, in unlock order. */

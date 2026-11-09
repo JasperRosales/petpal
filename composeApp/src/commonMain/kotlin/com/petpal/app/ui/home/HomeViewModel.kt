@@ -7,6 +7,7 @@ import com.petpal.app.domain.battle.Move
 import com.petpal.app.domain.logic.DayMath
 import com.petpal.app.domain.logic.PetEngine
 import com.petpal.app.domain.model.*
+import com.petpal.app.domain.platform.StepTracking
 import com.petpal.app.domain.platform.TimeProvider
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -23,6 +24,7 @@ data class HomeState(
     val stepsAvailable: Boolean = false,
     val isNight: Boolean = false,
     val lifetimeSteps: Long = 0,
+    val tracking: Boolean = true,
 )
 
 class HomeViewModel(
@@ -30,6 +32,7 @@ class HomeViewModel(
     habitRepository: HabitRepository,
     private val stepRepository: StepRepository,
     private val time: TimeProvider,
+    private val stepTracking: StepTracking,
 ) : ViewModel() {
 
     private val isNight = MutableStateFlow(computeNight())
@@ -40,8 +43,8 @@ class HomeViewModel(
         habitRepository.streak(),
         stepRepository.todaySteps(),
         isNight,
-        petRepository.lifetimeSteps,
-    ) { pet, streak, steps, night, lifetime ->
+        petRepository.lifetimeSteps.combine(stepTracking.enabled, ::Pair),
+    ) { pet, streak, steps, night, (lifetime, tracking) ->
         HomeState(
             lifetimeSteps = lifetime,
             pet = pet,
@@ -50,6 +53,7 @@ class HomeViewModel(
             todaySteps = steps,
             stepsAvailable = stepRepository.isAvailable,
             isNight = night,
+            tracking = tracking,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeState())
 
@@ -70,6 +74,8 @@ class HomeViewModel(
         if (stepJob?.isActive == true || !stepRepository.isAvailable) return
         stepJob = viewModelScope.launch { stepRepository.track() }
     }
+
+    fun setTracking(on: Boolean) = stepTracking.setEnabled(on)
 
     private fun computeNight(): Boolean {
         val hour = DayMath.hourOf(time.nowMillis(), TimeZone.currentSystemDefault())

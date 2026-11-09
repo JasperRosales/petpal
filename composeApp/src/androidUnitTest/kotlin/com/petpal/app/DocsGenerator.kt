@@ -72,13 +72,13 @@ class DocsGenerator {
         appendLine("${Species.entries.size} species. Every pet starts with ${SpeciesKit.STARTERS} moves, keeps up to ${SpeciesKit.MAX_MOVES}, and has its unique in slot 5.")
         appendLine("Base HP: Egg 85, Baby 100, Kid 115, Teen 122, Adult 130 (the same multiplier scales damage).")
         appendLine()
-        appendLine("Every stage (Baby, Kid, Teen, Adult) has two passive options. When the pet hatches or evolves, one of the two is rolled at random.")
+        appendLine("Every stage (Baby, Kid, Teen, Adult) has one passive of its own, which the pet gets on hatching or evolving.")
         appendLine()
         appendLine("| Pet | Types | Baby | Kid | Teen | Adult |")
         appendLine("|---|---|---|---|---|---|")
         Species.entries.forEach { s ->
             appendLine("| [${s.label}](#${s.label.lowercase()}) | ${types(s)} | " +
-                SpeciesKit.passiveOptions(s).joinToString(" | ") { (a, b) -> "${a.label} / ${b.label}" } + " |")
+                SpeciesKit.passives(s).joinToString(" | ") { it.label } + " |")
         }
         Species.entries.forEach { s ->
             appendLine()
@@ -88,8 +88,8 @@ class DocsGenerator {
             appendLine()
             appendLine("- **Types:** ${types(s)}")
             val stages = listOf(Stage.BABY, Stage.KID, Stage.TEEN, Stage.ADULT)
-            appendLine("- **Passive options by stage (one is rolled):**")
-            stages.forEach { st -> SpeciesKit.passiveOptions(s, st).let { (a, b) -> appendLine("  - ${st.name.lowercase().replaceFirstChar { it.uppercase() }}: **${a.label}** (${a.description}) or **${b.label}** (${b.description})") } }
+            appendLine("- **Passive by stage:**")
+            stages.forEach { st -> SpeciesKit.passive(s, st).let { a -> appendLine("  - ${st.name.lowercase().replaceFirstChar { it.uppercase() }}: **${a.label}** (${a.description})") } }
             appendLine("- **Max HP:** ${Stage.entries.joinToString(" / ") { st -> "${st.name.lowercase().replaceFirstChar { it.uppercase() }} ${BattleStats.maxHp(FighterInfo("", s, st))}" }}")
             appendLine("- **Starters:** ${SpeciesKit.starters(s).joinToString { it.label }}")
             appendLine("- **Unique options by stage (pick one):**")

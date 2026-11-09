@@ -17,7 +17,6 @@ fun PetEntity.toDomain() = Pet(
     moves = moveList(moves),
     seenMoves = moveList(seenMoves).toSet(),
     uniquePicks = moveList(uniquePicks),
-    passives = passives.split(',').mapNotNull { n -> com.petpal.app.domain.battle.Passive.entries.firstOrNull { it.name == n } },
     relearnsUsed = relearnsUsed,
     stepsAtReset = stepsAtReset,
 )
@@ -41,7 +40,6 @@ fun Pet.toEntity(active: Boolean = true) = PetEntity(
     moves = moves.joinToString(",") { it.name },
     seenMoves = seenMoves.joinToString(",") { it.name },
     uniquePicks = uniquePicks.joinToString(",") { it.name },
-    passives = passives.joinToString(",") { it.name },
     relearnsUsed = relearnsUsed,
     stepsAtReset = stepsAtReset,
 )

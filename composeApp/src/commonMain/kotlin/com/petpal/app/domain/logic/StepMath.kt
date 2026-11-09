@@ -36,6 +36,11 @@ object StepMath {
         return current.copy(steps = current.offset + (sensorTotal - current.baseline))
     }
 
+    /** First reading after a pause: count on from [sensorTotal] so steps walked while paused don't count. */
+    fun resume(current: StepDay, date: String, sensorTotal: Long): StepDay =
+        if (date > current.date) StepDay(date = date, baseline = sensorTotal)
+        else current.copy(baseline = sensorTotal, offset = current.steps)
+
     /** Sensor total at the last saved reading. */
     private fun StepDay.lastRaw() = baseline + (steps - offset)
 

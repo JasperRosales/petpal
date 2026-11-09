@@ -21,7 +21,6 @@ class PetRepository(
     private val mutex = Mutex()
 
     val pet: Flow<Pet> = petDao.observePet().filterNotNull().map { PetEngine.syncMoves(it.toDomain()) }
-        .onEach { if (PetEngine.needsPassiveRoll(it)) refresh() } // evolved before passives were rolled
 
     /** False until the personality quiz has given this device its one partner pet. */
     val hasPet: Flow<Boolean> = petDao.observePet().map { it != null }.distinctUntilChanged()
@@ -40,9 +39,7 @@ class PetRepository(
     suspend fun refresh(): Pet? = mutex.withLock { load() }
 
     private suspend fun load(): Pet? {
-        val pet = petDao.getPet()?.toDomain()?.let(PetEngine::syncMoves) ?: return null
-        if (!PetEngine.needsPassiveRoll(pet)) return pet
-        return PetEngine.rollPassives(pet).also { petDao.upsert(it.toEntity()) }
+        return petDao.getPet()?.toDomain()?.let(PetEngine::syncMoves)
     }
 
     /** Resolves the learn prompt: swap out [forget], or skip the new move when [forget] is null. */

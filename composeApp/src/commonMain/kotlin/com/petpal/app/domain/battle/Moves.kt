@@ -604,8 +604,8 @@ object SpeciesKit {
     const val MAX_MOVES = 4
     const val SLOTS = MAX_MOVES + 1
 
-    /** The species' signature passive: its first Baby option. */
-    fun passive(s: Species) = passiveOptions(s).first().first
+    /** The species' signature passive: its Baby one. */
+    fun passive(s: Species) = passives(s).first()
 
     /** The species' own types (besides Normal). */
     fun affinity(s: Species): Set<Element> = when (s) {
@@ -876,21 +876,13 @@ object SpeciesKit {
     fun unique(s: Species, stage: Stage, picks: Collection<Move> = emptyList()): Move? =
         uniqueOptions(s, stage)?.let { (a, b) -> if (b in picks) b else a }
 
-    /**
-     * Two passive options per stage (Baby, Kid, Teen, Adult). When the pet hatches or evolves,
-     * one of the stage's two is rolled at random. The Baby pair starts with the species' signature [passive].
-     */
-    fun passiveOptions(s: Species): List<Pair<Passive, Passive>> = PASSIVES.getValue(s)
+    /** One passive per stage (Baby, Kid, Teen, Adult); the Egg uses the Baby one. */
+    fun passives(s: Species): List<Passive> = PASSIVES.getValue(s)
 
-    private val PASSIVES: Map<Species, List<Pair<Passive, Passive>>> = Passive.entries.groupBy { it.species }
-        .mapValues { (_, ps) -> Stage.entries.drop(1).map { st -> ps.filter { it.stage == st }.let { it[0] to it[1] } } }
+    private val PASSIVES: Map<Species, List<Passive>> = Passive.entries.groupBy { it.species }
+        .mapValues { (_, ps) -> Stage.entries.drop(1).map { st -> ps.single { it.stage == st } } }
 
-    fun passiveOptions(s: Species, stage: Stage): Pair<Passive, Passive> =
-        passiveOptions(s)[(stage.ordinal - 1).coerceAtLeast(0)]
-
-    /** The passive in play: [rolled] if it's one of the stage's options, otherwise the first option. */
-    fun passiveFor(s: Species, stage: Stage, rolled: Passive?): Passive =
-        passiveOptions(s, stage).let { (a, b) -> if (rolled == b) b else a }
+    fun passive(s: Species, stage: Stage): Passive = passives(s)[(stage.ordinal - 1).coerceAtLeast(0)]
 
     const val STARTERS = 2
 

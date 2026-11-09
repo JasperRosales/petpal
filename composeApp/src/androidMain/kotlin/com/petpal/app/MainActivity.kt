@@ -38,6 +38,10 @@ class MainActivity : ComponentActivity() {
 
         if (stepPermission.value) StepService.start(this)
 
-        setContent { App(stepPermissionGranted = stepPermission.value) }
+        setContent {
+            App(stepPermissionGranted = stepPermission.value, requestStepPermission = {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) requestPermission.launch(Manifest.permission.ACTIVITY_RECOGNITION)
+            })
+        }
     }
 }

@@ -40,61 +40,33 @@ class PetEngineTest {
         assertEquals(SpeciesKit.uniqueOptions(Species.DRAKE, Stage.TEEN), PetEngine.pendingUnique(teen))
     }
 
-    @Test fun evolvingRollsOneOfTheStagesTwoPassives() {
+    @Test fun eachStageHasExactlyOnePassive() {
         val egg = base.copy(species = Species.DRAKE)
-        assertTrue(egg.passives.isEmpty())
-        val adult = PetEngine.addXp(egg, PetEngine.xpForLevel(PetEngine.ADULT_LEVEL), kotlin.random.Random(3))
+        assertEquals(Passive.BLAZE, PetEngine.passive(egg)) // Egg uses the Baby passive
+        val adult = PetEngine.addXp(egg, PetEngine.xpForLevel(PetEngine.ADULT_LEVEL))
         assertEquals(Stage.ADULT, adult.stage)
-        assertEquals(4, adult.passives.size) // Baby, Kid, Teen, Adult
-        listOf(Stage.BABY, Stage.KID, Stage.TEEN, Stage.ADULT).forEachIndexed { i, st ->
-            val (a, b) = SpeciesKit.passiveOptions(Species.DRAKE, st)
-            assertTrue(adult.passives[i] == a || adult.passives[i] == b, st.name)
-        }
-        assertEquals(adult.passives.last(), PetEngine.passive(adult))
-        assertEquals(adult, PetEngine.rollPassives(adult)) // already rolled: stays put
-        // both options of a stage come up
-        val rolls = (0 until 20).map { PetEngine.addXp(egg, PetEngine.xpForLevel(PetEngine.HATCH_LEVEL), kotlin.random.Random(it)).passives.single() }
-        assertEquals(SpeciesKit.passiveOptions(Species.DRAKE, Stage.BABY).toList().toSet(), rolls.toSet())
+        assertEquals(SpeciesKit.passive(Species.DRAKE, Stage.ADULT), PetEngine.passive(adult))
         // it reaches battles and survives the link protocol
         val info = PetEngine.fighterInfo(adult)
-        assertEquals(adult.passives.last(), info.passive)
+        assertEquals(PetEngine.passive(adult), info.passive)
         val back = com.petpal.app.domain.battle.Protocol.parse(com.petpal.app.domain.battle.Protocol.hello(info))
             as com.petpal.app.domain.battle.Protocol.Hello
         assertEquals(info.passive, back.info.passive)
-        // a passive that isn't one of the stage's options is ignored
-        assertEquals(Passive.BLAZE, com.petpal.app.domain.battle.FighterInfo("X", Species.DRAKE, Stage.BABY, stagePassive = Passive.VAMPIRE).passive)
-    }
-
-    @Test fun everyStageHasTwoDistinctPassives() {
-        Species.entries.forEach { s ->
-            val all = SpeciesKit.passiveOptions(s).flatMap { it.toList() }
-            assertEquals(8, all.toSet().size, s.name)
-            assertEquals(SpeciesKit.passive(s), all.first(), s.name)
-        }
     }
 
     @Test fun everyPassiveIsUniqueToOnePetAndStage() {
-        val all = Species.entries.flatMap { s -> SpeciesKit.passiveOptions(s).flatMap { it.toList() } }
+        val all = Species.entries.flatMap { s -> SpeciesKit.passives(s) }
         assertEquals(Passive.entries.size, all.size)
         assertEquals(all.size, all.toSet().size)
         val combos = Passive.entries.groupBy { it.perks.toSet() }.filterValues { it.size > 1 }
         assertTrue(combos.isEmpty(), "same effects: $combos")
         assertEquals(all.size, all.map { it.label }.toSet().size)
         Species.entries.forEach { s ->
+            assertEquals(4, SpeciesKit.passives(s).size, s.name)
             listOf(Stage.BABY, Stage.KID, Stage.TEEN, Stage.ADULT).forEach { st ->
-                SpeciesKit.passiveOptions(s, st).toList().forEach { assertTrue(it.species == s && it.stage == st, it.name) }
+                SpeciesKit.passive(s, st).let { assertTrue(it.species == s && it.stage == st, it.name) }
             }
         }
-    }
-
-    @Test fun passivesFromOlderVersionsAreRerolled() {
-        val adult = PetEngine.addXp(base.copy(species = Species.DRAKE), PetEngine.xpForLevel(PetEngine.ADULT_LEVEL), kotlin.random.Random(1))
-        val stale = adult.copy(passives = listOf(adult.passives[0], Passive.VAMPIRE) + adult.passives.drop(2))
-        assertTrue(PetEngine.needsPassiveRoll(stale))
-        val fixed = PetEngine.rollPassives(stale, kotlin.random.Random(2))
-        assertEquals(4, fixed.passives.size)
-        assertEquals(adult.passives[0], fixed.passives[0])
-        assertTrue(fixed.passives[1] in SpeciesKit.passiveOptions(Species.DRAKE, Stage.KID).toList())
     }
 
     @Test fun teenStageSitsBetweenKidAndAdult() {
@@ -191,6 +163,14 @@ class PetEngineTest {
 }
 
 class StepMathTest {
+    @Test fun stepsWalkedWhilePausedDontCount() {
+        val d = StepMath.onReading(StepDay("2026-11-08", 100), "2026-11-08", 1100) // 1000 today
+        val resumed = StepMath.resume(d, "2026-11-08", 5100) // walked 4000 while paused
+        assertEquals(1000, resumed.steps)
+        assertEquals(1200, StepMath.onReading(resumed, "2026-11-08", 5300).steps)
+        assertEquals(0, StepMath.resume(d, "2026-11-09", 5100).steps) // paused overnight: fresh day
+    }
+
     @Test fun newDayKeepsStepsSinceLastReading() {
         // Last reading yesterday was at sensor 5100; 3900 steps walked since, app closed.
         val d = StepMath.onReading(StepDay("2026-11-07", 100, steps = 5000), "2026-11-08", 9000)

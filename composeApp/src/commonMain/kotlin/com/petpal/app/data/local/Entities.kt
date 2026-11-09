@@ -22,7 +22,7 @@ data class PetEntity(
     /** The one pet that earns XP and battles. Exactly one row is active. */
     @ColumnInfo(defaultValue = "1") val active: Boolean = true,
     @ColumnInfo(defaultValue = "") val uniquePicks: String = "", // comma-separated Move names
-    @ColumnInfo(defaultValue = "") val passives: String = "", // comma-separated Passive names, one per evolution
+    @ColumnInfo(defaultValue = "") val passives: String = "", // unused since v0.21: one fixed passive per stage
 )
 
 @Entity(tableName = "habit_log")

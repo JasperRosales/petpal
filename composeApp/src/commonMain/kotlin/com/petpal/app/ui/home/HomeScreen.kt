@@ -32,6 +32,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun HomeScreen(
     snackbar: SnackbarHostState,
     stepPermissionGranted: Boolean,
+    requestStepPermission: () -> Unit = {},
     vm: HomeViewModel = koinViewModel(),
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
@@ -70,10 +71,18 @@ fun HomeScreen(
             EvolutionCard(pet, state.mood)
 
             if (state.stepsAvailable) {
+                val on = state.tracking && stepPermissionGranted
                 Text(
-                    "${state.todaySteps} steps today, +${PetEngine.STEP_XP} XP every 1,000 (max 20k/day)",
+                    if (on) "${state.todaySteps} steps today, +${PetEngine.STEP_XP} XP every 1,000 (max 20k/day)"
+                    else "${state.todaySteps} steps today. Step tracking is off.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (on) TextButton(onClick = { vm.setTracking(false) }) { Text("Don't track now") }
+                else NeuButton(
+                    onClick = { if (!stepPermissionGranted) requestStepPermission(); vm.setTracking(true) },
+                    text = "Track my steps", icon = PetPalIcons.Steps, filled = true,
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
 
@@ -177,23 +186,15 @@ private fun EvolutionCard(pet: Pet, mood: Mood) {
 
             // Details for the tapped stage
             val power = com.petpal.app.domain.battle.BattleStats.power(selected)
-            val stagePassive = PetEngine.passiveAt(pet, selected)
             Text(
                 selected.label() + (if (selected <= pet.stage) " (reached)" else " (locked)") +
                     " · HP & damage ×" + (power * 100).toInt() / 100.0,
                 style = MaterialTheme.typography.bodySmall,
             )
             if (selected != Stage.EGG) {
-                val (pa, pb) = SpeciesKit.passiveOptions(pet.species, selected)
-                Text(if (stagePassive != null) "Passive (rolled):" else "Passive (one is rolled at random on evolving):",
-                    style = MaterialTheme.typography.bodySmall)
-                listOf(pa, pb).forEach { p ->
-                    Text(
-                        (if (p == stagePassive) "✓ " else if (stagePassive != null) "✗ " else "• ") + p.label + ": " + p.description,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (stagePassive != null && p != stagePassive) dim.copy(alpha = 0.5f) else dim,
-                    )
-                }
+                val p = SpeciesKit.passive(pet.species, selected)
+                Text("Passive:", style = MaterialTheme.typography.bodySmall)
+                Text(p.label + ": " + p.description, style = MaterialTheme.typography.labelSmall, color = dim)
             }
             SpeciesKit.uniqueOptions(pet.species, selected)?.let { (a, b) ->
                 val picked = listOf(a, b).firstOrNull { it in pet.uniquePicks }

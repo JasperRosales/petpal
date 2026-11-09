@@ -5,6 +5,7 @@ import com.petpal.app.domain.logic.DayMath
 import com.petpal.app.domain.logic.StepMath
 import com.petpal.app.domain.model.HabitType
 import com.petpal.app.domain.platform.StepCounter
+import com.petpal.app.domain.platform.StepTracking
 import com.petpal.app.domain.platform.TimeProvider
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
@@ -16,6 +17,7 @@ class StepRepository(
     private val stepDayDao: StepDayDao,
     private val petRepository: PetRepository,
     private val time: TimeProvider,
+    private val tracking: StepTracking,
 ) {
     val isAvailable: Boolean get() = stepCounter.isAvailable
 
@@ -31,13 +33,23 @@ class StepRepository(
     fun stepsFrom(fromDate: String): Flow<Map<String, Long>> =
         stepDayDao.observeFrom(fromDate).map { days -> days.associate { it.date to it.steps } }
 
-    /** Collect readings (app or background service): persists readings and pays out 1k-step rewards. */
+    /**
+     * Collect readings (app or background service): persists readings and pays out 1k-step rewards.
+     * Stops while tracking is switched off; steps walked during the pause are skipped.
+     */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     suspend fun track() {
-        stepCounter.stepsSinceBoot().collect { total -> lock.withLock { onReading(total) } }
+        tracking.enabled.collectLatest { on ->
+            if (on) stepCounter.stepsSinceBoot().collect { total -> lock.withLock { onReading(total) } }
+        }
     }
 
     private suspend fun onReading(total: Long) {
         val previous = stepDayDao.latest()?.toDomain()
+        if (tracking.resyncPending) {
+            tracking.resyncPending = false
+            if (previous != null) { stepDayDao.upsert(StepMath.resume(previous, todayKey(), total).toEntity()); return }
+        }
         var day = StepMath.onReading(previous, todayKey(), total)
         val pending = StepMath.pendingRewards(day)
         if (pending > 0) day = day.copy(rewardedThousands = day.rewardedThousands + pending)

@@ -51,6 +51,9 @@ kotlin {
         commonTest.dependencies {
             implementation(kotlin("test"))
         }
+        androidUnitTest.dependencies {
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+        }
     }
 }
 
@@ -62,8 +65,8 @@ android {
         applicationId = "com.petpal.app"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 22
-        versionName = "0.20.1"
+        versionCode = 23
+        versionName = "0.21.0"
     }
     signingConfigs {
         if (keystoreProps.isNotEmpty()) create("release") {

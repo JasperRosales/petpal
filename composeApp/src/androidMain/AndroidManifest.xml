@@ -51,6 +51,9 @@
             android:exported="false"
             android:foregroundServiceType="health" />
         <receiver
+            android:name=".platform.StepPauseReceiver"
+            android:exported="false" />
+        <receiver
             android:name=".platform.StepBootReceiver"
             android:exported="false">
             <intent-filter>

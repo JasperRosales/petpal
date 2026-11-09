@@ -62,12 +62,12 @@ class RootViewModel(private val petRepository: PetRepository) : ViewModel() {
 }
 
 @Composable
-fun PetPalNavHost(stepPermissionGranted: Boolean, root: RootViewModel = koinViewModel()) {
+fun PetPalNavHost(stepPermissionGranted: Boolean, requestStepPermission: () -> Unit, root: RootViewModel = koinViewModel()) {
     when (root.hasPet.collectAsStateWithLifecycle().value) {
         null -> Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
         false -> OnboardingScreen()
         true -> {
-            MainTabs(stepPermissionGranted)
+            MainTabs(stepPermissionGranted, requestStepPermission)
             val uniquePrompt = root.uniquePrompt.collectAsStateWithLifecycle().value
             val prompt = root.learnPrompt.collectAsStateWithLifecycle().value
             if (uniquePrompt != null) {
@@ -82,7 +82,7 @@ fun PetPalNavHost(stepPermissionGranted: Boolean, root: RootViewModel = koinView
 }
 
 @Composable
-private fun MainTabs(stepPermissionGranted: Boolean) {
+private fun MainTabs(stepPermissionGranted: Boolean, requestStepPermission: () -> Unit) {
     val nav = rememberNavController()
     val snackbar = remember { SnackbarHostState() }
     val entry by nav.currentBackStackEntryAsState()
@@ -113,7 +113,7 @@ private fun MainTabs(stepPermissionGranted: Boolean) {
     ) { padding ->
         CompositionLocalProvider(LocalBattleFullscreen provides battleFullscreen) {
         NavHost(nav, startDestination = Tab.Home.route, modifier = Modifier.padding(padding)) {
-            composable(Tab.Home.route) { HomeScreen(snackbar, stepPermissionGranted) }
+            composable(Tab.Home.route) { HomeScreen(snackbar, stepPermissionGranted, requestStepPermission) }
             composable(Tab.Pets.route) { PetsScreen(snackbar) }
             composable(Tab.Habits.route) { HabitsScreen() }
             composable(Tab.Battle.route) { BattleScreen(battleVm) }
