@@ -21,9 +21,13 @@ object StepMath {
         // Clock moved back to an earlier day: keep counting into the current day so the
         // daily cap can't be reset by changing the date.
         val day = if (current != null && date < current.date) current.date else date
-        if (current == null || current.date != day) {
-            // New day: start counting from this reading.
-            return StepDay(date = day, baseline = sensorTotal)
+        if (current == null) return StepDay(date = day, baseline = sensorTotal)
+        if (current.date != day) {
+            // New day: steps walked since the last reading (e.g. while the app was closed)
+            // count toward today. After a reboot, everything since boot counts.
+            val lastRaw = current.lastRaw()
+            return StepDay(date = day, baseline = if (sensorTotal >= lastRaw) lastRaw else 0)
+                .let { it.copy(steps = sensorTotal - it.baseline) }
         }
         if (sensorTotal < current.baseline) {
             // Device rebooted: keep today's progress and count from zero again.
@@ -31,6 +35,9 @@ object StepMath {
         }
         return current.copy(steps = current.offset + (sensorTotal - current.baseline))
     }
+
+    /** Sensor total at the last saved reading. */
+    private fun StepDay.lastRaw() = baseline + (steps - offset)
 
     /** New 1k-step rewards earned since the last payout (capped per day). */
     fun pendingRewards(day: StepDay): Int =

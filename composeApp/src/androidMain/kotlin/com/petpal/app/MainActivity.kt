@@ -10,12 +10,16 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.mutableStateOf
+import com.petpal.app.platform.StepService
 
 class MainActivity : ComponentActivity() {
     private val stepPermission = mutableStateOf(false)
 
     private val requestPermission =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { stepPermission.value = it }
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+            stepPermission.value = it
+            if (it) StepService.start(this)
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge(
@@ -31,6 +35,8 @@ class MainActivity : ComponentActivity() {
         } else {
             stepPermission.value = true // no runtime permission before Android 10
         }
+
+        if (stepPermission.value) StepService.start(this)
 
         setContent { App(stepPermissionGranted = stepPermission.value) }
     }

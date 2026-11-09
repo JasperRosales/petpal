@@ -191,9 +191,16 @@ class PetEngineTest {
 }
 
 class StepMathTest {
-    @Test fun newDayStartsAtZero() {
+    @Test fun newDayKeepsStepsSinceLastReading() {
+        // Last reading yesterday was at sensor 5100; 3900 steps walked since, app closed.
         val d = StepMath.onReading(StepDay("2026-11-07", 100, steps = 5000), "2026-11-08", 9000)
-        assertEquals(StepDay("2026-11-08", baseline = 9000), d)
+        assertEquals(StepDay("2026-11-08", baseline = 5100, steps = 3900), d)
+        assertEquals(4000, StepMath.onReading(d, "2026-11-08", 9100).steps)
+    }
+
+    @Test fun newDayAfterRebootCountsSinceBoot() {
+        val d = StepMath.onReading(StepDay("2026-11-07", 100, steps = 5000), "2026-11-08", 700)
+        assertEquals(StepDay("2026-11-08", baseline = 0, steps = 700), d)
     }
 
     @Test fun countsFromBaseline() {
