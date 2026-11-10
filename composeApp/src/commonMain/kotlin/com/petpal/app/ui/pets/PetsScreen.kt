@@ -32,15 +32,22 @@ data class PetsState(
     val pets: List<Pet> = emptyList(),
     val activeId: Long? = null,
     val lifetimeSteps: Long = 0,
-    /** It's the 1st and this month's free pet hasn't been claimed. */
+    /** It's the 1st, you're #1 on the leaderboard, and this month's free pet hasn't been claimed. */
     val monthlyGift: Boolean = false,
 )
 
 class PetsViewModel(private val repo: PetRepository, private val rewards: RewardRepository) : ViewModel() {
-    val state = combine(repo.pets, repo.pet, repo.lifetimeSteps, rewards.claimed) { pets, active, lifetime, claimed ->
+    /** Leaderboard #1 check, only made on the 1st. */
+    private val champion = flow {
+        emit(false)
+        if (Events.monthlyOpen(rewards.today())) emit(rewards.isChampion())
+    }
+
+    val state = combine(repo.pets, repo.pet, repo.lifetimeSteps, rewards.claimed, champion) { pets, active, lifetime, claimed, champ ->
         val today = rewards.today()
         PetsState(pets, active.id, lifetime,
-            monthlyGift = Events.monthlyOpen(today) && Events.monthlyKey(today) !in claimed && pets.size < Species.entries.size)
+            monthlyGift = champ && Events.monthlyOpen(today) && Events.monthlyKey(today) !in claimed &&
+                pets.size < Species.entries.size)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PetsState())
 
     fun switchTo(id: Long) = viewModelScope.launch { repo.switchPet(id) }
@@ -81,8 +88,8 @@ fun PetsScreen(snackbar: SnackbarHostState, vm: PetsViewModel = koinViewModel())
             ) {
                 Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        Text("Monthly gift", style = MaterialTheme.typography.titleSmall)
-                        Text("A free random pet, today only. Comes back on the 1st of every month.",
+                        Text("Champion's gift", style = MaterialTheme.typography.titleSmall)
+                        Text("You're #1 on the leaderboard! Claim a free random pet, today only.",
                             style = MaterialTheme.typography.bodySmall)
                     }
                     FilledTonalButton(onClick = { vm.claimMonthly(onUnlocked) }) { Text("Claim") }

@@ -23,7 +23,7 @@ object Events {
         return CpuOpponent.random(template, rng, prefix = "Boss").copy(bonusHp = BOSS_BONUS_HP)
     }
 
-    /** The monthly gift can only be claimed on the 1st. */
+    /** The monthly gift for the leaderboard #1 can only be claimed on the 1st. */
     fun monthlyOpen(today: LocalDate) = today.dayOfMonth == 1
     fun monthlyKey(today: LocalDate) = "monthly:${today.year}-${today.monthNumber.toString().padStart(2, '0')}"
 }

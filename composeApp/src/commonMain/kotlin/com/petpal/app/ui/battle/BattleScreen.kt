@@ -279,7 +279,7 @@ private fun OnlineCard(vm: BattleViewModel) {
                 Spacer(Modifier.width(10.dp))
                 Text("Online ranked", style = MaterialTheme.typography.titleMedium)
             }
-            Text("1v1 against a random player. Wins raise your rating; the top 10 make the leaderboard.",
+            Text("1v1 against a random player. Wins raise your rating; the top 10 make the leaderboard. On the 1st of every month, #1 gets a free pet.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 NeuButton(onClick = vm::findOnline, text = "Find match", icon = Icons.Rounded.TravelExplore,

@@ -21,7 +21,7 @@ val sharedModule = module {
     single { get<PetPalDatabase>().stepDayDao() }
     single { get<PetPalDatabase>().battleLogDao() }
     single { get<PetPalDatabase>().rewardDao() }
-    single { RewardRepository(get(), get(), get()) }
+    single { RewardRepository(get(), get(), get(), getOrNull()) }
 
     single { PetRepository(get(), get(), get(), get(), get()) }
     single { HabitRepository(get(), get()) }
