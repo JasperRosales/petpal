@@ -91,6 +91,8 @@ private fun Lobby(vm: BattleViewModel, message: String?, format: BattleFormat) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         message?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        val bossOpen by vm.bossOpen.collectAsStateWithLifecycle()
+        if (bossOpen) BossCard(vm)
         if (vm.hasOnline) OnlineCard(vm)
         FormatPicker(format, vm::setFormat)
         LinkKind.entries.forEach { kind -> LinkCard(kind, vm) }
@@ -110,6 +112,26 @@ private fun Lobby(vm: BattleViewModel, message: String?, format: BattleFormat) {
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+@Composable
+private fun BossCard(vm: BattleViewModel) {
+    ElevatedCard(
+        Modifier.fillMaxWidth(),
+        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Event: Boss battle", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "A random Lv ${com.petpal.app.domain.logic.Events.BOSS_LEVEL} pet with " +
+                    "+${com.petpal.app.domain.logic.Events.BOSS_BONUS_HP} HP. Beat it once to unlock a random pet. " +
+                    "Retry as often as you like until the end of November.",
+                style = MaterialTheme.typography.bodySmall,
+            )
+            NeuButton(onClick = vm::boss, icon = Icons.Rounded.EmojiEvents, text = "Fight the boss",
+                filled = true, modifier = Modifier.fillMaxWidth())
+        }
     }
 }
 

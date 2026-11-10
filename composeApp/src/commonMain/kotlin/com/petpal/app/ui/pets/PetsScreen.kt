@@ -16,6 +16,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.petpal.app.data.repository.PetRepository
+import com.petpal.app.data.repository.RewardRepository
+import com.petpal.app.domain.logic.Events
 import com.petpal.app.domain.battle.SpeciesKit
 import com.petpal.app.domain.logic.PetEngine
 import com.petpal.app.domain.logic.PetEngine.UnlockKind
@@ -30,11 +32,15 @@ data class PetsState(
     val pets: List<Pet> = emptyList(),
     val activeId: Long? = null,
     val lifetimeSteps: Long = 0,
+    /** It's the 1st and this month's free pet hasn't been claimed. */
+    val monthlyGift: Boolean = false,
 )
 
-class PetsViewModel(private val repo: PetRepository) : ViewModel() {
-    val state = combine(repo.pets, repo.pet, repo.lifetimeSteps) { pets, active, lifetime ->
-        PetsState(pets, active.id, lifetime)
+class PetsViewModel(private val repo: PetRepository, private val rewards: RewardRepository) : ViewModel() {
+    val state = combine(repo.pets, repo.pet, repo.lifetimeSteps, rewards.claimed) { pets, active, lifetime, claimed ->
+        val today = rewards.today()
+        PetsState(pets, active.id, lifetime,
+            monthlyGift = Events.monthlyOpen(today) && Events.monthlyKey(today) !in claimed && pets.size < Species.entries.size)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PetsState())
 
     fun switchTo(id: Long) = viewModelScope.launch { repo.switchPet(id) }
@@ -43,6 +49,8 @@ class PetsViewModel(private val repo: PetRepository) : ViewModel() {
     fun unlock(kind: UnlockKind, species: Species?, onDone: (Species?) -> Unit) = viewModelScope.launch {
         onDone(repo.unlockPet(kind, species))
     }
+
+    fun claimMonthly(onDone: (Species?) -> Unit) = viewModelScope.launch { onDone(rewards.claimMonthly()) }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,6 +75,19 @@ fun PetsScreen(snackbar: SnackbarHostState, vm: PetsViewModel = koinViewModel())
             Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            if (state.monthlyGift) ElevatedCard(
+                Modifier.fillMaxWidth(),
+                colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
+            ) {
+                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Monthly gift", style = MaterialTheme.typography.titleSmall)
+                        Text("A free random pet, today only. Comes back on the 1st of every month.",
+                            style = MaterialTheme.typography.bodySmall)
+                    }
+                    FilledTonalButton(onClick = { vm.claimMonthly(onUnlocked) }) { Text("Claim") }
+                }
+            }
             UnlockCard(state, onRandom = { vm.unlock(UnlockKind.RANDOM, null, onUnlocked) }, onChoose = { choosing = true })
 
             Text("Your pets (${state.pets.size}/${Species.entries.size})", style = MaterialTheme.typography.titleSmall)

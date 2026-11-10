@@ -53,6 +53,25 @@ data class StepDayEntity(
     val rewardedThousands: Int,
 )
 
+/** Event and monthly rewards already collected, keyed like "boss:2026-11" or "monthly:2026-12". */
+@Entity(tableName = "reward_claim")
+data class RewardClaimEntity(
+    @PrimaryKey val key: String,
+    val timestamp: Long,
+)
+
+@Dao
+interface RewardDao {
+    @Query("SELECT `key` FROM reward_claim")
+    fun observeKeys(): Flow<List<String>>
+
+    @Query("SELECT COUNT(*) FROM reward_claim WHERE `key` = :key")
+    suspend fun count(key: String): Int
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insert(claim: RewardClaimEntity)
+}
+
 @Dao
 interface PetDao {
     @Query("SELECT * FROM pet WHERE active = 1 LIMIT 1")

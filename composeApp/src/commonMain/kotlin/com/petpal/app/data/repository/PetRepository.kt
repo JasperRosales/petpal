@@ -93,6 +93,19 @@ class PetRepository(
         next
     }
 
+    /**
+     * Free random egg from an event or the monthly gift. Doesn't touch the step counter.
+     * Returns null if every pet is already owned.
+     */
+    suspend fun grantRandomPet(): Species? = mutex.withLock {
+        val all = petDao.getAll().map { it.toDomain() }
+        if (all.isEmpty()) return@withLock null
+        val next = (Species.entries - all.map { it.species }.toSet()).randomOrNull() ?: return@withLock null
+        val pet = PetEngine.newPet(all.maxOf { it.id } + 1, next, time.nowMillis(), all.maxOf { it.stepsAtReset })
+        petDao.upsert(pet.toEntity(active = false))
+        next
+    }
+
     /** Makes [id] the active pet: the one that earns XP and battles. */
     suspend fun switchPet(id: Long) = mutex.withLock {
         if (petDao.getAll().any { it.id == id }) petDao.setActive(id)

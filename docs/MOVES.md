@@ -224,7 +224,7 @@ species signatures in slot 5, usable 2x per battle.
 | Crosswind | Flying | Normal | 22 | 8 | 0.40 | 3.0s | 250ms | projectile | swap places |
 | Twister | Flying | Normal | 24 | 8 | 0.45 | 2.0s | 300ms | projectile | knockback |
 | Sky Uppercut | Flying | Normal | 26 | 12 | 0.18 | 2.4s | 250ms | melee | knockback |
-| Fly | Flying | Normal | 28 | 16 | 0.30 | 4.0s | 1200ms | melee | vanish |
+| Fly | Flying | Normal | 28 | 16 | 0.30 | 8.0s | 1200ms | melee | vanish |
 | Bounce | Flying | Normal | 30 | 13 | 0.30 | 3.6s | 1000ms | melee | vanish |
 | Gust | Flying | Special | 32 | 13 | 0.55 | 3.5s | 300ms | cone | knockback |
 | Drill Peck | Flying | Normal | 36 | 4 | 0.22 | 1.8s | 200ms | melee | hits 2-4x |

@@ -17,6 +17,8 @@ data class FighterInfo(
     val stage: Stage,
     val level: Int = 1,
     val moves: List<Move> = emptyList(),
+    /** Extra max HP on top of the stage's (event bosses). Local only: not sent over links. */
+    val bonusHp: Int = 0,
 ) {
     val passive get() = SpeciesKit.passive(species, stage)
     /** Learned moves the species can really use at this level, plus the stage's unique. */
@@ -35,7 +37,7 @@ object BattleStats {
 
     fun maxHp(f: FighterInfo): Int {
         val base = 100 * power(f.stage)
-        return (base * (1 + f.passive[Trait.MAX_HP])).roundToInt()
+        return (base * (1 + f.passive[Trait.MAX_HP])).roundToInt() + f.bonusHp
     }
 
     fun baseDamage(f: FighterInfo, m: Move): Float {

@@ -250,7 +250,7 @@ enum class Move(
     TAILWIND("Tailwind", N, Element.FLYING, 17, 0, 0f, 9000, 200, 100, Effect.HASTE),
     ROOST("Roost", N, Element.FLYING, 20, 0, 0f, 7000, 300, 200, Effect.HEAL),
     TWISTER("Twister", N, Element.FLYING, 24, 8, 0.45f, 2000, 300, 200, Effect.KNOCKBACK),
-    FLY("Fly", N, Element.FLYING, 28, 16, 0.30f, 4000, 1200, 300, Effect.VANISH),
+    FLY("Fly", N, Element.FLYING, 28, 16, 0.30f, 8000, 1200, 300, Effect.VANISH),
     BOUNCE("Bounce", N, Element.FLYING, 30, 13, 0.30f, 3600, 1000, 300, Effect.VANISH),
     GUST("Gust", S, Element.FLYING, 32, 13, 0.55f, 3500, 300, 200, Effect.KNOCKBACK),
     DRILL_PECK("Drill Peck", N, Element.FLYING, 36, 4, 0.22f, 1800, 200, 200, Effect.MULTI),

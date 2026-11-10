@@ -20,6 +20,8 @@ val sharedModule = module {
     single { get<PetPalDatabase>().habitLogDao() }
     single { get<PetPalDatabase>().stepDayDao() }
     single { get<PetPalDatabase>().battleLogDao() }
+    single { get<PetPalDatabase>().rewardDao() }
+    single { RewardRepository(get(), get(), get()) }
 
     single { PetRepository(get(), get(), get(), get(), get()) }
     single { HabitRepository(get(), get()) }
@@ -28,9 +30,9 @@ val sharedModule = module {
     viewModel { HomeViewModel(get(), get(), get(), get(), get()) }
     viewModel { HabitsViewModel(get(), get()) }
     viewModel { StatsViewModel(get(), get(), get()) }
-    viewModel { BattleViewModel(get(), get(), get()) }
+    viewModel { BattleViewModel(get(), get(), get(), get()) }
     viewModel { OnboardingViewModel(get()) }
     viewModel { RootViewModel(get()) }
-    viewModel { com.petpal.app.ui.pets.PetsViewModel(get()) }
+    viewModel { com.petpal.app.ui.pets.PetsViewModel(get(), get()) }
     viewModel { UpdateViewModel(get()) }
 }

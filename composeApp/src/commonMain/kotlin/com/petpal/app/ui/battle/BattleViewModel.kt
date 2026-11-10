@@ -3,6 +3,8 @@ package com.petpal.app.ui.battle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.petpal.app.data.repository.PetRepository
+import com.petpal.app.data.repository.RewardRepository
+import com.petpal.app.domain.logic.Events
 import com.petpal.app.domain.battle.*
 import com.petpal.app.domain.logic.PetEngine
 import com.petpal.app.domain.model.BattleOutcome
@@ -78,7 +80,16 @@ class BattleViewModel(
     private val links: BattleLinks,
     private val petRepository: PetRepository,
     private val online: OnlineService? = null,
+    private val rewards: RewardRepository? = null,
 ) : ViewModel() {
+    /** The limited-time boss is open and not beaten yet. */
+    val bossOpen: StateFlow<Boolean> = (rewards?.claimed ?: flowOf(emptyList())).map { keys ->
+        rewards != null && Events.BOSS_KEY !in keys && Events.bossOpen(rewards.today())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    /** Current match is the event boss: a win unlocks a pet. */
+    private var bossFight = false
+
     private val _state = MutableStateFlow(BattleUiState())
     val state: StateFlow<BattleUiState> = _state.asStateFlow()
 
@@ -106,6 +117,7 @@ class BattleViewModel(
 
     private fun start(block: suspend CoroutineScope.() -> Unit) {
         stop()
+        bossFight = false
         val keep = format
         job = viewModelScope.launch {
             try {
@@ -134,6 +146,13 @@ class BattleViewModel(
             else -> listOf(me, ally(), foe(), foe()).let { it to BattleEngine.defaultTeams(4) }
         }
         runHost(infos, remotes = emptyMap(), terrain = nextTerrain(), teams = teams)
+    }
+
+    /** Event boss: 1v1 vs a random Lv 35 pet with bonus HP. Beat it once for a random pet. */
+    fun boss(): Unit = start {
+        again = ::boss
+        bossFight = true
+        runHost(listOf(myInfo(), Events.boss()), remotes = emptyMap(), terrain = nextTerrain())
     }
 
     /** "Battle again" on the result screen. Linked matches: the host re-hosts and the guest reconnects. */
@@ -531,7 +550,10 @@ class BattleViewModel(
         }
         val rivals = fighters.indices.filter { teamOf(it) != teamOf(me) }.joinToString(" & ") { fighters[it].name }
         val xp = petRepository.recordBattle(outcome, rivals, practice)
-        val detail = "+$xp XP${if (practice) " (CPU)" else ""}"
+        var detail = "+$xp XP${if (practice) " (CPU)" else ""}"
+        if (bossFight && outcome == BattleOutcome.WIN) {
+            detail += rewards?.claimBoss()?.let { "\nBoss defeated! ${it.label} egg unlocked" } ?: ""
+        }
         _state.update { s -> s.copy(fight = s.fight?.copy(snap = snap, result = "$title  $detail")) }
     }
 }
