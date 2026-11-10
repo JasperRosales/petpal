@@ -16,7 +16,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.ui.draw.alpha
-import com.petpal.app.domain.battle.BattleRules
 import com.petpal.app.domain.battle.Move
 import com.petpal.app.domain.battle.SpeciesKit
 import com.petpal.app.domain.logic.PetEngine
@@ -254,8 +253,8 @@ private fun MovesCard(pet: Pet, onRelearn: (Move, Move?) -> Unit) {
             }
             Text(
                 "Can learn ${learnset.size} of ${Move.entries.size} moves. Slot 5 is the unique: each stage offers two " +
-                    "and you keep the one you pick (${BattleRules.UNIQUE_USES}x per battle). See Evolution for every stage's options. " +
-                    "Special moves need a full energy bar; elemental moves cost energy. Tap ▶ to see a move in action.",
+                    "and you keep the one you pick. See Evolution for every stage's options. " +
+                    "Specials have long cooldowns. Uniques need a full energy bar, charged by dealing and taking hits. Tap ▶ to see a move in action.",
                 style = MaterialTheme.typography.labelSmall,
                 color = dim,
             )

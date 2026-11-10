@@ -9,7 +9,9 @@ import kotlin.random.Random
 const val ARENA_W = 1f
 const val ARENA_H = 1.2f
 const val BATTLE_MS = 90_000L
-private const val ENERGY_PER_SEC = 6f
+/** Energy only comes from trading hits: per point of damage dealt / taken. */
+private const val ENERGY_PER_DEALT = 1.5f
+private const val ENERGY_PER_TAKEN = 0.8f
 
 data class FighterInfo(
     val name: String,
@@ -141,7 +143,6 @@ data class FighterSnap(
     val hurtAgeMs: Long,
     val facing: Int, // 1 = right, -1 = left
     val energy: Int,
-    val uniqueLeft: Int,
     val cooldowns: List<Long>, // remaining ms, same order as FighterInfo.loadout
     val evadeCdMs: Long = 0,
     val aimX: Float = x, // where the current move is aimed (target position when it was started)
@@ -216,9 +217,8 @@ class BattleEngine(
         var shieldUntil = 0L
         var lastHitAt = 0L
         var lastHitElement: Element? = null
-        // enough for one elemental move right away
-        var energy = if (demo) BattleRules.MAX_ENERGY.toFloat() else 35f + info.passive[Trait.START_ENERGY]
-        var uniqueUsed = 0
+        // only fills from trading hits; a full bar unlocks the unique
+        var energy = if (demo) BattleRules.MAX_ENERGY.toFloat() else info.passive[Trait.START_ENERGY]
         var hurtAt = -10_000L
         var leechBy = 0
         var knockedOut = false
@@ -291,9 +291,7 @@ class BattleEngine(
         val me = f[i]
         return !ended && alive(i) && (demo || m in me.info.loadout) && now >= me.busyUntil && now >= me.stunUntil &&
             now >= me.readyAt[m.ordinal] && me.projectile == null &&
-            (m.category != MoveCategory.SPECIAL || me.energy >= BattleRules.MAX_ENERGY) &&
-            me.energy >= m.energyCost &&
-            (m.category != MoveCategory.UNIQUE || me.uniqueUsed < BattleRules.UNIQUE_USES)
+            (m.category != MoveCategory.UNIQUE || me.energy >= BattleRules.MAX_ENERGY)
     }
 
     fun canEvade(i: Int, now: Long): Boolean {
@@ -352,6 +350,13 @@ class BattleEngine(
         }
     }
 
+    /** Hit-based energy, scaled by Energy Rate passives, home turf and terrain. */
+    private fun gainEnergy(me: Fighter, base: Float) {
+        var g = base * (1 + me.passive[Trait.ENERGY_RATE]) * terrain.energyScale
+        if (me.homeTurf) g *= Terrain.HOME_ENERGY
+        me.energy = minOf(BattleRules.MAX_ENERGY.toFloat(), me.energy + g)
+    }
+
     /** Returns an event line, or null if the move isn't allowed right now. */
     fun command(i: Int, m: Move, now: Long): String? {
         if (!isReady(i, m, now)) return null
@@ -365,9 +370,7 @@ class BattleEngine(
         if (now < me.paralyzeUntil) cdScale *= 1.5f
         me.readyAt[m.ordinal] = now + (BattleStats.cooldown(me.info, m, terrain) * cdScale).toLong()
         if (m.effect == Effect.VANISH) me.vanishUntil = now + m.windupMs
-        if (m.category == MoveCategory.SPECIAL) me.energy = 0f
-        me.energy -= m.energyCost
-        if (m.category == MoveCategory.UNIQUE) me.uniqueUsed++
+        if (m.category == MoveCategory.UNIQUE) me.energy = 0f
         me.busyUntil = now + m.windupMs + m.recoverMs
         me.pendingHit = true
         if (m.effect == Effect.TWIN_SLASH) { me.slashesLeft = 2; stepForward(me, opp, now, m.windupMs) }
@@ -413,12 +416,8 @@ class BattleEngine(
                 val by = f[me.leechBy]
                 if (by.hp > 0) by.hp = minOf(by.maxHp.toFloat(), by.hp + 1.5f * dt)
             }
-            var charge = ENERGY_PER_SEC * (1 + me.passive[Trait.ENERGY_RATE])
-            if (me.homeTurf) charge *= Terrain.HOME_ENERGY
-            charge *= terrain.energyScale
             if (terrain.hpPerSec > 0 && me.hp > 0) me.hp = minOf(me.maxHp.toFloat(), me.hp + terrain.hpPerSec * dt)
             if (terrain.hpPerSec < 0 && me.hp > 1) me.hp = maxOf(1f, me.hp + terrain.hpPerSec * dot * dt)
-            me.energy = minOf(BattleRules.MAX_ENERGY.toFloat(), me.energy + charge * dt)
             if (me.hp > 0) {
                 var regen = me.passive[Trait.REGEN]
                 if (me.hp < me.maxHp / 2f) regen += me.passive[Trait.REGEN_LOW]
@@ -723,8 +722,8 @@ class BattleEngine(
             opp.energy -= stolen
             me.energy = minOf(BattleRules.MAX_ENERGY.toFloat(), me.energy + stolen)
         }
-        me.energy = minOf(BattleRules.MAX_ENERGY.toFloat(), me.energy + dealt * 1.5f)
-        opp.energy = minOf(BattleRules.MAX_ENERGY.toFloat(), opp.energy + dealt * 0.8f)
+        gainEnergy(me, dealt * ENERGY_PER_DEALT)
+        gainEnergy(opp, dealt * ENERGY_PER_TAKEN)
         val times = if (hits > 1) " ($hits hits)" else ""
         val notes = listOfNotNull("critical".takeIf { crit || lucky }, "guarded".takeIf { guarded }, "shielded".takeIf { toHp < dealt })
         events += "${m.label} hits $target for $dealt$times" + if (notes.isEmpty()) "" else notes.joinToString(", ", " (", ")")
@@ -903,7 +902,6 @@ class BattleEngine(
                 hurtAgeMs = now - me.hurtAt,
                 facing = me.facing,
                 energy = me.energy.toInt(),
-                uniqueLeft = BattleRules.UNIQUE_USES - me.uniqueUsed,
                 cooldowns = me.info.loadout.map { (me.readyAt[it.ordinal] - now).coerceAtLeast(0) },
                 evadeCdMs = (me.evadeReadyAt - now).coerceAtLeast(0),
                 aimX = me.aimX, aimY = me.aimY,

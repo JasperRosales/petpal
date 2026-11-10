@@ -116,6 +116,7 @@ fun UniquePickDialog(pet: Pet, options: Pair<Move, Move>, onPick: (Move) -> Unit
 fun MoveListDialog(pet: Pet, onDismiss: () -> Unit) {
     val types = SpeciesKit.affinity(pet.species)
     var preview by remember { mutableStateOf<Move?>(null) }
+    var filter by remember { mutableStateOf<MoveCategory?>(null) } // null = all
     preview?.let { MovePreviewDialog(pet, it) { preview = null } }
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(Modifier.fillMaxSize().padding(12.dp), shape = MaterialTheme.shapes.large) {
@@ -129,13 +130,24 @@ fun MoveListDialog(pet: Pet, onDismiss: () -> Unit) {
                     }
                     TextButton(onClick = onDismiss) { Text("Close") }
                 }
+                Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    (listOf(null) + MoveCategory.entries).forEach { c ->
+                        FilterChip(
+                            selected = filter == c,
+                            onClick = { filter = c },
+                            label = { Text(c?.label ?: "All") },
+                        )
+                    }
+                }
                 LazyColumn(
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Element.entries.forEach { el ->
-                        val moves = Move.entries.filter { it.element == el && it.category != MoveCategory.UNIQUE }
-                        item(key = el.name) {
+                        val moves = Move.entries.filter {
+                            it.element == el && it.category != MoveCategory.UNIQUE && (filter == null || it.category == filter)
+                        }
+                        if (moves.isNotEmpty()) item(key = el.name) {
                             Text(el.label, style = MaterialTheme.typography.titleSmall, color = el.tint(),
                                 modifier = Modifier.padding(top = 8.dp))
                         }
@@ -150,8 +162,9 @@ fun MoveListDialog(pet: Pet, onDismiss: () -> Unit) {
                             MoveRow(m, label, Modifier.alpha(if (can) 1f else 0.4f), onView = { preview = m })
                         }
                     }
-                    item { Text("Uniques", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp)) }
-                    items(Move.entries.filter { it.category == MoveCategory.UNIQUE }, key = { it.name }) { m ->
+                    val uniques = if (filter == null || filter == MoveCategory.UNIQUE) Move.entries.filter { it.category == MoveCategory.UNIQUE } else emptyList()
+                    if (uniques.isNotEmpty()) item { Text("Uniques", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp)) }
+                    items(uniques, key = { it.name }) { m ->
                         val st = SpeciesKit.uniqueStage(pet.species, m)
                         val label = when {
                             st == null -> "Can't learn"

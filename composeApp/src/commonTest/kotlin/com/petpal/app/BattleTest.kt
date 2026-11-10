@@ -126,25 +126,35 @@ class BattleTest {
         assertFalse(e.snapshot(t).fighters[0].has(Status.VANISH))
     }
 
-    @Test fun specialNeedsFullEnergy() {
+    @Test fun energyOnlyComesFromHits() {
         val e = BattleEngine(listOf(a, b), Random(1))
-        assertNull(e.command(0, Move.FIRE_BREATH, 0))
+        e.place(0, 0.1f, ARENA_H / 2); e.place(1, ARENA_W - 0.1f, ARENA_H / 2)
         var t = 0L
-        while (t < 20_000) { e.tick(t); t += 50 } // passive regen fills the bar
-        assertNotNull(e.command(0, Move.FIRE_BREATH, t))
+        while (t < 20_000) { e.tick(t); t += 50 } // no passive regen
         assertEquals(0, e.snapshot(t).fighters[0].energy)
+        assertNull(e.command(0, Move.INFERNO, t))
     }
 
-    @Test fun uniqueOnlyTwicePerBattle() {
+    @Test fun specialNeedsNoEnergy() {
         val e = BattleEngine(listOf(a, b), Random(1))
+        assertNotNull(e.command(0, Move.FIRE_BREATH, 0))
+        assertTrue(BattleStats.cooldown(a, Move.FIRE_BREATH) >= 10_000)
+    }
+
+    @Test fun uniqueNeedsFullBarAndHasNoCooldown() {
+        val e = BattleEngine(listOf(a, b), Random(1))
+        assertNull(e.command(0, Move.INFERNO, 0))
+        e.place(0, 0.4f, ARENA_H / 2); e.place(1, 0.52f, ARENA_H / 2)
         var t = 0L
-        repeat(2) {
-            assertNotNull(e.command(0, Move.INFERNO, t))
-            val end = t + 16_000
-            while (t < end) { t += 100; e.tick(t) } // let the fireball fly and explode
+        while (e.snapshot(t).fighters[0].energy < BattleRules.MAX_ENERGY && t < 120_000) {
+            e.command(0, Move.PUNCH, t)
+            t += 50; e.tick(t)
+            if (e.snapshot(t).fighters[1].hp <= 0) break
         }
-        assertNull(e.command(0, Move.INFERNO, t))
-        assertEquals(0, e.snapshot(t).fighters[0].uniqueLeft)
+        assertEquals(BattleRules.MAX_ENERGY, e.snapshot(t).fighters[0].energy)
+        while (e.command(0, Move.INFERNO, t) == null) { t += 50; e.tick(t) } // wait out the punch recovery
+        assertEquals(0, e.snapshot(t).fighters[0].energy)
+        assertEquals(0L, BattleStats.cooldown(a, Move.INFERNO))
     }
 
     @Test fun infernoExplodesOnBothEnemies() {
@@ -187,7 +197,7 @@ class BattleTest {
         assertEquals(snap.fighters.map { it.hp to it.action }, parsed.fighters.map { it.hp to it.action })
         assertEquals(snap.fighters[1].cooldowns, parsed.fighters[1].cooldowns)
         assertEquals(snap.fighters.map { it.evadeCdMs }, parsed.fighters.map { it.evadeCdMs })
-        assertEquals(snap.fighters.map { it.energy to it.uniqueLeft }, parsed.fighters.map { it.energy to it.uniqueLeft })
+        assertEquals(snap.fighters.map { it.energy }, parsed.fighters.map { it.energy })
         assertEquals(Protocol.Hello(Protocol.VERSION, a), Protocol.parse(Protocol.hello(a)))
         assertEquals(Protocol.Command(Move.GUARD), Protocol.parse(Protocol.command(Move.GUARD)))
     }
@@ -305,15 +315,6 @@ class HitboxTest {
         }
     }
 
-    @Test fun elementalMovesCostEnergy() {
-        assertEquals(0, Move.PUNCH.energyCost)
-        assertTrue(Move.EMBER.energyCost > 0)
-        val e = BattleEngine(listOf(a, b), Random(1))
-        val before = e.snapshot(0).fighters[0].energy
-        assertNotNull(e.command(0, Move.EMBER, 0))
-        assertEquals(before - Move.EMBER.energyCost, e.snapshot(0).fighters[0].energy)
-    }
-
     @Test fun demoPreviewLandsTheMove() {
         val e = BattleEngine(listOf(a, b), Random(1), demo = true)
         e.place(0, 0.4f, ARENA_H / 2); e.place(1, 0.52f, ARENA_H / 2)
@@ -373,7 +374,9 @@ class HitboxTest {
         assertFalse(Terrain.TUNDRA.isHomeTurf(a))
         val home = BattleEngine(listOf(a, b), Random(1), terrain = Terrain.VOLCANO) // Drake is Fire
         val away = BattleEngine(listOf(a, b), Random(1), terrain = Terrain.TUNDRA)
+        listOf(home, away).forEach { it.place(0, 0.4f, ARENA_H / 2); it.place(1, 0.52f, ARENA_H / 2); it.command(0, Move.PUNCH, 0) }
         for (t in 0..2000L step 50) { home.tick(t); away.tick(t) }
+        assertTrue(away.snapshot(2000).fighters[0].energy > 0)
         assertTrue(home.snapshot(2000).fighters[0].energy > away.snapshot(2000).fighters[0].energy)
     }
 

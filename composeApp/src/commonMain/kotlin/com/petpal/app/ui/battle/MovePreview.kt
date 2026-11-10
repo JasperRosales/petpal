@@ -159,8 +159,8 @@ private fun howItWorks(m: Move): String = buildString {
     })
     append(" Wind-up ${m.windupMs} ms: a target that moves away in time dodges it.")
     when (m.category) {
-        MoveCategory.SPECIAL -> append(" Needs a full energy bar and empties it.")
-        MoveCategory.UNIQUE -> append(" Usable ${BattleRules.UNIQUE_USES}x per battle.")
-        MoveCategory.NORMAL -> if (m.energyCost > 0) append(" Costs ${m.energyCost} energy.")
+        MoveCategory.SPECIAL -> append(" Strong, with a long cooldown.")
+        MoveCategory.UNIQUE -> append(" No cooldown: needs a full energy bar and empties it.")
+        MoveCategory.NORMAL -> {}
     }
 }

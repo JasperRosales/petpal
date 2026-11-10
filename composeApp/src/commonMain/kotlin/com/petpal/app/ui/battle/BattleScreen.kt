@@ -86,7 +86,7 @@ private fun Lobby(vm: BattleViewModel, message: String?, format: BattleFormat) {
     ) {
         Text("Battle", style = MaterialTheme.typography.headlineMedium)
         Text(
-            "Fight a friend nearby with no internet, or a random player online. Pets roam on their own. Time your moves for when they're in range. Hits charge your energy bar for Special moves; Your unique (slot 5) works twice per battle.",
+            "Fight a friend nearby with no internet, or a random player online. Pets roam on their own. Time your moves for when they're in range. Dealing and taking hits charges your energy bar; a full bar unleashes your unique (slot 5).",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -532,14 +532,6 @@ private fun EnergyRow(me: FighterSnap) {
             gapSize = 0.dp,
             drawStopIndicator = {},
         )
-        Spacer(Modifier.width(10.dp))
-        Text("Unique", style = MaterialTheme.typography.labelSmall)
-        repeat(BattleRules.UNIQUE_USES) { k ->
-            Box(
-                Modifier.padding(start = 4.dp).size(10.dp).clip(CircleShape)
-                    .background(if (k < me.uniqueLeft) MoveCategory.UNIQUE.color() else MaterialTheme.colorScheme.surfaceVariant),
-            )
-        }
     }
 }
 
@@ -572,9 +564,8 @@ private fun EvadeButton(me: FighterSnap, modifier: Modifier, onClick: () -> Unit
 
 @Composable
 private fun MoveButton(m: Move, cd: Long, info: FighterInfo, me: FighterSnap, terrain: Terrain, modifier: Modifier, onClick: () -> Unit) {
-    val needsEnergy = (m.category == MoveCategory.SPECIAL && me.energy < BattleRules.MAX_ENERGY) || me.energy < m.energyCost
-    val usedUp = m.category == MoveCategory.UNIQUE && me.uniqueLeft <= 0
-    val enabled = cd == 0L && !needsEnergy && !usedUp && !me.has(Status.STUN)
+    val needsEnergy = m.category == MoveCategory.UNIQUE && me.energy < BattleRules.MAX_ENERGY
+    val enabled = cd == 0L && !needsEnergy && !me.has(Status.STUN)
     val accent = m.tint()
     val total = BattleStats.cooldown(info, m, terrain).coerceAtLeast(1)
     Box(
@@ -596,11 +587,8 @@ private fun MoveButton(m: Move, cd: Long, info: FighterInfo, me: FighterSnap, te
             Text(m.label, style = MaterialTheme.typography.labelSmall, maxLines = 1, textAlign = TextAlign.Center)
             Text(
                 when {
-                    usedUp -> "used up"
                     cd > 0 -> "${(cd / 100) / 10.0}s"
-                    needsEnergy -> "need energy"
-                    m.category == MoveCategory.UNIQUE -> "${me.uniqueLeft} left"
-                    m.energyCost > 0 -> "⚡${m.energyCost}"
+                    needsEnergy -> "⚡${me.energy}%"
                     m.isBuff -> "buff"
                     m.damage == 0 -> "debuff"
                     else -> m.category.label.lowercase()
