@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
@@ -613,6 +614,24 @@ private fun HpBar(name: String, level: String, f: FighterSnap, color: Color, mod
     }
 }
 
+/**
+ * The floor (gradients, scenery, dozens of blotches) never changes during a fight, so paint it once
+ * into a bitmap and just blit that each frame instead of redrawing everything at 60 fps.
+ */
+@Composable
+private fun ArenaFloor(terrain: Terrain, modifier: Modifier) {
+    Spacer(modifier.drawWithCache {
+        val w = size.width.toInt()
+        val h = size.height.toInt()
+        val img = if (w > 0 && h > 0) ImageBitmap(w, h).also { bmp ->
+            androidx.compose.ui.graphics.drawscope.CanvasDrawScope().draw(
+                this, layoutDirection, androidx.compose.ui.graphics.Canvas(bmp), size,
+            ) { if (terrain == Terrain.ARENA) drawArenaFloor() else drawTerrainFloor(terrain) }
+        } else null
+        onDrawBehind { img?.let { drawImage(it) } }
+    })
+}
+
 /** Fixed (seeded) floor specks in arena units, so both phones and every frame look the same. */
 private val floorSpecks by lazy {
     val r = kotlin.random.Random(42)
@@ -995,8 +1014,12 @@ internal fun Arena(fight: FightState, modifier: Modifier) {
         val sy = h / ARENA_H
         fun pos(s: FighterSnap) = Offset(s.x * sx, s.y * sy)
         val spriteDp = 72.dp
+        val hurtboxDash = with(androidx.compose.ui.platform.LocalDensity.current) {
+            remember(this) { PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx())) }
+        }
+        ArenaFloor(f.terrain, Modifier.matchParentSize())
         Canvas(Modifier.matchParentSize()) {
-            if (f.terrain == Terrain.ARENA) drawArenaFloor() else drawTerrainFloor(f.terrain)
+            val hurtboxStroke = Stroke(1.5.dp.toPx(), pathEffect = hurtboxDash)
             f.snap.traps.forEach { tr -> drawTrap(tr, Offset(tr.x * sx, tr.y * sy), Trap.RADIUS * minOf(sx, sy)) }
             f.snap.fighters.forEachIndexed { i, s ->
                 val c = pos(s)
@@ -1009,8 +1032,7 @@ internal fun Arena(fight: FightState, modifier: Modifier) {
                 val tl = Offset(c.x - hr.width / 2, c.y - hr.height / 2)
                 if (!s.has(Status.VANISH)) {
                     drawOval(ring.copy(alpha = 0.10f), tl, hr)
-                    drawOval(ring.copy(alpha = 0.55f), tl, hr, style = Stroke(1.5.dp.toPx(),
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx()))))
+                    drawOval(ring.copy(alpha = 0.55f), tl, hr, style = hurtboxStroke)
                 }
             }
             f.snap.fighters.forEachIndexed { i, s ->

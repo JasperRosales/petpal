@@ -10,7 +10,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.petpal.app.domain.model.*
@@ -37,30 +41,54 @@ fun PetSprite(
         Stage.ADULT -> 200.dp
     },
 ) {
-    val transition = rememberInfiniteTransition(label = "pet")
-    val bounce by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = if (mood == Mood.SLEEPY) 0f else 1f,
-        animationSpec = infiniteRepeatable(tween(if (mood == Mood.HAPPY) 450 else 900), RepeatMode.Reverse),
-        label = "bounce",
-    )
-    val grid = remember(stage, mood, species, fried) { if (fried) PetArt.friedFish() else PetArt.draw(species, stage, mood) }
-    val palette = remember(species, fried) { if (fried) FRIED_PALETTE else species.palette() }
+    // Sleepy pets don't bounce, so skip the per-frame animation entirely.
+    val bounce = if (mood == Mood.SLEEPY) 0f else {
+        val v by rememberInfiniteTransition(label = "pet").animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(tween(if (mood == Mood.HAPPY) 450 else 900), RepeatMode.Reverse),
+            label = "bounce",
+        )
+        v
+    }
+    // Rasterize the 20x20 grid once into a tiny bitmap, then scale it up without smoothing:
+    // one drawImage per redraw instead of up to 400 drawRects.
+    val image = remember(stage, mood, species, fried) { spriteBitmap(stage, mood, species, fried) }
+    val egg = stage == Stage.EGG
 
     Canvas(
         modifier.size(size).graphicsLayer {
-            if (stage == Stage.EGG) rotationZ = (bounce - 0.5f) * 8f
+            if (egg) rotationZ = (bounce - 0.5f) * 8f
             else translationY = -bounce * 4.dp.toPx()
         },
     ) {
-        val px = this.size.width / PetArt.N
+        drawImage(
+            image,
+            dstSize = IntSize(this.size.width.roundToInt(), this.size.height.roundToInt()),
+            filterQuality = FilterQuality.None,
+        )
+    }
+}
+
+private val spriteCache = HashMap<Long, ImageBitmap>()
+
+/** Bitmaps are tiny (20x20) and there are few combinations, so keep them for the app's lifetime. */
+private fun spriteBitmap(stage: Stage, mood: Mood, species: Species, fried: Boolean): ImageBitmap {
+    val key = if (fried) -1L else (species.ordinal.toLong() shl 16) or (stage.ordinal.toLong() shl 8) or mood.ordinal.toLong()
+    return spriteCache.getOrPut(key) {
+        val grid = if (fried) PetArt.friedFish() else PetArt.draw(species, stage, mood)
+        val palette = if (fried) FRIED_PALETTE else species.palette()
+        val img = ImageBitmap(PetArt.N, PetArt.N)
+        val canvas = androidx.compose.ui.graphics.Canvas(img)
+        val paint = Paint()
         grid.forEachIndexed { y, row ->
             row.forEachIndexed { x, c ->
                 val color = palette[c] ?: return@forEachIndexed
-                // +0.5px overlap hides hairline seams between cells
-                drawRect(color, Offset(x * px, y * px), Size(px + 0.5f, px + 0.5f))
+                paint.color = color
+                canvas.drawRect(x.toFloat(), y.toFloat(), x + 1f, y + 1f, paint)
             }
         }
+        img
     }
 }
 
