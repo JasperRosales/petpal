@@ -62,6 +62,10 @@ internal suspend fun <T> blockingIo(closeable: Closeable, block: () -> T): T = w
     }
     try {
         block()
+    } catch (e: Exception) {
+        // We closed the socket ourselves to unblock it: that's a cancel, not a "Socket closed" failure.
+        ensureActive()
+        throw e
     } finally {
         done.set(true)
         watcher.cancel()
