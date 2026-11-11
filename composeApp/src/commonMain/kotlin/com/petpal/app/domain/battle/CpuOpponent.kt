@@ -11,7 +11,7 @@ object CpuOpponent {
         // Favour attacks: up to 3 damaging moves plus one utility move, picked at random.
         val (attacks, utility) = known.partition { it.damage > 0 }
         val picks = (attacks.shuffled(rng).take(3) + utility.shuffled(rng).take(1))
-            .let { it + (known - it.toSet()).shuffled(rng) }
+            .let { SpeciesKit.oneVanish(it + (known - it.toSet()).shuffled(rng)) }
             .take(SpeciesKit.MAX_MOVES)
         val unique = SpeciesKit.uniqueOptions(species, me.stage)?.let { if (rng.nextBoolean()) it.first else it.second }
         return FighterInfo("$prefix ${species.label}", species, me.stage, me.level, picks + listOfNotNull(unique))

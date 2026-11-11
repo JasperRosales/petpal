@@ -108,15 +108,16 @@ object PetEngine {
 
     /** Learns new moves while there are free slots; once full they wait in [pendingMove]. */
     fun syncMoves(pet: Pet): Pet {
-        val valid = pet.moves.filter { SpeciesKit.canLearn(pet.species, it) }.distinct().take(SpeciesKit.MAX_MOVES)
+        val valid = SpeciesKit.oneVanish(pet.moves.filter { SpeciesKit.canLearn(pet.species, it) }.distinct()).take(SpeciesKit.MAX_MOVES)
         var p = if (valid == pet.moves) pet else pet.copy(moves = valid)
         if (p.moves.isEmpty() && p.seenMoves.isEmpty() && levelFor(p.xp) > 1) {
             // Pet from before movesets: keep its newest moves, don't ask about old ones.
             val all = pendingMoves(p)
-            return p.copy(moves = all.takeLast(SpeciesKit.MAX_MOVES), seenMoves = all.toSet())
+            return p.copy(moves = SpeciesKit.oneVanish(all.reversed()).take(SpeciesKit.MAX_MOVES).reversed(), seenMoves = all.toSet())
         }
         for (m in pendingMoves(p)) {
-            if (p.moves.size >= SpeciesKit.MAX_MOVES) break
+            // Full, or a second vanish move: it waits in the learn prompt.
+            if (p.moves.size >= SpeciesKit.MAX_MOVES || !SpeciesKit.vanishOk(p.moves, m)) break
             p = p.copy(moves = p.moves + m, seenMoves = p.seenMoves + m)
         }
         return p
@@ -125,6 +126,7 @@ object PetEngine {
     /** Answer to the learn prompt: replace [forget] with [move], or skip [move] when [forget] is null. */
     fun learn(pet: Pet, move: Move, forget: Move?): Pet {
         if (move !in pendingMoves(pet)) return pet
+        if (forget != null && !SpeciesKit.vanishOk(pet.moves, move, forget)) return pet
         val moves = if (forget != null && forget in pet.moves) pet.moves.map { if (it == forget) move else it } else pet.moves
         return syncMoves(pet.copy(moves = moves, seenMoves = pet.seenMoves + move))
     }
@@ -159,9 +161,10 @@ object PetEngine {
     /** Spends a relearn point on [move], replacing [forget] when all slots are full. */
     fun relearn(pet: Pet, move: Move, forget: Move?): Pet {
         if (relearnPoints(pet) <= 0 || move !in relearnable(pet)) return pet
+        if (!SpeciesKit.vanishOk(pet.moves, move, forget)) return pet
         val moves = when {
-            pet.moves.size < SpeciesKit.MAX_MOVES -> pet.moves + move
             forget != null && forget in pet.moves -> pet.moves.map { if (it == forget) move else it }
+            pet.moves.size < SpeciesKit.MAX_MOVES -> pet.moves + move
             else -> return pet
         }
         return pet.copy(moves = moves, relearnsUsed = pet.relearnsUsed + 1)

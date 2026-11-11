@@ -27,6 +27,18 @@ class PetEngineTest {
         assertEquals(0, PetEngine.xpToNextStage(adult))
     }
 
+    @Test fun onlyOneLearnedVanishMove() {
+        val v = Move.entries.filter { it.effect == com.petpal.app.domain.battle.Effect.VANISH && it.category != com.petpal.app.domain.battle.MoveCategory.UNIQUE }
+        val (a, b) = v[0] to v[1]
+        assertFalse(SpeciesKit.vanishOk(listOf(a, Move.TACKLE), b))
+        assertTrue(SpeciesKit.vanishOk(listOf(a, Move.TACKLE), b, forget = a))
+        assertEquals(listOf(a), SpeciesKit.forgettable(listOf(a, Move.TACKLE), b))
+        assertEquals(listOf(a, Move.TACKLE), SpeciesKit.oneVanish(listOf(a, Move.TACKLE, b)))
+        // A vanishing unique doesn't count against the limit.
+        val u = Move.entries.first { it.effect == com.petpal.app.domain.battle.Effect.VANISH && it.category == com.petpal.app.domain.battle.MoveCategory.UNIQUE }
+        assertTrue(SpeciesKit.vanishOk(listOf(Move.TACKLE), a) && u !in listOf(a, b))
+    }
+
     @Test fun pickOneUniquePerStage() {
         val kid = base.copy(species = Species.DRAKE, xp = PetEngine.xpForLevel(PetEngine.KID_LEVEL), stage = Stage.KID)
         val (a, b) = PetEngine.pendingUnique(kid)!!

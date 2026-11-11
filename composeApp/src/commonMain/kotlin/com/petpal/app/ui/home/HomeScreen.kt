@@ -287,7 +287,8 @@ private fun RelearnDialog(pet: Pet, onDismiss: () -> Unit, onConfirm: (Move, Mov
     var pick by remember { mutableStateOf<Move?>(null) }
     var forget by remember { mutableStateOf<Move?>(null) }
     var preview by remember { mutableStateOf<Move?>(null) }
-    val full = pet.moves.size >= SpeciesKit.MAX_MOVES
+    val vanish = pick?.let { !SpeciesKit.vanishOk(pet.moves, it) } == true
+    val full = pet.moves.size >= SpeciesKit.MAX_MOVES || vanish
     preview?.let { MovePreviewDialog(pet, it) { preview = null } }
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -300,8 +301,9 @@ private fun RelearnDialog(pet: Pet, onDismiss: () -> Unit, onConfirm: (Move, Mov
                         leading = { RadioButton(selected = pick == m, onClick = { pick = m }) })
                 }
                 if (full) {
-                    Text("Forget which move?", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))
-                    pet.moves.forEach { m ->
+                    Text(if (vanish) "Only one vanishing move allowed. Replace:" else "Forget which move?",
+                        style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))
+                    pick?.let { SpeciesKit.forgettable(pet.moves, it) }.orEmpty().ifEmpty { pet.moves }.forEach { m ->
                         MoveRow(m, m.category.label, Modifier.fillMaxWidth().clickable { forget = m },
                             leading = { RadioButton(selected = forget == m, onClick = { forget = m }) })
                     }
@@ -309,7 +311,8 @@ private fun RelearnDialog(pet: Pet, onDismiss: () -> Unit, onConfirm: (Move, Mov
             }
         },
         confirmButton = {
-            TextButton(onClick = { pick?.let { onConfirm(it, forget) } }, enabled = pick != null && (!full || forget != null)) {
+            val ok = pick?.let { forget == null || SpeciesKit.forgettable(pet.moves, it).contains(forget) } == true
+            TextButton(onClick = { pick?.let { onConfirm(it, forget.takeIf { full }) } }, enabled = ok && (!full || forget != null)) {
                 Text("Relearn")
             }
         },

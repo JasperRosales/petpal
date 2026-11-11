@@ -19,7 +19,7 @@ species signatures in slot 5, usable 2x per battle.
 | freeze | Target can't move or act for 1.5s |
 | knockback | Pushes the target away |
 | pull | Drags the target closer |
-| vanish | Untouchable during the wind-up, then reappears next to the target |
+| vanish | Untouchable during the wind-up, then reappears next to the target. A pet can know only one (plus a vanishing unique) |
 | recoil | User takes a quarter of the damage dealt |
 | hits 2-4x | Hits 2-4 times (damage is per hit) |
 | leech | Target loses HP to the user for 5s |

@@ -61,9 +61,13 @@ fun LearnMoveDialog(pet: Pet, move: Move, onDecide: (forget: Move?) -> Unit) {
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 MoveRow(move, move.category.label, onView = { preview = move })
-                Text("But it already knows ${SpeciesKit.MAX_MOVES} moves. Forget one?",
-                    style = MaterialTheme.typography.bodyMedium)
-                pet.moves.forEach { m ->
+                val vanish = !SpeciesKit.vanishOk(pet.moves, move)
+                Text(
+                    if (vanish) "But it can only know one vanishing move. Replace it?"
+                    else "But it already knows ${SpeciesKit.MAX_MOVES} moves. Forget one?",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                SpeciesKit.forgettable(pet.moves, move).forEach { m ->
                     MoveRow(
                         m, m.category.label,
                         Modifier.fillMaxWidth().clickable { forget = m },

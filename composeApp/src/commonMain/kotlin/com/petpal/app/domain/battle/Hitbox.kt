@@ -26,7 +26,7 @@ enum class HitShape {
 private val BEAMS = setOf(Move.HYPER_BEAM, Move.ZAP_CANNON, Move.SUN_RAY, Move.SOLAR_BEAM, Move.SOLAR_FLARE, Move.OVERHEAT, Move.PRISM_BLAST)
 /** Fireballs that explode on impact, hitting every enemy within [BLAST_RADIUS]. */
 private val EXPLOSIVE = setOf(Move.INFERNO)
-const val BLAST_RADIUS = 0.17f
+const val BLAST_RADIUS = 0.14f
 val Move.explodes: Boolean get() = this in EXPLOSIVE
 
 private val WAVES = setOf(Move.SPLASH_WAVE, Move.TIDAL_WAVE, Move.TSUNAMI, Move.ECHO_SHRIEK)
@@ -49,19 +49,19 @@ val Move.shape: HitShape
 /** Half-width of a projectile / beam, radius of a melee or strike circle, in arena units. */
 fun Move.hitSize(range: Float): Float = when (shape) {
     HitShape.SELF -> 0f
-    HitShape.MELEE -> range * 0.5f
-    HitShape.PROJECTILE -> if (explodes) 0.065f else if (category == MoveCategory.NORMAL) 0.035f else 0.05f
-    HitShape.BEAM -> if (category == MoveCategory.UNIQUE) 0.075f else 0.055f
-    HitShape.STRIKE -> if (category == MoveCategory.NORMAL) 0.075f else 0.1f
+    HitShape.MELEE -> range * 0.4f // centered half-way out, so it still reaches ~range but is narrower
+    HitShape.PROJECTILE -> if (explodes) 0.055f else if (category == MoveCategory.NORMAL) 0.03f else 0.04f
+    HitShape.BEAM -> if (category == MoveCategory.UNIQUE) 0.06f else 0.045f
+    HitShape.STRIKE -> if (category == MoveCategory.NORMAL) 0.06f else 0.08f
     HitShape.CONE -> 0f
 }
 
 /** Half-angle of a cone in radians. */
 fun Move.coneHalfAngle(): Float = when {
-    this in WAVES -> 0.75f
-    damage == 0 -> 0.55f
-    category == MoveCategory.UNIQUE -> 0.6f
-    else -> 0.45f
+    this in WAVES -> 0.6f
+    damage == 0 -> 0.45f
+    category == MoveCategory.UNIQUE -> 0.5f
+    else -> 0.38f
 }
 
 /** Unit vector from (ox, oy) toward (ax, ay); falls back to [facing] if they overlap. */

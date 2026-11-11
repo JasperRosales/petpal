@@ -593,6 +593,23 @@ data class MoveUnlock(val move: Move, val level: Int)
  */
 object SpeciesKit {
     const val MAX_MOVES = 4
+
+    /**
+     * Learned moves may hold only one vanishing move (Dig, Fly...). A vanishing unique sits in
+     * its own slot and doesn't count, so a pet can have it plus one learned vanish move.
+     */
+    fun vanishOk(moves: List<Move>, add: Move, forget: Move? = null): Boolean =
+        add.effect != Effect.VANISH || moves.none { it.effect == Effect.VANISH && it != forget }
+
+    /** Moves that may be swapped out for [add]: only the old vanish move when [add] would be a second one. */
+    fun forgettable(moves: List<Move>, add: Move): List<Move> =
+        if (vanishOk(moves, add)) moves else moves.filter { it.effect == Effect.VANISH }
+
+    /** Drops every vanishing move after the first. */
+    fun oneVanish(moves: List<Move>): List<Move> {
+        var seen = false
+        return moves.filter { it.effect != Effect.VANISH || !seen.also { seen = true } }
+    }
     const val SLOTS = MAX_MOVES + 1
 
     /** The species' signature passive: its Baby one. */
@@ -907,5 +924,5 @@ object SpeciesKit {
 
     /** Battle buttons: up to [MAX_MOVES] valid learned moves, then the unique in slot 5 (picked via [moves]). */
     fun loadout(s: Species, stage: Stage, level: Int, moves: List<Move>): List<Move> =
-        moves.distinct().filter { canLearn(s, it) && it.level <= level }.take(MAX_MOVES) + listOfNotNull(unique(s, stage, moves))
+        oneVanish(moves.distinct().filter { canLearn(s, it) && it.level <= level }).take(MAX_MOVES) + listOfNotNull(unique(s, stage, moves))
 }
