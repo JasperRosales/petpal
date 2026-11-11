@@ -23,11 +23,11 @@ enum class BattleScreenMode { LOBBY, HOSTING, SEARCHING, CONNECTING, ROOM, FIGHT
 const val MAX_PLAYERS = 6
 
 /**
- * SOLO = 1v1. DUO_RIVAL = you + CPU vs friend + CPU. DUO_PARTNER = you + friend vs 2 CPUs.
+ * SOLO = 1v1.
  * TEAMS / FFA: a room of up to [MAX_PLAYERS]; players pick teams (or it's everyone for themselves) and the host starts.
  */
 enum class BattleFormat(val label: String, val guests: Int = 1) {
-    SOLO("1v1"), DUO_RIVAL("Duo: friend as rival"), DUO_PARTNER("Duo: friend as partner"),
+    SOLO("1v1"),
     TEAMS("Team battle", guests = MAX_PLAYERS - 1), FFA("Free-for-all", guests = MAX_PLAYERS - 1);
 
     val isRoom get() = this == TEAMS || this == FFA
@@ -133,7 +133,7 @@ class BattleViewModel(
         }
     }
 
-    /** 1v1 vs a CPU, duo (you + CPU vs 2 CPUs), 3v3 with CPU partners, or a 4-pet free-for-all. */
+    /** 1v1 vs a CPU, 3v3 with CPU partners, or a 4-pet free-for-all. */
     fun practice(): Unit = start {
         again = ::practice
         val me = myInfo()
@@ -143,7 +143,6 @@ class BattleViewModel(
             BattleFormat.SOLO -> listOf(me, foe()).let { it to BattleEngine.defaultTeams(2) }
             BattleFormat.FFA -> listOf(me, foe(), foe(), foe()).let { it to BattleEngine.freeForAll(4) }
             BattleFormat.TEAMS -> listOf(me, ally(), ally(), foe(), foe(), foe()).let { it to BattleEngine.defaultTeams(6) }
-            else -> listOf(me, ally(), foe(), foe()).let { it to BattleEngine.defaultTeams(4) }
         }
         runHost(infos, remotes = emptyMap(), terrain = nextTerrain(), teams = teams)
     }
@@ -187,15 +186,8 @@ class BattleViewModel(
             }
         }
         val friend = joined.first().second
-        // Slots 0,1 are one team and 2,3 the other; empty slots are filled with CPUs.
         val (infos, slots) = when (fmt) {
             BattleFormat.SOLO -> listOf(me, friend) to listOf(1)
-            BattleFormat.DUO_RIVAL ->
-                listOf(me, CpuOpponent.random(me, prefix = "CPU"), friend, CpuOpponent.random(friend, prefix = "CPU")) to listOf(2)
-            BattleFormat.DUO_PARTNER -> {
-                val lead = if (friend.level > me.level) friend else me
-                listOf(me, friend, CpuOpponent.random(lead), CpuOpponent.random(lead)) to listOf(1)
-            }
             BattleFormat.TEAMS, BattleFormat.FFA -> error("rooms are hosted by hostRoom")
         }
         val remotes = slots.zip(joined.map { it.first }).toMap()

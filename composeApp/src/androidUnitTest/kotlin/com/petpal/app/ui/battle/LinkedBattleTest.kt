@@ -151,8 +151,6 @@ class LinkedBattleTest {
     }
 
     @Test fun solo() = linked(BattleFormat.SOLO)
-    @Test fun duoRival() = linked(BattleFormat.DUO_RIVAL)
-    @Test fun duoPartner() = linked(BattleFormat.DUO_PARTNER)
     @Test fun teams() = linked(BattleFormat.TEAMS)
     @Test fun ffa() = linked(BattleFormat.FFA)
 }

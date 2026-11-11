@@ -1,12 +1,16 @@
 package com.petpal.app.ui.components
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,6 +23,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
@@ -102,6 +107,8 @@ fun NeuButton(
     shape: NeuShape = NeuShape.Rounded,
     contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
     surface: Color = MaterialTheme.colorScheme.background, // must match what the button sits on
+    /** Flat with a border instead of raised; selected = thick accent border, tint and a check. */
+    outlined: Boolean = false,
 ) {
     val interaction = remember { MutableInteractionSource() }
     val isPressed by interaction.collectIsPressedAsState()
@@ -113,19 +120,34 @@ fun NeuButton(
         else -> accent
     }
     val radius = when (shape) { NeuShape.Rounded -> 18.dp; NeuShape.Circle -> 100.dp }
+    val clipShape = if (shape == NeuShape.Circle) CircleShape else RoundedCornerShape(radius)
+    val look = if (!outlined) Modifier.neumorphic(radius, depth, fill, shadow, highlight).clip(clipShape)
+    else {
+        val tint = when {
+            filled -> accent
+            selected -> accent.copy(alpha = 0.16f).compositeOver(bg)
+            isPressed -> accent.copy(alpha = 0.08f).compositeOver(bg)
+            else -> bg
+        }
+        Modifier.clip(clipShape).background(tint).border(
+            if (selected) 2.5.dp else 1.dp,
+            if (selected || filled) accent else MaterialTheme.colorScheme.outline,
+            clipShape,
+        )
+    }
+    val shownIcon = if (outlined && selected) Icons.Rounded.Check else icon
 
     Box(
         modifier
             .alpha(if (enabled) 1f else 0.45f)
-            .neumorphic(radius, depth, fill, shadow, highlight)
-            .clip(if (shape == NeuShape.Circle) CircleShape else RoundedCornerShape(radius))
+            .then(look)
             .clickable(interaction, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)
             .padding(contentPadding),
         contentAlignment = Alignment.Center,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            if (icon != null) Icon(icon, contentDescription, tint = content, modifier = Modifier.size(20.dp))
-            if (icon != null && text != null) Spacer(Modifier.width(8.dp))
+            if (shownIcon != null) Icon(shownIcon, contentDescription, tint = content, modifier = Modifier.size(20.dp))
+            if (shownIcon != null && text != null) Spacer(Modifier.width(8.dp))
             if (text != null) Text(text, color = content, style = MaterialTheme.typography.labelLarge)
         }
     }

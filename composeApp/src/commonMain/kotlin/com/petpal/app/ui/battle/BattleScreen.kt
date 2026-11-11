@@ -21,6 +21,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
@@ -95,14 +97,13 @@ private fun Lobby(vm: BattleViewModel, message: String?, format: BattleFormat) {
         if (vm.hasOnline) OnlineCard(vm)
         FormatPicker(format, vm::setFormat)
         LinkKind.entries.forEach { kind -> LinkCard(kind, vm) }
-        NeuButton(
+        NeuButton(outlined = true,
             onClick = vm::practice,
             icon = Icons.Rounded.SmartToy,
             text = when (format) {
                 BattleFormat.SOLO -> "Practice vs CPU"
                 BattleFormat.TEAMS -> "3v3 vs CPUs (with CPU partners)"
                 BattleFormat.FFA -> "Free-for-all vs 3 CPUs"
-                else -> "Duo vs CPU (with a CPU partner)"
             },
             modifier = Modifier.fillMaxWidth(),
         )
@@ -128,7 +129,7 @@ private fun BossCard(vm: BattleViewModel) {
                     "Retry as often as you like until the end of November.",
                 style = MaterialTheme.typography.bodySmall,
             )
-            NeuButton(onClick = vm::boss, icon = Icons.Rounded.EmojiEvents, text = "Fight the boss",
+            NeuButton(outlined = true, onClick = vm::boss, icon = Icons.Rounded.EmojiEvents, text = "Fight the boss",
                 filled = true, modifier = Modifier.fillMaxWidth())
         }
     }
@@ -136,35 +137,18 @@ private fun BossCard(vm: BattleViewModel) {
 
 @Composable
 private fun FormatPicker(format: BattleFormat, onPick: (BattleFormat) -> Unit) {
-    val duo = format == BattleFormat.DUO_RIVAL || format == BattleFormat.DUO_PARTNER
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Format", style = MaterialTheme.typography.titleMedium)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            NeuButton(onClick = { onPick(BattleFormat.SOLO) }, text = "1v1", icon = Icons.Rounded.Person,
+            NeuButton(outlined = true, onClick = { onPick(BattleFormat.SOLO) }, text = "1v1", icon = Icons.Rounded.Person,
                 selected = format == BattleFormat.SOLO, modifier = Modifier.weight(1f))
-            NeuButton(onClick = { if (!duo) onPick(BattleFormat.DUO_RIVAL) }, text = "Duo 2v2",
-                icon = Icons.Rounded.Groups, selected = duo, modifier = Modifier.weight(1f))
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            NeuButton(onClick = { onPick(BattleFormat.TEAMS) }, text = "Teams", icon = Icons.Rounded.Diversity3,
+            NeuButton(outlined = true, onClick = { onPick(BattleFormat.TEAMS) }, text = "Teams", icon = Icons.Rounded.Diversity3,
                 selected = format == BattleFormat.TEAMS, modifier = Modifier.weight(1f))
-            NeuButton(onClick = { onPick(BattleFormat.FFA) }, text = "Free-for-all", icon = Icons.Rounded.EmojiEvents,
+            NeuButton(outlined = true, onClick = { onPick(BattleFormat.FFA) }, text = "FFA", icon = Icons.Rounded.EmojiEvents,
                 selected = format == BattleFormat.FFA, modifier = Modifier.weight(1f))
-        }
-        if (duo) {
-            Text("A friend who joins plays as...", style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                NeuButton(onClick = { onPick(BattleFormat.DUO_RIVAL) }, text = "Rival", icon = Icons.Rounded.SportsMma,
-                    selected = format == BattleFormat.DUO_RIVAL, modifier = Modifier.weight(1f))
-                NeuButton(onClick = { onPick(BattleFormat.DUO_PARTNER) }, text = "Partner", icon = Icons.Rounded.Handshake,
-                    selected = format == BattleFormat.DUO_PARTNER, modifier = Modifier.weight(1f))
-            }
         }
         if (format != BattleFormat.SOLO) Text(
             when (format) {
-                BattleFormat.DUO_RIVAL -> "You + CPU vs friend + CPU. Empty slots are filled with CPU pets at your level."
-                BattleFormat.DUO_PARTNER -> "You + friend vs 2 CPUs. Empty slots are filled with CPU pets at your level."
                 BattleFormat.TEAMS -> "Up to $MAX_PLAYERS players join your room and pick a team. You start when both teams have someone."
                 else -> "Up to $MAX_PLAYERS players join your room, everyone for themselves. Last pet standing wins."
             } + " The host picks the format.",
@@ -218,10 +202,10 @@ private fun Room(r: RoomUi, link: LinkKind?, vm: BattleViewModel) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 members.forEach { PlayerRow(it, color) }
             }
-            if (!r.host) NeuButton(onClick = { vm.switchTeam(r.you) }, text = "Switch team", icon = Icons.Rounded.SwapHoriz,
+            if (!r.host) NeuButton(outlined = true, onClick = { vm.switchTeam(r.you) }, text = "Switch team", icon = Icons.Rounded.SwapHoriz,
                 modifier = Modifier.fillMaxWidth())
         }
-        if (r.host) NeuButton(
+        if (r.host) NeuButton(outlined = true,
             onClick = vm::startRoom, enabled = r.canStart, filled = true, icon = Icons.Rounded.PlayArrow,
             text = when {
                 r.canStart -> "Start (${r.players.size} players)"
@@ -230,7 +214,7 @@ private fun Room(r: RoomUi, link: LinkKind?, vm: BattleViewModel) {
             },
             modifier = Modifier.fillMaxWidth(),
         )
-        NeuButton(onClick = vm::leave, text = if (r.host) "Close room" else "Leave", icon = Icons.Rounded.Close,
+        NeuButton(outlined = true, onClick = vm::leave, text = if (r.host) "Close room" else "Leave", icon = Icons.Rounded.Close,
             modifier = Modifier.fillMaxWidth())
     }
 }
@@ -252,12 +236,12 @@ private fun LinkCard(kind: LinkKind, vm: BattleViewModel) {
                 Text("Not available on this device", style = MaterialTheme.typography.bodySmall)
             } else {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    NeuButton(
+                    NeuButton(outlined = true,
                         onClick = { pending = { vm.host(kind) }; ask() },
                         text = "Host", icon = Icons.Rounded.Podcasts, filled = true, surface = surface,
                         modifier = Modifier.weight(1f),
                     )
-                    NeuButton(
+                    NeuButton(outlined = true,
                         onClick = { pending = { vm.search(kind) }; ask() },
                         text = "Join", icon = Icons.Rounded.Search, surface = surface,
                         modifier = Modifier.weight(1f),
@@ -281,9 +265,9 @@ private fun OnlineCard(vm: BattleViewModel) {
             Text("1v1 against a random player. Wins raise your rating; the top 10 make the leaderboard. On the 1st of every month, #1 gets a free pet.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                NeuButton(onClick = vm::findOnline, text = "Find match", icon = Icons.Rounded.TravelExplore,
+                NeuButton(outlined = true, onClick = vm::findOnline, text = "Find match", icon = Icons.Rounded.TravelExplore,
                     filled = true, surface = surface, modifier = Modifier.weight(1f))
-                NeuButton(onClick = vm::showLeaderboard, text = "Top 10", icon = Icons.Rounded.Leaderboard,
+                NeuButton(outlined = true, onClick = vm::showLeaderboard, text = "Top 10", icon = Icons.Rounded.Leaderboard,
                     surface = surface, modifier = Modifier.weight(1f))
             }
         }
@@ -316,9 +300,9 @@ private fun LeaderboardScreen(s: BattleUiState, vm: BattleViewModel) {
             else RankRow(me, highlight = true)
         }
         Spacer(Modifier.height(8.dp))
-        NeuButton(onClick = vm::findOnline, text = "Find match", icon = Icons.Rounded.TravelExplore, filled = true,
+        NeuButton(outlined = true, onClick = vm::findOnline, text = "Find match", icon = Icons.Rounded.TravelExplore, filled = true,
             modifier = Modifier.fillMaxWidth())
-        NeuButton(onClick = vm::leave, text = "Back", icon = Icons.Rounded.Close, modifier = Modifier.fillMaxWidth())
+        NeuButton(outlined = true, onClick = vm::leave, text = "Back", icon = Icons.Rounded.Close, modifier = Modifier.fillMaxWidth())
     }
 }
 
@@ -355,7 +339,7 @@ private fun Waiting(title: String, hint: String?, onCancel: () -> Unit) {
             Text(it, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        NeuButton(onClick = onCancel, text = "Cancel", icon = Icons.Rounded.Close)
+        NeuButton(outlined = true, onClick = onCancel, text = "Cancel", icon = Icons.Rounded.Close)
     }
 }
 
@@ -380,7 +364,7 @@ private fun Searching(s: BattleUiState, vm: BattleViewModel) {
             )
         }
         Spacer(Modifier.weight(1f))
-        NeuButton(onClick = vm::leave, text = "Back", icon = Icons.Rounded.Close, modifier = Modifier.fillMaxWidth())
+        NeuButton(outlined = true, onClick = vm::leave, text = "Back", icon = Icons.Rounded.Close, modifier = Modifier.fillMaxWidth())
     }
 }
 
@@ -401,40 +385,47 @@ private fun Fight(f: FightState, vm: BattleViewModel) {
     val info = f.fighters[f.me]
     val myTeam = f.snap.fighters.indices.filter { teamOf(f, it) == teamOf(f, f.me) }.sortedBy { it != f.me }
     val rivals = f.snap.fighters.indices.filter { teamOf(f, it) != teamOf(f, f.me) }
+    val crowd = f.fighters.size > 2
     Column(Modifier.fillMaxSize().background(EmberCanvas)) {
+        // HUD sits above the arena (never over it) so pets near the top stay visible.
+        Column(Modifier.fillMaxWidth().background(Color.Black.copy(alpha = 0.35f)).padding(horizontal = 10.dp, vertical = 6.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.weight(1f)) { TerrainBadge(f) }
+                Text("${f.snap.timeLeftMs / 1000}s", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                Icon(
+                    if (soundOn) Icons.Rounded.VolumeUp else Icons.Rounded.VolumeOff,
+                    contentDescription = if (soundOn) "Mute sounds" else "Unmute sounds",
+                    tint = Color.White.copy(alpha = 0.85f),
+                    modifier = Modifier.padding(start = 6.dp).size(28.dp).clip(CircleShape)
+                        .clickable { soundOn = !soundOn; sound.enabled = soundOn }.padding(4.dp),
+                )
+            }
+            val primary = MaterialTheme.colorScheme.primary
+            @Composable fun bar(i: Int, m: Modifier) = f.fighters[i].let { o ->
+                HpBar(fighterTag(f, i) + o.name, "Lv ${o.level}", f.snap.fighters[i], fighterColor(f, i, primary), crowd, m)
+            }
+            if (isFfa(f)) {
+                // Free-for-all: everyone in a grid, two per row, you first.
+                (myTeam + rivals).chunked(2).forEach { row ->
+                    Row(Modifier.fillMaxWidth().padding(top = 3.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        row.forEach { bar(it, Modifier.weight(1f)) }
+                        if (row.size == 1) Spacer(Modifier.weight(1f))
+                    }
+                }
+            } else Row(Modifier.fillMaxWidth().padding(top = 3.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                // Your team on the left (blue), theirs on the right (red).
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    if (crowd) Text("ALLIES", style = MaterialTheme.typography.labelSmall, color = AllyBlue)
+                    myTeam.forEach { bar(it, Modifier.fillMaxWidth()) }
+                }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    if (crowd) Text("ENEMIES", style = MaterialTheme.typography.labelSmall, color = EnemyRed)
+                    rivals.forEach { bar(it, Modifier.fillMaxWidth()) }
+                }
+            }
+        }
         Box(Modifier.weight(1f).fillMaxWidth()) {
             Arena(f, Modifier.fillMaxSize())
-            // HUD
-            Column(Modifier.fillMaxWidth().background(Color.Black.copy(alpha = 0.35f)).padding(horizontal = 10.dp, vertical = 8.dp)) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    myTeam.forEach { i ->
-                        val o = f.fighters[i]
-                        val tag = when { i == f.me -> "You · "; i in f.humans -> "Friend · "; else -> "" }
-                        HpBar("$tag${o.name}", "Lv ${o.level}", f.snap.fighters[i],
-                            if (i == f.me) MaterialTheme.colorScheme.primary else AllyBlue, Modifier.fillMaxWidth())
-                    }
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(horizontal = 6.dp)) {
-                    Text("${f.snap.timeLeftMs / 1000}s", style = MaterialTheme.typography.titleMedium, color = Color.White)
-                    Icon(
-                        if (soundOn) Icons.Rounded.VolumeUp else Icons.Rounded.VolumeOff,
-                        contentDescription = if (soundOn) "Mute sounds" else "Unmute sounds",
-                        tint = Color.White.copy(alpha = 0.85f),
-                        modifier = Modifier.size(28.dp).clip(CircleShape)
-                            .clickable { soundOn = !soundOn; sound.enabled = soundOn }.padding(4.dp),
-                    )
-                }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    rivals.forEach { i ->
-                        val o = f.fighters[i]
-                        HpBar(if (i in f.humans) "Friend · ${o.name}" else o.name, "Lv ${o.level}", f.snap.fighters[i],
-                            MaterialTheme.colorScheme.error, Modifier.fillMaxWidth())
-                    }
-                }
-            }
-            TerrainBadge(f)
-            }
             if (f.log.isNotEmpty()) {
                 Column(
                     Modifier.align(Alignment.BottomStart).padding(8.dp)
@@ -457,10 +448,10 @@ private fun Fight(f: FightState, vm: BattleViewModel) {
                         Text(f.result, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
                         val pad = PaddingValues(horizontal = 10.dp, vertical = 12.dp)
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                            NeuButton(onClick = vm::battleAgain, modifier = Modifier.weight(1f), text = "Battle again",
+                            NeuButton(outlined = true, onClick = vm::battleAgain, modifier = Modifier.weight(1f), text = "Battle again",
                                 icon = Icons.Rounded.Replay, filled = true, enabled = armed, contentPadding = pad,
                                 surface = MaterialTheme.colorScheme.tertiaryContainer)
-                            NeuButton(onClick = vm::leave, modifier = Modifier.weight(1f), text = "Back to lobby",
+                            NeuButton(outlined = true, onClick = vm::leave, modifier = Modifier.weight(1f), text = "Back to lobby",
                                 enabled = armed, contentPadding = pad, surface = MaterialTheme.colorScheme.tertiaryContainer)
                         }
                         if (f.humans.size > 1) Text(
@@ -499,7 +490,7 @@ private fun Fight(f: FightState, vm: BattleViewModel) {
 private fun TerrainBadge(f: FightState) {
     val t = f.terrain
     val home = t.isHomeTurf(f.fighters[f.me])
-    Column(Modifier.padding(top = 4.dp)) {
+    Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Rounded.Terrain, null, Modifier.size(14.dp), tint = t.accent())
             Spacer(Modifier.width(4.dp))
@@ -601,25 +592,32 @@ private fun MoveButton(m: Move, cd: Long, info: FighterInfo, me: FighterSnap, te
 }
 
 @Composable
-private fun HpBar(name: String, level: String, f: FighterSnap, color: Color, modifier: Modifier) {
+private fun HpBar(name: String, level: String, f: FighterSnap, color: Color, compact: Boolean, modifier: Modifier) {
     Column(modifier) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("$name  $level", style = MaterialTheme.typography.labelMedium, maxLines = 1, color = Color.White,
-                modifier = Modifier.weight(1f, fill = false))
+            // Same color as the ring and tag over this pet on the field.
+            Box(Modifier.size(9.dp).background(color, CircleShape))
+            Spacer(Modifier.width(4.dp))
+            Text("$name  $level", style = if (compact) MaterialTheme.typography.labelSmall else MaterialTheme.typography.labelMedium,
+                maxLines = 1, overflow = TextOverflow.Ellipsis, color = Color.White, modifier = Modifier.weight(1f, fill = false))
             statusIcons(f).forEach { (icon, tint) ->
-                Icon(icon, null, Modifier.padding(start = 2.dp).size(14.dp), tint = tint)
+                Icon(icon, null, Modifier.padding(start = 2.dp).size(if (compact) 11.dp else 14.dp), tint = tint)
+            }
+            if (compact) {
+                Spacer(Modifier.weight(1f))
+                Text("${f.hp}", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.8f))
             }
         }
         LinearProgressIndicator(
             progress = { f.hp.toFloat() / f.maxHp },
-            modifier = Modifier.fillMaxWidth().height(10.dp),
-            color = if (f.hp.toFloat() / f.maxHp < 0.3f) MaterialTheme.colorScheme.error else color,
+            modifier = Modifier.fillMaxWidth().height(if (compact) 6.dp else 10.dp),
+            color = color,
             trackColor = Color.White.copy(alpha = 0.3f),
             strokeCap = StrokeCap.Round,
             gapSize = 0.dp,
             drawStopIndicator = {},
         )
-        Text("${f.hp}/${f.maxHp}", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.8f))
+        if (!compact) Text("${f.hp}/${f.maxHp}", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.8f))
     }
 }
 
@@ -1015,7 +1013,6 @@ internal fun Arena(fight: FightState, modifier: Modifier) {
         0f, 1f, infiniteRepeatable(tween(500), RepeatMode.Reverse),
     )
     val meColor = MaterialTheme.colorScheme.primary
-    val oppColor = Color(0xFFE74C3C)
     BoxWithConstraints(modifier.clipToBounds()) {
         val w = constraints.maxWidth.toFloat()
         val h = constraints.maxHeight.toFloat()
@@ -1028,20 +1025,20 @@ internal fun Arena(fight: FightState, modifier: Modifier) {
         }
         ArenaFloor(f.terrain, Modifier.matchParentSize())
         Canvas(Modifier.matchParentSize()) {
-            val hurtboxStroke = Stroke(1.5.dp.toPx(), pathEffect = hurtboxDash)
+            val hurtboxStroke = Stroke(2.5.dp.toPx(), pathEffect = hurtboxDash)
             f.snap.traps.forEach { tr -> drawTrap(tr, Offset(tr.x * sx, tr.y * sy), Trap.RADIUS * minOf(sx, sy)) }
             f.snap.fighters.forEachIndexed { i, s ->
                 val c = pos(s)
                 if (s.hp <= 0) return@forEachIndexed
-                val ring = when { i == f.me -> meColor; teamOf(f, i) == teamOf(f, f.me) -> AllyBlue; else -> oppColor }
+                val ring = fighterColor(f, i, meColor)
                 drawOval(Color.Black.copy(alpha = 0.2f), Offset(c.x - 26.dp.toPx(), c.y + 24.dp.toPx()),
                     Size(52.dp.toPx(), 12.dp.toPx()))
                 // hurtbox: exactly the circle moves are tested against (yours orange, theirs red)
                 val hr = Size(PET_RADIUS * sx * 2, PET_RADIUS * sy * 2)
                 val tl = Offset(c.x - hr.width / 2, c.y - hr.height / 2)
                 if (!s.has(Status.VANISH)) {
-                    drawOval(ring.copy(alpha = 0.10f), tl, hr)
-                    drawOval(ring.copy(alpha = 0.55f), tl, hr, style = hurtboxStroke)
+                    drawOval(ring.copy(alpha = 0.18f), tl, hr)
+                    drawOval(ring.copy(alpha = 0.9f), tl, hr, style = hurtboxStroke)
                 }
             }
             f.snap.fighters.forEachIndexed { i, s ->
@@ -1131,6 +1128,25 @@ internal fun Arena(fight: FightState, modifier: Modifier) {
         if (f.snap.blasts.isNotEmpty()) Canvas(Modifier.matchParentSize()) {
             f.snap.blasts.forEach { b -> drawBlast(Offset(b.x * sx, b.y * sy), BLAST_RADIUS * minOf(sx, sy), b.ageMs) }
         }
+        // Tag over every other pet in its color: ALLY / FOE in team fights, the name in a free-for-all.
+        val tagLift = with(density) { (spriteDp / 2 + 18.dp).roundToPx() }
+        val tagW = with(density) { 90.dp.roundToPx() }
+        f.snap.fighters.forEachIndexed { i, s ->
+            if (i == f.me || s.hp <= 0 || s.has(Status.VANISH)) return@forEachIndexed
+            val c = pos(s)
+            val col = fighterColor(f, i, meColor)
+            val label = when {
+                isFfa(f) -> f.fighters[i].name
+                teamOf(f, i) == teamOf(f, f.me) -> "ALLY · ${f.fighters[i].name}"
+                else -> "FOE · ${f.fighters[i].name}"
+            }
+            Box(Modifier.width(90.dp).offset { IntOffset(c.x.roundToInt() - tagW / 2, c.y.roundToInt() - tagLift) },
+                contentAlignment = Alignment.Center) {
+                Text(label, style = MaterialTheme.typography.labelSmall, color = if (col.luminance() > 0.5f) Color.Black else Color.White,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.background(col, RoundedCornerShape(6.dp)).padding(horizontal = 5.dp, vertical = 1.dp))
+            }
+        }
         // "YOU" marker bobbing above your pet
         val mine = pos(f.snap.fighters[f.me])
         val markerW = with(density) { 44.dp.roundToPx() }
@@ -1147,6 +1163,27 @@ internal fun Arena(fight: FightState, modifier: Modifier) {
 }
 
 private val AllyBlue = Color(0xFF4FA3E0)
+private val EnemyRed = Color(0xFFE74C3C)
+/** Free-for-all: one distinct color per rival (no orange = you, no blue/red = team colors). */
+private val FfaColors = listOf(
+    Color(0xFFB26BFF), Color(0xFFFFD23F), Color(0xFF2EE6C5), Color(0xFFFF5FA2), Color(0xFF9BE15D), Color(0xFFBFBFBF),
+)
+
+private fun isFfa(f: FightState) = f.fighters.size > 2 && f.teams.toSet().size == f.fighters.size
+
+/** You = [me]; team fights: allies blue, foes red; free-for-all: a color per player. */
+private fun fighterColor(f: FightState, i: Int, me: Color): Color = when {
+    i == f.me -> me
+    isFfa(f) -> FfaColors[(if (i > f.me) i - 1 else i) % FfaColors.size]
+    teamOf(f, i) == teamOf(f, f.me) -> AllyBlue
+    else -> EnemyRed
+}
+
+private fun fighterTag(f: FightState, i: Int) = when {
+    i == f.me -> "You · "
+    i in f.humans -> if (isFfa(f) || teamOf(f, i) != teamOf(f, f.me)) "" else "Friend · "
+    else -> ""
+}
 
 private fun teamOf(f: FightState, i: Int) = f.teams[i]
 
