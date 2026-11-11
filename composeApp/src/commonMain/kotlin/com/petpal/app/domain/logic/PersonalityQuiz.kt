@@ -106,6 +106,76 @@ object PersonalityQuiz {
             a("A museum or old library", CURIOSITY to 3),
             a("Camping under the stars", COURAGE to 1, CALM to 1, CURIOSITY to 1),
             a("Visiting family", HEART to 2, SOCIAL to 1)),
+        q("You get a surprise day off. First move?",
+            a("Text everyone to make plans", SOCIAL to 3),
+            a("Sleep in, no alarms", CALM to 3),
+            a("Go somewhere you've never been", COURAGE to 2, CURIOSITY to 1),
+            a("Go for a run", ENERGY to 3)),
+        q("A new kid joins your class. You...",
+            a("Wave them over to your table", HEART to 2, SOCIAL to 1),
+            a("Ask them a hundred questions", CURIOSITY to 2, SOCIAL to 1),
+            a("Show them around the school", ENERGY to 1, HEART to 1, COURAGE to 1),
+            a("Give them space to settle in", CALM to 2, HEART to 1)),
+        q("Pick a pet chore",
+            a("Long walks every day", ENERGY to 3),
+            a("Teaching it new tricks", CURIOSITY to 2, CALM to 1),
+            a("Cuddles and brushing", HEART to 3),
+            a("Taking it to the park to meet others", SOCIAL to 3)),
+        q("There's a spider in the room. You...",
+            a("Catch it and put it outside", COURAGE to 2, HEART to 1),
+            a("Look up what kind it is", CURIOSITY to 3),
+            a("Leave it be, it's fine", CALM to 3),
+            a("Yell for backup", SOCIAL to 2, ENERGY to 1)),
+        q("Which game do you pick?",
+            a("A fast sport", ENERGY to 2, COURAGE to 1),
+            a("A puzzle or strategy game", CURIOSITY to 2, CALM to 1),
+            a("A party game with lots of people", SOCIAL to 3),
+            a("A co-op game to help each other", HEART to 2, SOCIAL to 1)),
+        q("You win a big prize. You...",
+            a("Share it with family", HEART to 3),
+            a("Throw a party", SOCIAL to 2, ENERGY to 1),
+            a("Save it and plan carefully", CALM to 3),
+            a("Spend it on a crazy adventure", COURAGE to 3)),
+        q("How do you learn best?",
+            a("Trying it myself, right away", ENERGY to 2, COURAGE to 1),
+            a("Reading everything about it", CURIOSITY to 3),
+            a("Studying with a group", SOCIAL to 3),
+            a("Slowly, with lots of practice", CALM to 3)),
+        q("Pick a weather",
+            a("A wild thunderstorm", COURAGE to 3),
+            a("A bright hot sunny day", ENERGY to 3),
+            a("A soft rainy afternoon", CALM to 2, HEART to 1),
+            a("A strange foggy morning", CURIOSITY to 3)),
+        q("Your room is usually...",
+            a("Full of half-done projects", CURIOSITY to 2, ENERGY to 1),
+            a("Neat and peaceful", CALM to 3),
+            a("Covered in photos of friends", SOCIAL to 2, HEART to 1),
+            a("Hardly used, I'm always out", ENERGY to 2, COURAGE to 1)),
+        q("Someone dares you to try a weird food. You...",
+            a("Eat it right away", COURAGE to 3),
+            a("Ask what's in it first", CURIOSITY to 3),
+            a("Only if my friends try it too", SOCIAL to 3),
+            a("Politely say no thanks", CALM to 3)),
+        q("A stray animal follows you home. You...",
+            a("Take care of it right away", HEART to 3),
+            a("Find out who it belongs to", CURIOSITY to 2, HEART to 1),
+            a("Post about it to get help", SOCIAL to 3),
+            a("Stay calm and give it water", CALM to 2, HEART to 1)),
+        q("Pick a job for a day",
+            a("Firefighter", COURAGE to 3),
+            a("Scientist", CURIOSITY to 3),
+            a("Nurse", HEART to 3),
+            a("Tour guide", SOCIAL to 2, ENERGY to 1)),
+        q("Which motto fits you?",
+            a("Go big or go home", COURAGE to 2, ENERGY to 1),
+            a("Slow and steady wins", CALM to 3),
+            a("The more the merrier", SOCIAL to 3),
+            a("Never stop asking why", CURIOSITY to 3)),
+        q("Your phone dies for a whole day. You...",
+            a("Love the peace and quiet", CALM to 3),
+            a("Go outside and play", ENERGY to 3),
+            a("Miss my friends already", SOCIAL to 2, HEART to 1),
+            a("Take it apart to see what broke", CURIOSITY to 2, COURAGE to 1)),
     )
 
     /** Each pet's personality, 0..3 per trait: ENERGY, SOCIAL, CURIOSITY, CALM, COURAGE, HEART. */
@@ -157,18 +227,44 @@ object PersonalityQuiz {
         questions.sumOf { q -> q.answers.maxOf { it.traits[Trait.entries[t]] ?: 0 } }
     }
 
+    /** Average and spread of each trait for random answers, so the pet matches what stands out about you. */
+    private val avg = FloatArray(Trait.entries.size) { t ->
+        questions.sumOf { q -> q.answers.sumOf { it.traits[Trait.entries[t]] ?: 0 } }.toFloat() / 4f
+    }
+    private val spread = FloatArray(Trait.entries.size) { t ->
+        val tr = Trait.entries[t]
+        sqrt(questions.sumOf { q ->
+            val m = q.answers.sumOf { it.traits[tr] ?: 0 } / 4.0
+            q.answers.sumOf { a -> ((a.traits[tr] ?: 0) - m).let { it * it } } / 4.0
+        }).toFloat()
+    }
+
+    /** Per-pet nudges tuned by simulation so every pet comes up about equally often (~3% each). */
+    private val bias: Map<Species, Float> = mapOf(
+        SPROUT to 0.035f, KITTY to -0.074f, DRAKE to -0.022f, BUNNY to -0.001f,
+        PUP to -0.003f, OWL to -0.057f, TURTLE to 0.077f, FOX to -0.053f,
+        FROG to 0.056f, BEAR to -0.021f, PENGUIN to 0.092f, HEDGEHOG to 0.031f,
+        BAT to -0.095f, DEER to 0.026f, OTTER to 0.015f, PANDA to 0.108f,
+        LIZARD to -0.013f, RACCOON to -0.066f, HAMSTER to 0.030f, PARROT to -0.061f,
+        AXOLOTL to 0.002f, MOLE to -0.014f, KOALA to 0.066f, SHARK to -0.002f,
+        CHAMELEON to -0.048f, BEAVER to -0.007f, MONKEY to -0.003f, KANGAROO to 0.049f,
+        EAGLE to -0.079f, SEAL to 0.058f, ELEPHANT to -0.066f, TIGER to -0.014f,
+        TILAPIA to 0.056f,
+    )
+
     /** [choices] = chosen answer index per question. Ties are broken at random. */
     fun evaluate(choices: List<Int>, rng: Random = Random.Default): Result {
         val raw = scores(choices)
-        // Compare shapes, not sizes: each trait relative to its max, centered, then cosine similarity.
-        val you = centered(FloatArray(raw.size) { raw[it].toFloat() / maxScores[it].coerceAtLeast(1) })
-        val fit = profiles.mapValues { (_, p) -> cosine(you, centered(FloatArray(p.size) { p[it] / 3f })) }
-        val best = fit.values.max()
-        val species = fit.filterValues { it >= best - 1e-6f }.keys.random(rng)
+        // Each trait vs. the average answerer, then cosine vs. each pet's shape.
+        val you = centered(FloatArray(raw.size) { (raw[it] - avg[it]) / spread[it].coerceAtLeast(1f) })
+        val fit = profiles.mapValues { (_, p) -> cosine(you, centered(FloatArray(p.size) { p[it].toFloat() })) }
+        val score = fit.mapValues { (s, f) -> f + (bias[s] ?: 0f) }
+        val best = score.values.max()
+        val species = score.filterValues { it >= best - 1e-6f }.keys.random(rng)
         return Result(
             species,
             Trait.entries.associateWith { raw[it.ordinal].toFloat() / maxScores[it.ordinal].coerceAtLeast(1) },
-            ((best + 1f) / 2f * 100).toInt().coerceIn(0, 100),
+            ((fit.getValue(species) + 1f) / 2f * 100).toInt().coerceIn(0, 100),
         )
     }
 

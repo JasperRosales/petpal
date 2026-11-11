@@ -178,6 +178,18 @@ class BattleTest {
         assertEquals(Species.entries.toSet(), reachable)
     }
 
+    @Test fun quizSpreadsPetsEvenly() {
+        val counts = mutableMapOf<Species, Int>()
+        val r = Random(42)
+        val n = 20000
+        repeat(n) {
+            val s = com.petpal.app.domain.logic.PersonalityQuiz.run { result(questions.map { r.nextInt(4) }, r) }
+            counts[s] = (counts[s] ?: 0) + 1
+        }
+        val share = Species.entries.map { (counts[it] ?: 0).toFloat() / n }
+        assertTrue(share.max() < 0.05f && share.min() > 0.01f, "quiz shares ${share.min()}..${share.max()}")
+    }
+
     @Test fun battleEndsWithinTimeLimit() {
         val e = BattleEngine(listOf(a, b), Random(2))
         val rng = Random(3)
