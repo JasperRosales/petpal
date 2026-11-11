@@ -6,7 +6,6 @@ import com.petpal.app.domain.platform.BattleLinks
 import com.petpal.app.domain.platform.StepCounter
 import com.petpal.app.domain.platform.SoundPlayer
 import com.petpal.app.platform.sound.AndroidSoundPlayer
-import com.petpal.app.platform.link.BluetoothTransport
 import com.petpal.app.platform.link.LanTransport
 import com.petpal.app.platform.AndroidStepCounter
 import com.petpal.app.platform.AndroidAppUpdater
@@ -21,5 +20,5 @@ val androidModule = module {
     single<SoundPlayer> { AndroidSoundPlayer(androidContext()) }
     single<AppUpdater> { AndroidAppUpdater(androidContext()) }
     single<com.petpal.app.domain.platform.OnlineService> { com.petpal.app.platform.link.OnlineClient(androidContext()) }
-    single { BattleLinks(listOf(BluetoothTransport(androidContext()), LanTransport(androidContext()))) }
+    single { BattleLinks(listOf(LanTransport(androidContext()))) }
 }

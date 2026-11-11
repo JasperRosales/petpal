@@ -431,7 +431,7 @@ class BattleViewModel(
             format = format,
         )
         val clock = TimeSource.Monotonic.markNow()
-        // One writer per guest so a slow link (Bluetooth) never stalls the sim; stale states are dropped.
+        // One writer per guest so a slow link never stalls the sim; stale states are dropped.
         val outboxes = remotes.mapValues { (_, c) -> Outbox(c).also { it.start(this) } }
         var nextTick = 0L
         withContext(Dispatchers.Default) {

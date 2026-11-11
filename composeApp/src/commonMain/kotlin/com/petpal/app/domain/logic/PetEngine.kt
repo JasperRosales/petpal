@@ -73,16 +73,16 @@ object PetEngine {
     }
 
     fun battleXp(outcome: BattleOutcome): Int = when (outcome) {
-        BattleOutcome.WIN -> 30
-        BattleOutcome.DRAW -> 15
-        BattleOutcome.LOSS -> 10
+        BattleOutcome.WIN -> 45
+        BattleOutcome.DRAW -> 25
+        BattleOutcome.LOSS -> 15
     }
 
     /** CPU/practice battles give reduced XP. */
     fun cpuBattleXp(outcome: BattleOutcome): Int = when (outcome) {
-        BattleOutcome.WIN -> 8
-        BattleOutcome.DRAW -> 4
-        BattleOutcome.LOSS -> 2
+        BattleOutcome.WIN -> 28
+        BattleOutcome.DRAW -> 6
+        BattleOutcome.LOSS -> 3
     }
 
     /** Pets never devolve, even if an older version evolved them earlier. */

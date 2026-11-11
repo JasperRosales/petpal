@@ -13,9 +13,9 @@ interface BattleConnection {
 
 data class Peer(val id: String, val name: String)
 
-enum class LinkKind(val label: String) { BLUETOOTH("Bluetooth"), HOTSPOT("Hotspot / Wi-Fi") }
+enum class LinkKind(val label: String) { HOTSPOT("Hotspot / Wi-Fi") }
 
-/** Offline local link (Bluetooth RFCOMM or LAN sockets over a phone hotspot). */
+/** Offline local link (LAN sockets over a phone hotspot or shared Wi-Fi). */
 interface BattleTransport {
     val kind: LinkKind
     val isAvailable: Boolean

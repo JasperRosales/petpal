@@ -110,7 +110,7 @@ object Mechanics {
 
 /** Built-in backstep every pet has: a quick dash away from the opponent with brief invulnerability. */
 object Evade {
-    const val COOLDOWN_MS = 3000L
+    const val COOLDOWN_MS = 1000L
     const val DURATION_MS = 350L // dash time, also the i-frame window
     const val DISTANCE = 0.25f
 }

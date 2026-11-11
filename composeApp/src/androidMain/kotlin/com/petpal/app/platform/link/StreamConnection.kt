@@ -12,7 +12,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.util.concurrent.atomic.AtomicBoolean
 
-/** Line-based connection over any socket's streams (TCP or Bluetooth RFCOMM). */
+/** Line-based connection over any socket's streams (TCP). */
 internal class StreamConnection(
     input: InputStream,
     output: OutputStream,

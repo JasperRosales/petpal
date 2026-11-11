@@ -4,7 +4,7 @@ import com.petpal.app.domain.model.Species
 import com.petpal.app.domain.model.Stage
 import kotlin.math.roundToInt
 
-/** Line-based wire format shared by the Bluetooth and Wi-Fi links. */
+/** Line-based wire format shared by the Wi-Fi and online links. */
 object Protocol {
     const val VERSION = 22
 

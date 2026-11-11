@@ -74,7 +74,6 @@ fun BattleScreen(vm: BattleViewModel = koinViewModel()) {
 
 private fun hostHint(kind: LinkKind?) = when (kind) {
     LinkKind.HOTSPOT -> "Turn on your phone's hotspot (or join the same Wi-Fi). Your friend connects to it and taps Join."
-    LinkKind.BLUETOOTH -> "Keep this screen open. Your friend taps Join under Bluetooth and picks your phone."
     null -> null
 }
 
@@ -108,7 +107,7 @@ private fun Lobby(vm: BattleViewModel, message: String?, format: BattleFormat) {
             modifier = Modifier.fillMaxWidth(),
         )
         Text(
-            "Online battles: win +30 XP, draw +15, loss +10 (first 3 per day). Stronger pets come from walking.",
+            "Online battles: win +45 XP, draw +25, loss +15 (first 3 per day). CPU: win +28. Stronger pets come from walking.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -245,7 +244,7 @@ private fun LinkCard(kind: LinkKind, vm: BattleViewModel) {
     Card(colors = CardDefaults.cardColors(containerColor = surface)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(if (kind == LinkKind.BLUETOOTH) Icons.Rounded.Bluetooth else Icons.Rounded.WifiTethering, null)
+                Icon(Icons.Rounded.WifiTethering, null)
                 Spacer(Modifier.width(10.dp))
                 Text(kind.label, style = MaterialTheme.typography.titleMedium)
             }
@@ -368,7 +367,7 @@ private fun Searching(s: BattleUiState, vm: BattleViewModel) {
             CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
         }
         Text(
-            if (s.link == LinkKind.HOTSPOT) "Connect to your friend's hotspot first." else "Your friend should tap Host under Bluetooth.",
+            "Connect to your friend's hotspot or Wi-Fi first.",
             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         if (s.peers.isEmpty()) Text("Searching...")
