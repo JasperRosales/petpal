@@ -36,6 +36,9 @@ class RewardRepository(
 
     suspend fun claimBoss(): Species? = if (Events.bossOpen(today())) claim(Events.BOSS_KEY) else null
 
+    /** First raid clear of the day: a random pet. Repeat clears give XP only. */
+    suspend fun claimRaid(): Species? = claim("raid:${today()}")
+
     /** True if this player is #1 on the online leaderboard right now. False offline or on errors. */
     suspend fun isChampion(): Boolean =
         online?.let { runCatching { it.leaderboard().me?.rank == 1 }.getOrDefault(false) } ?: false

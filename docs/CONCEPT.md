@@ -4,7 +4,7 @@ PetPal is an offline habit pet. You raise one pixel pet, and it only grows from 
 
 ## Your pet
 
-- **One pet per device.** A short personality quiz picks its species the first time you open the app. See [PETS.md](PETS.md) for all 22 species.
+- **One pet per device.** A short personality quiz picks its species the first time you open the app. See [PETS.md](PETS.md) for all species.
 - **Pets tab.** Walk 10,000 steps to unlock a random new pet, or 50,000 to pick one yourself; the counter restarts after each unlock. New pets start as Lv 1 eggs. You keep every pet and can switch the active one any time; only the active pet earns XP and battles.
 - **Relearning moves.** Every 10 levels your pet earns a relearn point. Spend it on the Home tab to bring back a move it forgot or skipped.
 - **Stages.** Egg → Baby (Lv 3) → Kid (Lv 20) → Teen (Lv 35) → Adult (Lv 50). The stage sets max HP and damage (×0.85 / ×1.0 / ×1.15 / ×1.22 / ×1.3). Pets never devolve.
@@ -74,6 +74,7 @@ After a match, **Battle again** starts a rematch on the next map. Linked: both p
 |---|---|---|
 | 1v1 | 2 | You vs a friend, or vs a random CPU pet at your level |
 | Duo 2v2 | 4 | Two teams of two. Pets target the nearest enemy, and cones, beams and other area moves can hit both. A team loses when both its pets are knocked out. |
+| Raid | 2–4 | 10-floor co-op dungeon: skeleton packs, wild pets, then a 1000 HP boss. Fainted pets stay out. See [RAIDS.md](RAIDS.md). |
 
 Any seat without a person gets a **CPU**: a random species at the matching level with a random learned loadout. In Duo you can practice with a CPU partner against 2 CPUs. With a friend linked, they join as your rival (you + CPU vs friend + CPU) or your partner (you + friend vs 2 CPUs).
 

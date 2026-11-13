@@ -33,6 +33,8 @@ fun PetSprite(
     modifier: Modifier = Modifier,
     /** Fried Tilapia form (battle passive). */
     fried: Boolean = false,
+    /** Raid skeleton: bone-white palette. */
+    bone: Boolean = false,
     size: Dp = when (stage) {
         Stage.EGG -> 120.dp
         Stage.BABY -> 136.dp
@@ -53,7 +55,7 @@ fun PetSprite(
     }
     // Rasterize the 20x20 grid once into a tiny bitmap, then scale it up without smoothing:
     // one drawImage per redraw instead of up to 400 drawRects.
-    val image = remember(stage, mood, species, fried) { spriteBitmap(stage, mood, species, fried) }
+    val image = remember(stage, mood, species, fried, bone) { spriteBitmap(stage, mood, species, fried, bone) }
     val egg = stage == Stage.EGG
 
     Canvas(
@@ -73,11 +75,16 @@ fun PetSprite(
 private val spriteCache = HashMap<Long, ImageBitmap>()
 
 /** Bitmaps are tiny (20x20) and there are few combinations, so keep them for the app's lifetime. */
-private fun spriteBitmap(stage: Stage, mood: Mood, species: Species, fried: Boolean): ImageBitmap {
-    val key = if (fried) -1L else (species.ordinal.toLong() shl 16) or (stage.ordinal.toLong() shl 8) or mood.ordinal.toLong()
+private fun spriteBitmap(stage: Stage, mood: Mood, species: Species, fried: Boolean, bone: Boolean): ImageBitmap {
+    val key = if (fried) -1L else ((species.ordinal.toLong() shl 16) or (stage.ordinal.toLong() shl 8) or mood.ordinal.toLong()) or
+        (if (bone) 1L shl 40 else 0L)
     return spriteCache.getOrPut(key) {
         val grid = if (fried) PetArt.friedFish() else PetArt.draw(species, stage, mood)
-        val palette = if (fried) FRIED_PALETTE else species.palette()
+        val palette = when {
+            fried -> FRIED_PALETTE
+            bone -> BONE_PALETTE
+            else -> species.palette()
+        }
         val img = ImageBitmap(PetArt.N, PetArt.N)
         val canvas = androidx.compose.ui.graphics.Canvas(img)
         val paint = Paint()
@@ -96,6 +103,14 @@ private val FRIED_PALETTE = mapOf(
     'o' to Color(0xFF5A2E0C), 'e' to SpriteInk,
     'b' to Color(0xFFD08A2E), 'd' to Color(0xFF8A4A16), 'l' to Color(0xFFF0C062),
     'h' to Color(0xFFEDEDED), 'y' to Color(0xFFF7E15A), 'g' to SpriteLeaf,
+)
+
+/** Raid skeletons: every body colour becomes bone, while the ink stays dark. */
+private val BONE_PALETTE = mapOf(
+    'o' to SpriteInk, 'e' to SpriteInk, 'm' to SpriteInk,
+    'b' to Color(0xFFE7E1D1), 'd' to Color(0xFFB6AE99), 'l' to Color(0xFFF8F4E8),
+    'c' to Color(0xFFD8D2C2), 'p' to Color(0xFFD8D2C2), 'y' to Color(0xFFE7E1D1),
+    'h' to Color(0xFFF8F4E8), 'g' to Color(0xFFC9C2AF), 'r' to Color(0xFFB6AE99), 'w' to Color.White,
 )
 
 private fun Species.palette(): Map<Char, Color> {
@@ -142,6 +157,9 @@ fun Species.colors(): Triple<Color, Color, Color> = when (this) {
     Species.ELEPHANT -> Triple(Color(0xFFA7AEB8), Color(0xFF6B7380), Color(0xFFD8DCE2))
     Species.TIGER -> Triple(Color(0xFFF08A2C), Color(0xFF2B2420), Color(0xFFFFF4E6))
     Species.TILAPIA -> Triple(Color(0xFF8FA8A0), Color(0xFF4F6B66), Color(0xFFE6EEDF))
+    Species.CAPYBARA -> Triple(Color(0xFFB08456), Color(0xFF6E4C2E), Color(0xFFD9B98E))
+    Species.CRAB -> Triple(Color(0xFFE8634A), Color(0xFFA83A2A), Color(0xFFF6C7A8))
+    Species.FLAMINGO -> Triple(Color(0xFFF59AB5), Color(0xFFD9668C), Color(0xFFFFD6E2))
 }
 
 internal object PetArt {
@@ -236,6 +254,9 @@ internal object PetArt {
         Species.KOALA -> 0.96f to 1.0f
         Species.BEAVER -> 1.0f to 0.96f
         Species.TIGER -> 1.04f to 0.96f
+        Species.CAPYBARA -> 1.12f to 0.9f
+        Species.CRAB -> 0.98f to 0.7f
+        Species.FLAMINGO -> 0.8f to 1.1f
         else -> 1f to 1f
     }
 
@@ -245,7 +266,8 @@ internal object PetArt {
     /** How each species' eyes look: 0 = 1x2, 1 = 2x2 with a shine, 2 = single dot, 3 = 2x1 slit. */
     private fun Species.eyeStyle() = when (this) {
         Species.BUNNY, Species.KITTY, Species.HAMSTER, Species.AXOLOTL, Species.SEAL, Species.KOALA, Species.BAT, Species.DEER -> 1
-        Species.SHARK, Species.MOLE, Species.TILAPIA, Species.ELEPHANT, Species.PENGUIN -> 2
+        Species.SHARK, Species.MOLE, Species.TILAPIA, Species.ELEPHANT, Species.PENGUIN, Species.CAPYBARA,
+        Species.CRAB, Species.FLAMINGO -> 2
         Species.LIZARD, Species.CHAMELEON, Species.TIGER, Species.FOX, Species.EAGLE -> 3
         else -> 0
     }
@@ -367,6 +389,20 @@ internal object PetArt {
                 val r = if (big) 2.4f else if (grown) 2f else 1.6f
                 g.ellipse(b.cx + b.rx + r * 0.5f, b.bottom - r * 0.6f, r, r * 0.8f, 'd')
             }
+            Species.CRAB -> { // big claws held up at the sides
+                val r = if (big) 2.2f else if (grown) 1.9f else 1.5f
+                listOf(-1, 1).forEach { s ->
+                    val x = b.cx + s * (b.rx + 0.4f)
+                    g.ellipse(x, b.cy - b.ry * 0.6f, r, r, 'd')
+                    g.ellipse(x + s * r * 0.3f, b.cy - b.ry * 0.6f - r * 0.6f, r * 0.35f, r * 0.55f, '.', onlyOver = 'd')
+                }
+                for (k in 0..2) g.mirror(b.left + 1 + k, b.bottom, 'd') // little legs
+            }
+            Species.FLAMINGO -> { // folded wings and a short tail tuft
+                val wy = b.cy.toInt() - 1
+                val span = if (big) 2 else 1
+                for (i in 0..span) for (y in wy..wy + 2 + i) for (x in b.left - 1 - i..b.left) g.mirror(x, y, 'd')
+            }
             Species.KITTY -> g.rect(b.left + 2 * b.rx.toInt() - 1, b.cy.toInt() - (if (grown) 4 else 2), b.left + 2 * b.rx.toInt(), b.cy.toInt() + 2, 'b')
             Species.FOX -> {
                 val r = if (big) 3.2f else if (grown) 2.6f else 2f
@@ -452,6 +488,15 @@ internal object PetArt {
                 g.ellipse(b.cx - b.rx * 0.62f, b.top + 0.6f, r, r, 'd'); g.ellipse(b.cx + b.rx * 0.62f, b.top + 0.6f, r, r, 'd')
             }
             Species.LIZARD -> if (big) g.spike(b.left + 3, b.top + 1, 2, 2, 'd')
+            Species.CAPYBARA -> { // tiny round ears
+                val r = if (big) 1.2f else 1f
+                g.ellipse(b.cx - b.rx * 0.6f, b.top + 0.8f, r, r, 'd'); g.ellipse(b.cx + b.rx * 0.6f, b.top + 0.8f, r, r, 'd')
+            }
+            Species.CRAB -> { // eye stalks
+                val h = if (big) 3 else 2
+                for (i in 0..h) g.mirror(N / 2 - 3, b.top - i + 1, 'b')
+            }
+            Species.FLAMINGO -> if (grown) g.spike(b.cx.toInt() - 1, b.top + 1, if (big) 3 else 2, 2, 'd') // feather tuft
             Species.PUP, Species.PENGUIN, Species.HEDGEHOG, Species.AXOLOTL, Species.MOLE -> Unit
             Species.SPROUT, Species.TURTLE -> Unit
         }
@@ -462,7 +507,10 @@ internal object PetArt {
             val sy = b0.cy - b0.ry - 0.2f
             listOf(-3f, 0f, 3f).forEach { dx -> g.ellipse(b.cx + dx, sy + if (dx == 0f) 0f else 1.2f, 1f, 0.9f, 'y', onlyOver = 'd') }
         }
-        if (grown && species != Species.TILAPIA) {
+        if (grown && species == Species.FLAMINGO) { // thin legs
+            val fx = (b.cx - b.rx * 0.35f).toInt()
+            g.rect(fx, b.bottom - 1, fx, b.bottom + 1, 'd'); g.rect(N - 1 - fx, b.bottom - 1, N - 1 - fx, b.bottom + 1, 'd')
+        } else if (grown && species != Species.TILAPIA && species != Species.CRAB) {
             val fx = (b.cx - b.rx * 0.5f).toInt()
             g.rect(fx - 1, b.bottom - 1, fx + 1, b.bottom, 'b')
             g.rect(N - 1 - fx - 1, b.bottom - 1, N - 1 - fx + 1, b.bottom, 'b')
@@ -506,8 +554,10 @@ internal object PetArt {
         }
 
         // 4. Face
-        val ey = (b.cy - b.ry * 0.15f).roundToInt().let { if (species == Species.FROG) b.top + 1 else it }
-        val ex = (b.cx - b.rx * if (species == Species.FROG) 0.5f else 0.4f).toInt()
+        val ey = (b.cy - b.ry * 0.15f).roundToInt().let {
+            when (species) { Species.FROG -> b.top + 1; Species.CRAB -> b.top - (if (big) 2 else 1); else -> it }
+        }
+        val ex = if (species == Species.CRAB) N / 2 - 3 else (b.cx - b.rx * if (species == Species.FROG) 0.5f else 0.4f).toInt()
         val eyes = species.eyeStyle()
         if (mood == Mood.SLEEPY) {
             g.mirror(ex - 1, ey, 'e'); g.mirror(ex, ey, 'e')
@@ -529,7 +579,10 @@ internal object PetArt {
         }
         val my = (b.cy + b.ry * 0.25f).roundToInt()
         val c = N / 2
-        if (species == Species.OWL || species == Species.PENGUIN || species == Species.PARROT || species == Species.EAGLE) {
+        if (species == Species.FLAMINGO) { // bent beak with a dark tip
+            g.set(c - 1, my - 1, 'h'); g.set(c, my - 1, 'h'); g.set(c - 1, my, 'h'); g.set(c, my, 'h')
+            g.set(c - 1, my + 1, 'e'); g.set(c, my + 1, 'e')
+        } else if (species == Species.OWL || species == Species.PENGUIN || species == Species.PARROT || species == Species.EAGLE) {
             g.set(c - 1, my - 1, 'y'); g.set(c, my - 1, 'y'); g.set(c - 1, my, 'y'); g.set(c, my, 'y')
             if (species == Species.PARROT || species == Species.EAGLE) { g.set(c - 1, my + 1, 'y'); g.set(c, my + 1, 'e') } // hooked beak
         } else {
@@ -552,7 +605,8 @@ internal object PetArt {
                 Mood.SLEEPY -> g.set(c, my + 1, 'm')
             }
         }
-        if (mood != Mood.SAD && species != Species.OWL && species != Species.PENGUIN && species != Species.PARROT && species != Species.EAGLE) {
+        if (mood != Mood.SAD && species != Species.OWL && species != Species.PENGUIN && species != Species.PARROT && species != Species.EAGLE &&
+            species != Species.FLAMINGO && species != Species.CRAB) {
             g.mirror(ex - 1, ey + 2, 'c')
         }
 
@@ -616,6 +670,18 @@ internal object PetArt {
                 g.mirror(b.left + 1, b.cy.toInt() + 2, 'd')
             }
             Species.SHARK -> listOf(0, 1).forEach { dy -> g.mirror(b.left + 1, b.cy.toInt() + dy, 'd') } // gills
+            Species.CAPYBARA -> { // broad dark snout, plus a yuzu on its head once grown
+                for (x in c - 2..c + 1) g.set(x, my - 1, 'd')
+                if (grown) { g.set(c - 1, b.top - 1, 'y'); g.set(c, b.top - 1, 'y'); g.set(c - 1, b.top - 2, 'y'); g.set(c, b.top - 2, 'y') }
+                if (big) g.set(c, b.top - 3, 'g')
+            }
+            Species.CRAB -> {
+                if (mood != Mood.SLEEPY) { g.mirror(ex - 1, ey, 'w'); g.mirror(ex, ey, 'e') } // eyes on the stalk tips
+                if (grown) listOf(-3, 2).forEach { dx -> // shell spots
+                    if (g[c + dx, b.cy.toInt()] == 'b') g.set(c + dx, b.cy.toInt(), 'd')
+                }
+            }
+            Species.FLAMINGO -> if (big) { g.set(c - 1, b.top + 1, 'w'); g.set(c, b.top + 1, 'w') } // shiny crown
             Species.CHAMELEON -> if (grown) listOf(-3, 0, 3).forEach { dx -> // stripes
                 for (dy in 0..1) if (g[c + dx, b.cy.toInt() + dy] == 'b') g.set(c + dx, b.cy.toInt() + dy, 'd')
             }

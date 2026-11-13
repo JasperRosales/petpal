@@ -42,6 +42,9 @@ enum class Species(val label: String, val trait: String) {
     ELEPHANT("Elephant", "Wise and caring. You never forget a friend and always look out for the herd."),
     TIGER("Tiger", "Fierce and confident. You stalk your goals and pounce when the time is right."),
     TILAPIA("Tilapia", "Chill and resilient. You go with the flow, and even a bad day can't keep you down."),
+    CAPYBARA("Capybara", "Calm and friendly. Everyone feels relaxed around you, and nothing ruffles you."),
+    CRAB("Crab", "Tough and stubborn. Hard on the outside, and you never let go of what matters."),
+    FLAMINGO("Flamingo", "Stylish and social. You stand out in a crowd and keep your balance with grace."),
 }
 enum class BattleOutcome { WIN, LOSS, DRAW }
 

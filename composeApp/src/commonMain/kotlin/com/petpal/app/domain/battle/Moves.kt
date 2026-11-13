@@ -550,6 +550,33 @@ enum class Move(
     SCALE_SHED("Scale Shed", U, Element.NORMAL, 0, 0, 0.00f, 0, 250, 200, Effect.CLEANSE),
     NILE_FLOOD("Nile Flood", U, Element.WATER, 0, 34, 0.65f, 0, 600, 300, Effect.KNOCKBACK, element2 = Element.GRASS),
     FISH_FRY("Fish Fry", U, Element.FIRE, 0, 30, 0.45f, 0, 450, 250, Effect.BURN),
+    // Capybara
+    CAPY_NUDGE("Capy Nudge", U, Element.NORMAL, 0, 16, 0.24f, 0, 250, 250, Effect.KNOCKBACK),
+    CAPY_CUDDLE("Capy Cuddle", U, Element.GRASS, 0, 0, 0.00f, 0, 300, 200, Effect.HEAL),
+    YUZU_TOSS("Yuzu Toss", U, Element.GRASS, 0, 22, 0.50f, 0, 300, 250, Effect.LEECH),
+    MUD_BATH("Mud Bath", U, Element.WATER, 0, 0, 0.00f, 0, 300, 200, Effect.CLEANSE),
+    RIVERBANK_ROLL("Riverbank Roll", U, Element.WATER, 0, 27, 0.30f, 0, 350, 250, Effect.KNOCKBACK, alsoLunges = true),
+    ZEN_FLOAT("Zen Float", U, Element.WATER, 0, 0, 0.00f, 0, 300, 200, Effect.FORTRESS),
+    SPRING_FLOOD("Spring Flood", U, Element.WATER, 0, 33, 0.60f, 0, 550, 300, Effect.SLOW, element2 = Element.GRASS),
+    FRIEND_CIRCLE("Friend Circle", U, Element.GRASS, 0, 0, 0.00f, 0, 400, 200, Effect.AID),
+    // Crab
+    PINCH("Pinch", U, Element.FIGHTING, 0, 15, 0.20f, 0, 250, 250, Effect.STUN),
+    BUBBLE_SPIT("Bubble Spit", U, Element.WATER, 0, 14, 0.50f, 0, 300, 250, Effect.SLOW),
+    CLAW_CRUSH("Claw Crush", U, Element.FIGHTING, 0, 24, 0.22f, 0, 300, 250, Effect.WEAKEN, alsoLunges = true),
+    SHELL_GUARD("Shell Guard", U, Element.WATER, 0, 0, 0.00f, 0, 250, 200, Effect.COUNTER),
+    SIDEWAYS_RUSH("Sideways Rush", U, Element.FIGHTING, 0, 11, 0.20f, 0, 200, 200, Effect.TWIN_SLASH),
+    MOLT("Molt", U, Element.NORMAL, 0, 0, 0.00f, 0, 250, 200, Effect.CLEANSE),
+    CRAB_HAMMER("Crab Hammer", U, Element.WATER, 0, 34, 0.25f, 0, 450, 300, Effect.STUN, alsoLunges = true, element2 = Element.FIGHTING),
+    KING_CLAW("King Claw", U, Element.FIGHTING, 0, 0, 0.00f, 0, 400, 200, Effect.CITADEL),
+    // Flamingo
+    STILT_KICK("Stilt Kick", U, Element.NORMAL, 0, 16, 0.26f, 0, 250, 250, Effect.KNOCKBACK),
+    PINK_GLARE("Pink Glare", U, Element.NORMAL, 0, 0, 0.50f, 0, 250, 200, Effect.WEAKEN),
+    LAGOON_DASH("Lagoon Dash", U, Element.WATER, 0, 24, 0.40f, 0, 300, 250, Effect.LUNGE),
+    FLOCK_RALLY("Flock Rally", U, Element.FLYING, 0, 0, 0.00f, 0, 350, 200, Effect.AID),
+    PINK_TWISTER("Pink Twister", U, Element.FLYING, 0, 26, 0.45f, 0, 400, 250, Effect.PULL),
+    SHRIMP_SNACK("Shrimp Snack", U, Element.WATER, 0, 0, 0.00f, 0, 300, 200, Effect.HEAL),
+    SUNSET_DIVE("Sunset Dive", U, Element.FLYING, 0, 33, 0.50f, 0, 800, 300, Effect.VANISH, element2 = Element.WATER),
+    FLAMINGO_WALTZ("Flamingo Waltz", U, Element.FLYING, 0, 0, 0.00f, 0, 400, 200, Effect.BATTLE_CRY),
     ;
 
     /** Buffs target the user; everything else (including 0-damage debuffs) targets the opponent. */
@@ -650,6 +677,9 @@ object SpeciesKit {
         Species.SHARK -> setOf(Element.WATER, Element.ICE)
         Species.CHAMELEON -> setOf(Element.GRASS, Element.FIRE)
         Species.BEAVER -> setOf(Element.GROUND, Element.WATER)
+        Species.CAPYBARA -> setOf(Element.GRASS, Element.WATER)
+        Species.CRAB -> setOf(Element.WATER, Element.FIGHTING)
+        Species.FLAMINGO -> setOf(Element.FLYING, Element.WATER)
     }
 
     /** Off-type moves the species can still learn. */
@@ -687,6 +717,9 @@ object SpeciesKit {
         Species.SHARK -> setOf(Move.THUNDER_FANG, Move.FIRE_FANG, Move.BULLDOZE, Move.DIG)
         Species.CHAMELEON -> setOf(Move.THUNDER_WAVE, Move.SHOCK_WAVE, Move.AERIAL_ACE, Move.BUBBLE)
         Species.BEAVER -> setOf(Move.RAZOR_LEAF, Move.SEED_BOMB, Move.BRAMBLE_SNARE, Move.ICY_WIND)
+        Species.CAPYBARA -> setOf(Move.MUD_SLAP, Move.BULLDOZE, Move.ICY_WIND, Move.STONE_SKIN)
+        Species.CRAB -> setOf(Move.ICE_SHARD, Move.ROCK_THROW, Move.DIG, Move.MUD_SLAP)
+        Species.FLAMINGO -> setOf(Move.ICY_WIND, Move.SEED_BOMB, Move.SHOCK_WAVE, Move.BOUNCE)
     }
 
     /** Normal or own-type moves this species can't do (no fists, no wings, too slow...). */
@@ -729,6 +762,11 @@ object SpeciesKit {
             Move.DOUBLE_KICK, Move.ZOOMIES, Move.POUNCE)
         Species.CHAMELEON -> setOf(Move.HOWL, Move.BODY_SLAM, Move.GIGA_IMPACT, Move.MEGA_PUNCH, Move.FLARE_BLITZ)
         Species.BEAVER -> setOf(Move.HOWL, Move.ZOOMIES, Move.TELEPORT, Move.POUNCE, Move.DIVE)
+        Species.CAPYBARA -> setOf(Move.HOWL, Move.ZOOMIES, Move.TELEPORT, Move.POUNCE, Move.CLAW, Move.FURY_SWIPES,
+            Move.HYPER_FANG, Move.GIGA_IMPACT)
+        Species.CRAB -> setOf(Move.HOWL, Move.BITE, Move.HYPER_FANG, Move.DOUBLE_KICK, Move.POUNCE, Move.TELEPORT, Move.ZOOMIES)
+        Species.FLAMINGO -> setOf(Move.PUNCH, Move.MEGA_PUNCH, Move.QUICK_JAB, Move.CLAW, Move.FURY_SWIPES, Move.BITE,
+            Move.HYPER_FANG, Move.HOWL, Move.BODY_SLAM)
     }
 
     /**
@@ -867,6 +905,18 @@ object SpeciesKit {
         Species.TILAPIA -> listOf(
             Move.FIN_FLICK to Move.BUBBLE_NEST, Move.SCHOOL_RUSH to Move.MOUTH_BROOD,
             Move.ALGAE_BLOOM to Move.SCALE_SHED, Move.NILE_FLOOD to Move.FISH_FRY,
+        )
+        Species.CAPYBARA -> listOf(
+            Move.CAPY_NUDGE to Move.CAPY_CUDDLE, Move.YUZU_TOSS to Move.MUD_BATH,
+            Move.RIVERBANK_ROLL to Move.ZEN_FLOAT, Move.SPRING_FLOOD to Move.FRIEND_CIRCLE,
+        )
+        Species.CRAB -> listOf(
+            Move.PINCH to Move.BUBBLE_SPIT, Move.CLAW_CRUSH to Move.SHELL_GUARD,
+            Move.SIDEWAYS_RUSH to Move.MOLT, Move.CRAB_HAMMER to Move.KING_CLAW,
+        )
+        Species.FLAMINGO -> listOf(
+            Move.STILT_KICK to Move.PINK_GLARE, Move.LAGOON_DASH to Move.FLOCK_RALLY,
+            Move.PINK_TWISTER to Move.SHRIMP_SNACK, Move.SUNSET_DIVE to Move.FLAMINGO_WALTZ,
         )
     }
 

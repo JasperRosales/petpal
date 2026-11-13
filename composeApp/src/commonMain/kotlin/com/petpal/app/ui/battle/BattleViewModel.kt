@@ -25,22 +25,29 @@ const val MAX_PLAYERS = 6
 /**
  * SOLO = 1v1.
  * TEAMS / FFA: a room of up to [MAX_PLAYERS]; players pick teams (or it's everyone for themselves) and the host starts.
+ * RAID: a co-op room of up to [Raid.MAX_PLAYERS]; the host rolls a ten-floor dungeon.
  */
 enum class BattleFormat(val label: String, val guests: Int = 1) {
     SOLO("1v1"),
-    TEAMS("Team battle", guests = MAX_PLAYERS - 1), FFA("Free-for-all", guests = MAX_PLAYERS - 1);
+    TEAMS("Team battle", guests = MAX_PLAYERS - 1), FFA("Free-for-all", guests = MAX_PLAYERS - 1),
+    RAID("Raid", guests = Raid.MAX_PLAYERS - 1);
 
-    val isRoom get() = this == TEAMS || this == FFA
+    val isRoom get() = this == TEAMS || this == FFA || this == RAID
+    val isRaid get() = this == RAID
 }
 
-/** Waiting room before a team or free-for-all match. [you] = your entry in [players]. */
+/** Waiting room before a team, free-for-all or raid run. [you] = your entry in [players]. */
 data class RoomUi(
     val ffa: Boolean,
     val players: List<Protocol.RoomEntry>,
     val you: Int,
     val host: Boolean,
     val canStart: Boolean,
+    val raid: Boolean = false,
 )
+
+/** Raid progress shown in the fight HUD. */
+data class RaidUi(val floor: Int, val floors: Int = Raid.FLOORS)
 
 private sealed interface RoomEv {
     class Joined(val c: BattleConnection, val info: FighterInfo) : RoomEv
@@ -61,6 +68,8 @@ data class FightState(
     val terrain: Terrain = Terrain.ARENA,
     /** Team id per fighter. */
     val teams: List<Int> = BattleEngine.defaultTeams(fighters.size),
+    /** Non-null during a raid; [RaidUi.floor] is 1-based. */
+    val raid: RaidUi? = null,
 )
 
 data class BattleUiState(
@@ -143,6 +152,7 @@ class BattleViewModel(
             BattleFormat.SOLO -> listOf(me, foe()).let { it to BattleEngine.defaultTeams(2) }
             BattleFormat.FFA -> listOf(me, foe(), foe(), foe()).let { it to BattleEngine.freeForAll(4) }
             BattleFormat.TEAMS -> listOf(me, ally(), ally(), foe(), foe(), foe()).let { it to BattleEngine.defaultTeams(6) }
+            BattleFormat.RAID -> error("Raids are co-op. Host a room instead.")
         }
         runHost(infos, remotes = emptyMap(), terrain = nextTerrain(), teams = teams)
     }
@@ -158,11 +168,11 @@ class BattleViewModel(
     fun battleAgain() = again?.invoke() ?: leave()
 
     fun host(kind: LinkKind): Unit = start {
-        again = { host(kind) }
         val fmt = format
+        again = if (fmt.isRaid) null else fun() { host(kind) }
         if (fmt.isRoom) {
             _state.value = BattleUiState(mode = BattleScreenMode.ROOM, link = kind, format = fmt)
-            return@start hostRoom(kind, fmt == BattleFormat.FFA)
+            return@start hostRoom(kind, ffa = fmt == BattleFormat.FFA, raid = fmt.isRaid)
         }
         _state.value = BattleUiState(mode = BattleScreenMode.HOSTING, link = kind, format = fmt)
         val me = myInfo()
@@ -188,7 +198,7 @@ class BattleViewModel(
         val friend = joined.first().second
         val (infos, slots) = when (fmt) {
             BattleFormat.SOLO -> listOf(me, friend) to listOf(1)
-            BattleFormat.TEAMS, BattleFormat.FFA -> error("rooms are hosted by hostRoom")
+            BattleFormat.TEAMS, BattleFormat.FFA, BattleFormat.RAID -> error("rooms are hosted by hostRoom")
         }
         val remotes = slots.zip(joined.map { it.first }).toMap()
         val terrain = nextTerrain()
@@ -198,23 +208,30 @@ class BattleViewModel(
     }
 
     /**
-     * Open room: friends join (up to [MAX_PLAYERS] in all), switch teams, and the host taps Start.
-     * The host is always slot 0; in team battles the host's team spawns on the left.
+     * Open room: friends join (up to [MAX_PLAYERS], or [Raid.MAX_PLAYERS] for a raid), switch teams,
+     * and the host taps Start. The host is always slot 0; in team battles the host's team spawns on the left.
      */
-    private suspend fun hostRoom(kind: LinkKind, ffa: Boolean) = coroutineScope {
+    private suspend fun hostRoom(kind: LinkKind, ffa: Boolean, raid: Boolean = false) = coroutineScope {
         val me = myInfo()
+        val maxMembers = if (raid) Raid.MAX_PLAYERS else MAX_PLAYERS
         class Member(val c: BattleConnection?, val info: FighterInfo, var team: Int)
         val members = mutableListOf(Member(null, me, 0))
         val events = Channel<RoomEv>(Channel.UNLIMITED)
         roomEvents = events
-        fun canStart() = members.size >= 2 && (ffa || members.map { it.team }.toSet().size == 2)
+        fun canStart() = members.size >= 2 && when {
+            raid -> members.all { it.info.level >= Raid.MIN_LEVEL }
+            ffa -> true
+            else -> members.map { it.team }.toSet().size == 2
+        }
         suspend fun publish() {
-            val entries = members.map { Protocol.RoomEntry(it.info.name, it.info.level, if (ffa) 0 else it.team) }
-            _state.update { it.copy(mode = BattleScreenMode.ROOM, room = RoomUi(ffa, entries, 0, host = true, canStart = canStart())) }
-            members.forEachIndexed { i, m -> m.c?.let { c -> runCatching { c.send(Protocol.lobby(i, ffa, entries)) } } }
+            val entries = members.map { Protocol.RoomEntry(it.info.name, it.info.level, if (ffa || raid) 0 else it.team) }
+            _state.update {
+                it.copy(mode = BattleScreenMode.ROOM, room = RoomUi(ffa, entries, 0, host = true, canStart = canStart(), raid = raid))
+            }
+            members.forEachIndexed { i, m -> m.c?.let { c -> runCatching { c.send(Protocol.lobby(i, ffa, entries, raid)) } } }
         }
         val accept = launch {
-            links[kind].hostMany(me.name, MAX_PLAYERS - 1).collect { c ->
+            links[kind].hostMany(me.name, maxMembers - 1).collect { c ->
                 conns += c
                 launch {
                     try {
@@ -232,14 +249,18 @@ class BattleViewModel(
         publish()
         for (ev in events) {
             when (ev) {
-                is RoomEv.Joined -> if (members.size < MAX_PLAYERS) {
-                    // New players balance the teams (ties go to the other side, so 1v1 is the default)
-                    val team = if (members.count { it.team == 1 } <= members.count { it.team == 0 }) 1 else 0
+                is RoomEv.Joined -> if (members.size < maxMembers) {
+                    // New players balance the teams (ties go to the other side, so 1v1 is the default).
+                    val team = when {
+                        raid || ffa -> 0
+                        members.count { it.team == 1 } <= members.count { it.team == 0 } -> 1
+                        else -> 0
+                    }
                     members += Member(ev.c, ev.info, team)
                 } else ev.c.close()
                 is RoomEv.Left -> { members.removeAll { it.c === ev.c }; ev.c.close(); conns.remove(ev.c) }
-                is RoomEv.Switch -> if (!ffa) members.firstOrNull { it.c === ev.c }?.let { it.team = 1 - it.team }
-                is RoomEv.HostSwitch -> if (!ffa) members.getOrNull(ev.index)?.let { it.team = 1 - it.team }
+                is RoomEv.Switch -> if (!ffa && !raid) members.firstOrNull { it.c === ev.c }?.let { it.team = 1 - it.team }
+                is RoomEv.HostSwitch -> if (!ffa && !raid) members.getOrNull(ev.index)?.let { it.team = 1 - it.team }
                 RoomEv.Start -> if (canStart()) break
             }
             publish()
@@ -249,14 +270,23 @@ class BattleViewModel(
         val inRoom = members.mapNotNull { it.c }.toSet()
         conns.filter { it !in inRoom }.forEach { it.close() }
         conns.retainAll(inRoom)
-        val order = if (ffa) members.toList() else members.sortedBy { if (it.team == members[0].team) 0 else 1 }
+        val order = if (ffa || raid) members.toList() else members.sortedBy { if (it.team == members[0].team) 0 else 1 }
         val infos = order.map { it.info }
-        val teams = if (ffa) BattleEngine.freeForAll(order.size) else order.map { it.team }
+        val teams = when {
+            raid -> List(order.size) { 0 }
+            ffa -> BattleEngine.freeForAll(order.size)
+            else -> order.map { it.team }
+        }
         val remotes = order.withIndex().filter { it.value.c != null }.associate { it.index to it.value.c!! }
         val terrain = nextTerrain()
-        remotes.forEach { (slot, c) -> c.send(Protocol.setup(slot, infos, terrain, order.indices.toSet(), teams)) }
         _state.update { it.copy(room = null) }
-        runHost(infos, remotes, terrain, teams)
+        if (raid) {
+            // runRaidHost sends the first floor setup itself, with skeletons on the enemy team.
+            runRaidHost(infos, remotes, terrain)
+        } else {
+            remotes.forEach { (slot, c) -> c.send(Protocol.setup(slot, infos, terrain, order.indices.toSet(), teams)) }
+            runHost(infos, remotes, terrain, teams)
+        }
     }
 
     /** Room: host taps a player to move them; a guest moves themselves. */
@@ -303,7 +333,8 @@ class BattleViewModel(
         val setup = c.incoming.map { Protocol.parse(it) }.transform { m ->
             when (m) {
                 is Protocol.Lobby -> _state.update {
-                    it.copy(mode = BattleScreenMode.ROOM, room = RoomUi(m.ffa, m.players, m.you, host = false, canStart = false))
+                    it.copy(mode = BattleScreenMode.ROOM,
+                        room = RoomUi(m.ffa, m.players, m.you, host = false, canStart = false, raid = m.raid))
                 }
                 is Protocol.Setup -> emit(m)
                 else -> Unit
@@ -311,7 +342,7 @@ class BattleViewModel(
         }.firstOrNull() ?: error("Host closed the room")
         roomConn = null
         _state.update { it.copy(room = null) }
-        runGuest(setup.infos, setup.you, setup.humans, c, setup.terrain, setup.teams)
+        runGuest(setup, c)
     }
 
     val hasOnline get() = online != null
@@ -335,7 +366,7 @@ class BattleViewModel(
         } else {
             val setup = c.incoming.map { Protocol.parse(it) }.filterIsInstance<Protocol.Setup>().firstOrNull()
                 ?: error("${match.opponent} left")
-            runGuest(setup.infos, setup.you, setup.humans, c, setup.terrain, setup.teams, ranked = true)
+            runGuest(setup, c, ranked = true)
         }
     }
 
@@ -476,33 +507,161 @@ class BattleViewModel(
         if (ranked) showRating()
     }
 
-    private suspend fun runGuest(
-        infos: List<FighterInfo>, you: Int, humans: Set<Int>, c: BattleConnection, terrain: Terrain, teams: List<Int>,
-        ranked: Boolean = false,
-    ) {
-        val practice = humans.all { teams[it] == teams[0] } // every player on one team vs CPUs
+    /**
+     * Host side of a raid: build a fresh engine per floor, carry surviving HP forward, and let a
+     * CPU take over anyone who drops. Guests only receive setup/state/event messages.
+     */
+    private suspend fun runRaidHost(
+        raiders: List<FighterInfo>, remotes: Map<Int, BattleConnection>, terrain: Terrain,
+    ) = coroutineScope {
+        val rng = Random.Default
+        val plan = Raid.plan(raiders.size, rng)
+        val humans = setOf(0) + remotes.keys
+        val bots = mutableSetOf<Int>()
+        val commands = Channel<Pair<Int, Move?>>(Channel.UNLIMITED)
+        sendMove = { commands.trySend(0 to it) }
+        val left = Channel<Int>(Channel.UNLIMITED)
+        val live = remotes.toMutableMap()
+        val readers = remotes.map { (slot, c) ->
+            launch {
+                c.incoming.collect { line ->
+                    when (val msg = Protocol.parse(line)) {
+                        is Protocol.Command -> commands.trySend(slot to msg.move)
+                        Protocol.EvadeCmd -> commands.trySend(slot to null)
+                        else -> Unit
+                    }
+                }
+                left.trySend(slot)
+            }
+        }
+        var carried = IntArray(raiders.size) { -1 }
+        var index = 0
+        var floorsCleared = 0
+        var cleared = false
+        raid@ while (index < plan.floors.size) {
+            val floor = plan.floors[index]
+            val infos = raiders.mapIndexed { i, r -> r.copy(startHp = carried[i]) } + floor.enemies
+            val teams = List(infos.size) { if (it < raiders.size) 0 else 1 }
+            val engine = BattleEngine(infos, terrain = terrain, teamIds = teams, timeLimitMs = floor.timeLimitMs)
+            // A fresh setup per floor also tells every phone which floor it is.
+            live.forEach { (slot, c) ->
+                runCatching {
+                    c.send(Protocol.setup(slot, infos, terrain, humans, teams,
+                        raid = true, floor = index + 1, floors = plan.floors.size))
+                }
+            }
+            _state.value = BattleUiState(mode = BattleScreenMode.FIGHT, format = format,
+                fight = FightState(0, infos, humans, engine.snapshot(0), terrain = terrain, teams = teams,
+                    raid = RaidUi(index + 1, plan.floors.size)))
+            val clock = TimeSource.Monotonic.markNow()
+            val outboxes = live.mapValues { (_, c) -> Outbox(c).also { it.start(this) } }
+            var nextTick = 0L
+            withContext(Dispatchers.Default) {
+                while (isActive) {
+                    val now = clock.elapsedNow().inWholeMilliseconds
+                    val events = mutableListOf<String>()
+                    while (true) {
+                        val slot = left.tryReceive().getOrNull() ?: break
+                        if (!live.containsKey(slot)) continue
+                        live.remove(slot)
+                        bots += slot
+                        events += "${infos[slot].name} left. A CPU takes over"
+                    }
+                    while (true) {
+                        val (i, m) = commands.tryReceive().getOrNull() ?: break
+                        if (i in bots) continue
+                        (if (m == null) engine.evade(i, now) else engine.command(i, m, now))?.let(events::add)
+                    }
+                    for (b in bots) {
+                        if (b >= raiders.size || engine.isDown(b)) continue
+                        if (BattleBot.shouldEvade(engine, b, now, rng)) engine.evade(b, now)?.let(events::add)
+                        else BattleBot.pick(engine, b, now, rng)?.let { engine.command(b, it, now)?.let(events::add) }
+                    }
+                    events += engine.tick(now)
+                    val snap = engine.snapshot(now)
+                    if (live.isNotEmpty()) {
+                        val stateLine = Protocol.state(snap)
+                        live.keys.forEach { outboxes[it]?.offer(events, stateLine) }
+                    }
+                    push(snap, events)
+                    if (snap.ended) break
+                    nextTick += TICK_MS
+                    val wait = nextTick - clock.elapsedNow().inWholeMilliseconds
+                    if (wait > 0) delay(wait) else { nextTick = clock.elapsedNow().inWholeMilliseconds; yield() }
+                }
+            }
+            outboxes.values.forEach { it.stop() }
+            val end = engine.snapshot(clock.elapsedNow().inWholeMilliseconds)
+            val enemiesDown = (raiders.size until infos.size).all { end.fighters[it].hp <= 0 }
+            val raidersDown = (0 until raiders.size).all { end.fighters[it].hp <= 0 }
+            if (!enemiesDown || raidersDown) break@raid // wipe or floor timeout
+            floorsCleared = index + 1
+            if (index == plan.floors.size - 1) { cleared = true; break@raid }
+            carried = Raid.carryHp(end, raiders.size)
+            delay(Raid.BANNER_MS) // the ended snapshot is still on screen as a floor banner
+            index++
+        }
+        readers.forEach { it.cancel() }
+        sendMove = {}
+        val result = Protocol.raidEnd(cleared, floorsCleared)
+        live.keys.forEach { slot -> remotes[slot]?.let { runCatching { it.send(result) } } }
+        finishRaid(cleared, floorsCleared)
+        if (remotes.isNotEmpty()) delay(1500) // let the final message reach the guests
+    }
+
+    private suspend fun runGuest(setup: Protocol.Setup, c: BattleConnection, ranked: Boolean = false) {
+        var infos = setup.infos
+        var teams = setup.teams
+        var terrain = setup.terrain
+        var raidFloor = setup.floor
+        var raidFloors = setup.floors
+        val you = setup.you
+        val humans = setup.humans
+        var practice = humans.all { teams[it] == teams[0] } // every player on one team vs CPUs
         sendMove = { m -> viewModelScope.launch { runCatching { c.send(if (m == null) Protocol.EVADE else Protocol.command(m)) } } }
         var last: BattleSnapshot? = null
+        var done = false
+        fun fightState(snap: BattleSnapshot) = FightState(you, infos, humans, snap, practice = practice,
+            terrain = terrain, teams = teams, raid = if (setup.raid) RaidUi(raidFloor, raidFloors) else null)
         c.incoming.map { Protocol.parse(it) }.flowOn(Dispatchers.Default).collect { msg ->
             when (msg) {
+                is Protocol.Setup -> if (msg.raid) {
+                    infos = msg.infos
+                    teams = msg.teams
+                    terrain = msg.terrain
+                    raidFloor = msg.floor
+                    raidFloors = msg.floors
+                    practice = msg.humans.all { msg.teams[it] == msg.teams[0] }
+                    // Keep the old snapshot and floor banner until the new floor's first state arrives,
+                    // so the two never disagree about how many fighters are on the field.
+                }
                 is Protocol.State -> {
-                    if (_state.value.mode != BattleScreenMode.FIGHT) {
-                        _state.value = BattleUiState(mode = BattleScreenMode.FIGHT, format = format,
-                            fight = FightState(you, infos, humans, msg.snap, practice = practice, terrain = terrain, teams = teams))
+                    val cur = _state.value.fight
+                    if (_state.value.mode != BattleScreenMode.FIGHT || cur == null || cur.fighters != infos ||
+                        cur.teams != teams || cur.terrain != terrain || cur.raid?.floor != (if (setup.raid) raidFloor else null)
+                    ) {
+                        _state.value = BattleUiState(mode = BattleScreenMode.FIGHT, format = format, fight = fightState(msg.snap))
                     }
                     last = msg.snap
                     push(msg.snap, emptyList())
-                    if (msg.snap.ended) {
+                    if (msg.snap.ended && !setup.raid) {
                         finish(you, msg.snap, practice)
                         sendMove = {}
+                        done = true
                         return@collect
                     }
+                }
+                is Protocol.RaidEnd -> {
+                    done = true
+                    sendMove = {}
+                    finishRaid(msg.cleared, msg.floors)
+                    return@collect
                 }
                 is Protocol.Event -> push(null, listOf(msg.text))
                 else -> Unit
             }
         }
-        if (last?.ended != true) endEarly(if (ranked) "Opponent left the battle" else "Host left the battle")
+        if (!done && last?.ended != true) endEarly(if (ranked) "Opponent left the battle" else "Host left the battle")
         if (ranked) showRating()
     }
 
@@ -547,6 +706,25 @@ class BattleViewModel(
             detail += rewards?.claimBoss()?.let { "\nBoss defeated! ${it.label} egg unlocked" } ?: ""
         }
         _state.update { s -> s.copy(fight = s.fight?.copy(snap = snap, result = "$title  $detail")) }
+    }
+
+    /** Raid result: XP for every floor cleared, and one daily pet unlock when the boss goes down. */
+    private suspend fun finishRaid(cleared: Boolean, floors: Int) {
+        if (_state.value.fight?.result != null) return
+        val xp = petRepository.recordRaid(cleared, floors)
+        var detail = "+$xp XP"
+        if (cleared) {
+            val pet = rewards?.claimRaid()
+            detail += if (pet != null) "\n${pet.label} egg unlocked!" else
+                "\nNo new pet available (already claimed today or collection complete)."
+        } else {
+            val f = _state.value.fight
+            val raiders = f?.teams?.count { it == f.teams.getOrNull(0) } ?: 0
+            val why = f?.let { Raid.failReason(it.snap, raiders) }?.let { "$it on" } ?: "The raid ended on"
+            detail += "\n$why floor ${floors + 1}: ${Raid.title(floors + 1)}."
+        }
+        val title = if (cleared) "Raid cleared!" else "Raid failed"
+        _state.update { s -> s.copy(fight = s.fight?.copy(result = "$title  $detail")) }
     }
 }
 

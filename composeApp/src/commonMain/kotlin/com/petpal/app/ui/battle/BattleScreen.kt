@@ -97,13 +97,14 @@ private fun Lobby(vm: BattleViewModel, message: String?, format: BattleFormat) {
         if (vm.hasOnline) OnlineCard(vm)
         FormatPicker(format, vm::setFormat)
         LinkKind.entries.forEach { kind -> LinkCard(kind, vm) }
-        NeuButton(outlined = true,
+        if (format != BattleFormat.RAID) NeuButton(outlined = true,
             onClick = vm::practice,
             icon = Icons.Rounded.SmartToy,
             text = when (format) {
                 BattleFormat.SOLO -> "Practice vs CPU"
                 BattleFormat.TEAMS -> "3v3 vs CPUs (with CPU partners)"
                 BattleFormat.FFA -> "Free-for-all vs 3 CPUs"
+                BattleFormat.RAID -> "Raid"
             },
             modifier = Modifier.fillMaxWidth(),
         )
@@ -147,9 +148,13 @@ private fun FormatPicker(format: BattleFormat, onPick: (BattleFormat) -> Unit) {
             NeuButton(outlined = true, onClick = { onPick(BattleFormat.FFA) }, text = "FFA", icon = Icons.Rounded.EmojiEvents,
                 selected = format == BattleFormat.FFA, modifier = Modifier.weight(1f))
         }
+        NeuButton(outlined = true, onClick = { onPick(BattleFormat.RAID) }, text = "Raid", icon = Icons.Rounded.Shield,
+            selected = format == BattleFormat.RAID, modifier = Modifier.fillMaxWidth())
         if (format != BattleFormat.SOLO) Text(
             when (format) {
                 BattleFormat.TEAMS -> "Up to $MAX_PLAYERS players join your room and pick a team. You start when both teams have someone."
+                BattleFormat.RAID -> "2–${Raid.MAX_PLAYERS} players, 10 floors, fainted pets stay out. " +
+                    "Everyone needs a Lv ${Raid.MIN_LEVEL}+ pet. Clearing the boss unlocks a pet once a day."
                 else -> "Up to $MAX_PLAYERS players join your room, everyone for themselves. Last pet standing wins."
             } + " The host picks the format.",
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -157,26 +162,35 @@ private fun FormatPicker(format: BattleFormat, onPick: (BattleFormat) -> Unit) {
     }
 }
 
-/** Waiting room for team battles and free-for-alls. */
+/** Waiting room for team battles, free-for-alls and raids. */
 @Composable
 private fun Room(r: RoomUi, link: LinkKind?, vm: BattleViewModel) {
+    val maxPlayers = if (r.raid) Raid.MAX_PLAYERS else MAX_PLAYERS
+    val lowLevel = r.players.filter { it.level < Raid.MIN_LEVEL }
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(if (r.ffa) "Free-for-all room" else "Team battle room",
+            Text(if (r.raid) "Raid room" else if (r.ffa) "Free-for-all room" else "Team battle room",
                 style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
-            Text("${r.players.size}/$MAX_PLAYERS", style = MaterialTheme.typography.titleMedium)
+            Text("${r.players.size}/$maxPlayers", style = MaterialTheme.typography.titleMedium)
         }
         Text(
             when {
+                r.raid && r.host -> (hostHint(link)?.let { "$it " } ?: "") +
+                    "Everyone needs a Lv ${Raid.MIN_LEVEL}+ pet. Tap Start once 2–${Raid.MAX_PLAYERS} raiders are in."
+                r.raid -> "Waiting for the host to start. Raids need 2–${Raid.MAX_PLAYERS} raiders, all Lv ${Raid.MIN_LEVEL}+."
                 r.host -> (hostHint(link)?.let { "$it " } ?: "") +
                     if (r.ffa) "Tap Start when everyone is in." else "Tap a player to move them to the other team."
                 r.ffa -> "Waiting for the host to start..."
                 else -> "Waiting for the host to start. You can switch teams until then."
             },
             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (r.raid && lowLevel.isNotEmpty()) Text(
+            "Needs Lv ${Raid.MIN_LEVEL}+: " + lowLevel.joinToString { "${it.name} (Lv ${it.level})" },
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error,
         )
         @Composable
         fun PlayerRow(i: Int, color: Color) {
@@ -186,13 +200,20 @@ private fun Room(r: RoomUi, link: LinkKind?, vm: BattleViewModel) {
                 headlineContent = { Text(p.name + tag) },
                 supportingContent = { Text("Lv ${p.level}") },
                 leadingContent = { Icon(Icons.Rounded.Pets, null, tint = color) },
-                trailingContent = if (r.host && !r.ffa) { { Icon(Icons.Rounded.SwapHoriz, "Switch team") } } else null,
+                trailingContent = when {
+                    r.raid && p.level < Raid.MIN_LEVEL -> {
+                        { Icon(Icons.Rounded.Warning, "Needs Lv ${Raid.MIN_LEVEL}+", tint = MaterialTheme.colorScheme.error) }
+                    }
+                    r.host && !r.ffa && !r.raid -> { { Icon(Icons.Rounded.SwapHoriz, "Switch team") } }
+                    else -> null
+                },
                 modifier = Modifier.clip(MaterialTheme.shapes.medium)
-                    .then(if (r.host && !r.ffa) Modifier.clickable { vm.switchTeam(i) } else Modifier),
+                    .then(if (r.host && !r.ffa && !r.raid) Modifier.clickable { vm.switchTeam(i) } else Modifier),
             )
         }
-        if (r.ffa) {
-            r.players.indices.forEach { PlayerRow(it, MaterialTheme.colorScheme.primary) }
+        if (r.ffa || r.raid) {
+            val color = if (r.raid) EmberGold else MaterialTheme.colorScheme.primary
+            r.players.indices.forEach { PlayerRow(it, color) }
         } else {
             listOf(0 to "Team A", 1 to "Team B").forEach { (t, label) ->
                 val color = if (t == 0) AllyBlue else MaterialTheme.colorScheme.error
@@ -208,7 +229,9 @@ private fun Room(r: RoomUi, link: LinkKind?, vm: BattleViewModel) {
         if (r.host) NeuButton(outlined = true,
             onClick = vm::startRoom, enabled = r.canStart, filled = true, icon = Icons.Rounded.PlayArrow,
             text = when {
-                r.canStart -> "Start (${r.players.size} players)"
+                r.canStart -> if (r.raid) "Start raid (${r.players.size} raiders)" else "Start (${r.players.size} players)"
+                r.raid && r.players.size < 2 -> "Need at least 2 raiders"
+                r.raid -> "Everyone needs Lv ${Raid.MIN_LEVEL}+"
                 r.ffa -> "Need at least 2 players"
                 else -> "Need someone on each team"
             },
@@ -447,37 +470,74 @@ private fun Fight(f: FightState, vm: BattleViewModel) {
                         verticalArrangement = Arrangement.spacedBy(14.dp)) {
                         Text(f.result, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
                         val pad = PaddingValues(horizontal = 10.dp, vertical = 12.dp)
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                            NeuButton(outlined = true, onClick = vm::battleAgain, modifier = Modifier.weight(1f), text = "Battle again",
-                                icon = Icons.Rounded.Replay, filled = true, enabled = armed, contentPadding = pad,
+                        if (f.raid != null) {
+                            NeuButton(outlined = true, onClick = vm::leave, modifier = Modifier.fillMaxWidth(), text = "Back to lobby",
+                                icon = Icons.Rounded.Close, enabled = armed, contentPadding = pad,
                                 surface = MaterialTheme.colorScheme.tertiaryContainer)
-                            NeuButton(outlined = true, onClick = vm::leave, modifier = Modifier.weight(1f), text = "Back to lobby",
-                                enabled = armed, contentPadding = pad, surface = MaterialTheme.colorScheme.tertiaryContainer)
+                        } else {
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                                NeuButton(outlined = true, onClick = vm::battleAgain, modifier = Modifier.weight(1f), text = "Battle again",
+                                    icon = Icons.Rounded.Replay, filled = true, enabled = armed, contentPadding = pad,
+                                    surface = MaterialTheme.colorScheme.tertiaryContainer)
+                                NeuButton(outlined = true, onClick = vm::leave, modifier = Modifier.weight(1f), text = "Back to lobby",
+                                    enabled = armed, contentPadding = pad, surface = MaterialTheme.colorScheme.tertiaryContainer)
+                            }
+                            if (f.humans.size > 1) Text(
+                                (if (f.humans.size > 2) "Everyone taps" else "Both players tap") +
+                                    " Battle again for a rematch on the next map.",
+                                style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center,
+                            )
                         }
-                        if (f.humans.size > 1) Text(
-                            (if (f.humans.size > 2) "Everyone taps" else "Both players tap") +
-                                " Battle again for a rematch on the next map.",
-                            style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center,
+                    }
+                }
+            }
+            if (f.raid != null && f.snap.ended && f.result == null && raidFloorCleared(f)) {
+                Card(
+                    Modifier.align(Alignment.Center).padding(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
+                ) {
+                    Column(Modifier.padding(18.dp), horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("Floor ${f.raid.floor} cleared", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            if (f.raid.floor < f.raid.floors)
+                                "Survivors heal ${(Raid.HEAL_BETWEEN * 100).toInt()}%.\nNext: floor ${f.raid.floor + 1}, ${Raid.title(f.raid.floor + 1)}"
+                            else "The raid boss is down!",
+                            style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center,
                         )
                     }
                 }
             }
         }
 
-        Column(
-            Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)
-                .padding(10.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            run {
-                EnergyRow(me)
-                (info.loadout.withIndex() + IndexedValue(-1, null)).chunked(3).forEach { row ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        row.forEach { (i, m) ->
-                            if (m == null) EvadeButton(me, Modifier.weight(1f), vm::evade)
-                            else MoveButton(m, me.cooldowns.getOrElse(i) { 0 }, info, me, f.terrain, Modifier.weight(1f)) { vm.use(m) }
+        when {
+            // The result card owns the screen; don't leave live move buttons underneath it.
+            f.raid != null && f.result != null -> Unit
+            f.raid != null && me.hp <= 0 -> Column(
+                Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant).padding(14.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text("You're down", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
+                Text("Your pet is out for the rest of the raid. You're spectating the party.",
+                    style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            else -> Column(
+                Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)
+                    .padding(10.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                run {
+                    EnergyRow(me)
+                    (info.loadout.withIndex() + IndexedValue(-1, null)).chunked(3).forEach { row ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            row.forEach { (i, m) ->
+                                if (m == null) EvadeButton(me, Modifier.weight(1f), vm::evade)
+                                else MoveButton(m, me.cooldowns.getOrElse(i) { 0 }, info, me, f.terrain, Modifier.weight(1f)) { vm.use(m) }
+                            }
+                            repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
                         }
-                        repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
                     }
                 }
             }
@@ -491,6 +551,10 @@ private fun TerrainBadge(f: FightState) {
     val t = f.terrain
     val home = t.isHomeTurf(f.fighters[f.me])
     Column {
+        f.raid?.let {
+            Text("RAID · FLOOR ${it.floor}/${it.floors} · ${Raid.title(it.floor).uppercase()}", style = MaterialTheme.typography.labelSmall,
+                color = EmberGold, maxLines = 1)
+        }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Rounded.Terrain, null, Modifier.size(14.dp), tint = t.accent())
             Spacer(Modifier.width(4.dp))
@@ -605,7 +669,8 @@ private fun HpBar(name: String, level: String, f: FighterSnap, color: Color, com
             }
             if (compact) {
                 Spacer(Modifier.weight(1f))
-                Text("${f.hp}", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.8f))
+                Text(if (f.hp <= 0) "DOWN" else "${f.hp}", style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = 0.8f))
             }
         }
         LinearProgressIndicator(
@@ -617,7 +682,8 @@ private fun HpBar(name: String, level: String, f: FighterSnap, color: Color, com
             gapSize = 0.dp,
             drawStopIndicator = {},
         )
-        if (!compact) Text("${f.hp}/${f.maxHp}", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.8f))
+        if (!compact) Text(if (f.hp <= 0) "DOWN" else "${f.hp}/${f.maxHp}", style = MaterialTheme.typography.labelSmall,
+            color = Color.White.copy(alpha = 0.8f))
     }
 }
 
@@ -1094,6 +1160,7 @@ internal fun Arena(fight: FightState, modifier: Modifier) {
                 species = info.species,
                 size = spriteDp,
                 fried = s.has(Status.FRIED),
+                bone = info.variant == FighterVariant.SKELETON,
                 modifier = Modifier
                     .offset { IntOffset(c.x.roundToInt() - half, c.y.roundToInt() - half) }
                     .graphicsLayer {
@@ -1170,6 +1237,14 @@ private val FfaColors = listOf(
 )
 
 private fun isFfa(f: FightState) = f.fighters.size > 2 && f.teams.toSet().size == f.fighters.size
+
+/** True when the last snapshot ended with this raider's team standing and every enemy down. */
+private fun raidFloorCleared(f: FightState): Boolean {
+    val mine = teamOf(f, f.me)
+    val allies = f.snap.fighters.indices.filter { teamOf(f, it) == mine }
+    val enemies = f.snap.fighters.indices.filter { teamOf(f, it) != mine }
+    return allies.any { f.snap.fighters[it].hp > 0 } && enemies.all { f.snap.fighters[it].hp <= 0 }
+}
 
 /** You = [me]; team fights: allies blue, foes red; free-for-all: a color per player. */
 private fun fighterColor(f: FightState, i: Int, me: Color): Color = when {

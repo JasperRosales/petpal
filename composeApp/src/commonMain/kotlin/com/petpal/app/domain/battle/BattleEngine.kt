@@ -13,6 +13,9 @@ const val BATTLE_MS = 90_000L
 private const val ENERGY_PER_DEALT = 1.5f
 private const val ENERGY_PER_TAKEN = 0.8f
 
+/** Raid-only visuals. Skeletons are ordinary [FighterInfo]s with a bone-white palette and no passive. */
+enum class FighterVariant { NORMAL, SKELETON }
+
 data class FighterInfo(
     val name: String,
     val species: Species,
@@ -21,10 +24,20 @@ data class FighterInfo(
     val moves: List<Move> = emptyList(),
     /** Extra max HP on top of the stage's (event bosses). Local only: not sent over links. */
     val bonusHp: Int = 0,
+    /** Raid skeletons: bone-white art and the neutral passive. Sent over links so both phones agree. */
+    val variant: FighterVariant = FighterVariant.NORMAL,
+    /** Raid skeletons: these moves are the loadout exactly (no learnset filtering, no unique). */
+    val fixedMoves: List<Move>? = null,
+    /** Damage multiplier for every move (raid boss: 1.5). Local only. */
+    val damageScale: Float = 1f,
+    /** Fixed max HP instead of the stage formula (raid boss); 0 = normal. Local only. */
+    val maxHpOverride: Int = 0,
+    /** HP to start the floor with (raids carry damage); -1 = full. Local only. */
+    val startHp: Int = -1,
 ) {
-    val passive get() = SpeciesKit.passive(species, stage)
+    val passive get() = if (variant == FighterVariant.SKELETON) Passive.NEUTRAL else SpeciesKit.passive(species, stage)
     /** Learned moves the species can really use at this level, plus the stage's unique. */
-    val loadout: List<Move> = SpeciesKit.loadout(species, stage, level, moves)
+    val loadout: List<Move> = fixedMoves ?: SpeciesKit.loadout(species, stage, level, moves)
 }
 
 /** Stat rules shared by both phones, so each can predict cooldowns and reach locally. */
@@ -38,6 +51,7 @@ object BattleStats {
     }
 
     fun maxHp(f: FighterInfo): Int {
+        if (f.maxHpOverride > 0) return f.maxHpOverride
         val base = 100 * power(f.stage)
         return (base * (1 + f.passive[Trait.MAX_HP])).roundToInt() + f.bonusHp
     }
@@ -47,7 +61,7 @@ object BattleStats {
         var boost = p.boost(m)
         if (m.isPunch) boost *= 1 + p[Trait.PUNCH]
         if (m.category != MoveCategory.NORMAL) boost *= 1 + p[Trait.SPECIAL]
-        return m.damage * power(f.stage) * boost
+        return m.damage * power(f.stage) * boost * f.damageScale
     }
 
     fun range(f: FighterInfo, m: Move) = m.range * (1 + f.passive[Trait.RANGE])
@@ -177,6 +191,8 @@ class BattleEngine(
     val terrain: Terrain = Terrain.ARENA,
     /** Team id per fighter. Default: first half vs second half. Free-for-all: everyone on their own team. */
     teamIds: List<Int> = defaultTeams(infos.size),
+    /** Raid floors: 90s normally, 120s for the boss. Defaults to the standard battle length. */
+    private val timeLimitMs: Long = BATTLE_MS,
 ) {
     companion object {
         fun defaultTeams(n: Int) = List(n) { it * 2 / n }
@@ -189,7 +205,7 @@ class BattleEngine(
 
     private inner class Fighter(val info: FighterInfo, var x: Float, var y: Float) {
         val maxHp = BattleStats.maxHp(info)
-        var hp = maxHp.toFloat()
+        var hp = (if (info.startHp >= 0) info.startHp else maxHp).coerceIn(0, maxHp).toFloat()
         var tx = x; var ty = y
         var nextWanderAt = 0L
         var action: Move? = null
@@ -233,10 +249,12 @@ class BattleEngine(
         var launchAt = 0L
         val readyAt = LongArray(Move.entries.size)
         val passive get() = info.passive
-        val homeTurf = terrain.isHomeTurf(info)
+        val homeTurf = info.variant == FighterVariant.NORMAL && terrain.isHomeTurf(info)
 
         init {
             if (passive.has(Trait.START_SHIELD)) { shield = maxHp * passive[Trait.START_SHIELD]; shieldUntil = Long.MAX_VALUE }
+            // A raider who fainted on an earlier floor starts the next one already down.
+            if (hp <= 0f) knockedOut = true
         }
     }
 
@@ -481,7 +499,7 @@ class BattleEngine(
         if (standing.size <= 1) {
             ended = true
             winner = standing.firstOrNull() ?: -1
-        } else if (now >= BATTLE_MS) {
+        } else if (now >= timeLimitMs) {
             ended = true
             // Average HP left per team (teams can be uneven)
             val p = teams.distinct().associateWith { t ->
@@ -868,7 +886,7 @@ class BattleEngine(
     }
 
     fun snapshot(now: Long) = BattleSnapshot(
-        timeLeftMs = (BATTLE_MS - now).coerceAtLeast(0),
+        timeLeftMs = (timeLimitMs - now).coerceAtLeast(0),
         ended = ended,
         winner = winner,
         smokes = clouds.map { SmokeSnap(it.x, it.y, now - it.at) },

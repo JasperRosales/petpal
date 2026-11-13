@@ -6,7 +6,7 @@ import kotlin.math.roundToInt
 
 /** Line-based wire format shared by the Wi-Fi and online links. */
 object Protocol {
-    const val VERSION = 22
+    const val VERSION = 23
 
     sealed interface Msg
     data class Hello(val version: Int, val info: FighterInfo) : Msg
@@ -21,9 +21,13 @@ object Protocol {
         val humans: Set<Int> = setOf(0, you),
         /** Team id per slot (free-for-all: each slot its own). */
         val teams: List<Int> = BattleEngine.defaultTeams(infos.size),
+        /** Raid floor setup (also sent again between floors). */
+        val raid: Boolean = false, val floor: Int = 0, val floors: Int = 0,
     ) : Msg
     /** Host -> guest while waiting in a room: everyone in it, and which entry is the guest. */
-    data class Lobby(val you: Int, val ffa: Boolean, val players: List<RoomEntry>) : Msg
+    data class Lobby(val you: Int, val ffa: Boolean, val players: List<RoomEntry>, val raid: Boolean = false) : Msg
+    /** Host -> guest when the whole raid is over. */
+    data class RaidEnd(val cleared: Boolean, val floors: Int) : Msg
     /** Guest -> host: put me on the other team. */
     data object SwitchTeam : Msg
 
@@ -34,17 +38,22 @@ object Protocol {
     fun command(m: Move) = "C|${m.ordinal}"
     const val EVADE = "E"
     const val SWITCH_TEAM = "W"
-    fun lobby(you: Int, ffa: Boolean, players: List<RoomEntry>) = "L|$you|${if (ffa) 1 else 0}|" +
-        players.joinToString("#") { "${clean(it.name).replace(Regex("[#~]"), " ")}~${it.level}~${it.team}" }
+    fun lobby(you: Int, ffa: Boolean, players: List<RoomEntry>, raid: Boolean = false) =
+        "L|$you|${if (ffa) 1 else 0}|${if (raid) 1 else 0}|" +
+            players.joinToString("#") { "${clean(it.name).replace(Regex("[#~]"), " ")}~${it.level}~${it.team}" }
     fun event(text: String) = "V|${clean(text)}"
+    fun raidEnd(cleared: Boolean, floors: Int) = "R|${if (cleared) 1 else 0}|$floors"
     fun setup(
         you: Int, infos: List<FighterInfo>, terrain: Terrain = Terrain.ARENA, humans: Set<Int> = setOf(0, you),
         teams: List<Int> = BattleEngine.defaultTeams(infos.size),
+        raid: Boolean = false, floor: Int = 0, floors: Int = 0,
     ) =
         "T|$you|" + infos.joinToString("#") {
             listOf(clean(it.name).replace(Regex("[#~]"), " "), it.species.name, it.stage.name, it.level,
-                it.moves.joinToString(",") { m -> m.name }).joinToString("~")
-        } + "|${terrain.name}|${humans.sorted().joinToString(",")}|${teams.joinToString(",")}"
+                it.moves.joinToString(",") { m -> m.name }, it.variant.ordinal,
+                if (it.fixedMoves != null) 1 else 0).joinToString("~")
+        } + "|${terrain.name}|${humans.sorted().joinToString(",")}|${teams.joinToString(",")}|" +
+            "${if (raid) 1 else 0}|$floor|$floors"
 
     fun state(s: BattleSnapshot) = buildString {
         append("S|${s.timeLeftMs},${if (s.ended) 1 else 0},${s.winner},${s.smokes.size},${s.blasts.size}")
@@ -78,22 +87,29 @@ object Protocol {
             "C" -> Command(Move.entries[p[1].toInt()])
             "E" -> EvadeCmd
             "W" -> SwitchTeam
-            "L" -> Lobby(p[1].toInt(), p[2] == "1", p[3].split('#').filter { it.isNotEmpty() }.map { e ->
+            "R" -> RaidEnd(p[1] == "1", p[2].toInt())
+            "L" -> Lobby(p[1].toInt(), p[2] == "1", p.getOrNull(4).orEmpty().split('#').filter { it.isNotEmpty() }.map { e ->
                 val v = e.split('~')
                 RoomEntry(v[0], v[1].toInt(), v[2].toInt())
-            })
+            }, p.getOrNull(3) == "1")
             "V" -> Event(p[1])
             "T" -> {
                 val you = p[1].toInt()
                 val infos = p[2].split('#').map { fs ->
                     val v = fs.split('~')
-                    FighterInfo(v[0], Species.valueOf(v[1]), Stage.valueOf(v[2]), v[3].toInt().coerceIn(1, 100),
-                        v.getOrNull(4).orEmpty().split(',').mapNotNull { n -> Move.entries.firstOrNull { it.name == n } })
+                    val moves = v.getOrNull(4).orEmpty().split(',')
+                        .mapNotNull { n -> Move.entries.firstOrNull { it.name == n } }
+                    FighterInfo(v[0], Species.valueOf(v[1]), Stage.valueOf(v[2]), v[3].toInt().coerceIn(1, 100), moves,
+                        variant = FighterVariant.entries.getOrNull(v.getOrNull(5)?.toIntOrNull() ?: 0) ?: FighterVariant.NORMAL,
+                        fixedMoves = if (v.getOrNull(6) == "1") moves else null)
                 }
                 Setup(you, infos, Terrain.entries.firstOrNull { it.name == p.getOrNull(3) } ?: Terrain.ARENA,
                     p.getOrNull(4)?.split(',')?.mapNotNull { it.toIntOrNull() }?.toSet()?.plus(setOf(0, you)) ?: setOf(0, you),
                     p.getOrNull(5)?.split(',')?.mapNotNull { it.toIntOrNull() }?.takeIf { it.size == infos.size }
-                        ?: BattleEngine.defaultTeams(infos.size))
+                        ?: BattleEngine.defaultTeams(infos.size),
+                    raid = p.getOrNull(6) == "1",
+                    floor = p.getOrNull(7)?.toIntOrNull() ?: 0,
+                    floors = p.getOrNull(8)?.toIntOrNull() ?: 0)
             }
             "S" -> {
                 val h = p[1].split(',')

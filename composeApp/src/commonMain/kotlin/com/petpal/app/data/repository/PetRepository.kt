@@ -129,6 +129,22 @@ class PetRepository(
         }
     }
 
+    /** Saves a raid: 5 XP per floor cleared, plus 25 XP when the boss goes down. */
+    suspend fun recordRaid(cleared: Boolean, floorsCleared: Int): Int {
+        refresh() ?: return 0
+        return mutex.withLock {
+            val now = time.nowMillis()
+            val xp = 5 * floorsCleared.coerceAtLeast(0) + if (cleared) 25 else 0
+            val pet = PetEngine.addXp(petDao.getPet()!!.toDomain(), xp)
+            petDao.upsert(pet.toEntity())
+            battleLogDao.insert(BattleLogEntity(
+                outcome = if (cleared) BattleOutcome.WIN.name else BattleOutcome.LOSS.name,
+                xp = xp, timestamp = now, opponent = "Raid",
+            ))
+            xp
+        }
+    }
+
     /** Reward, save, and record the habit in one step. */
     suspend fun logHabit(type: HabitType, value: Int = 1): Pet? {
         refresh() ?: return null

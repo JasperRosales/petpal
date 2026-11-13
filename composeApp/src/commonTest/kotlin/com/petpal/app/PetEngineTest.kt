@@ -68,7 +68,7 @@ class PetEngineTest {
 
     @Test fun everyPassiveIsUniqueToOnePetAndStage() {
         val all = Species.entries.flatMap { s -> SpeciesKit.passives(s) }
-        assertEquals(Passive.entries.size, all.size)
+        assertEquals(Passive.entries.count { it != Passive.NEUTRAL }, all.size)
         assertEquals(all.size, all.toSet().size)
         val combos = Passive.entries.groupBy { it.perks.toSet() }.filterValues { it.size > 1 }
         assertTrue(combos.isEmpty(), "same effects: $combos")

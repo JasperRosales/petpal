@@ -213,6 +213,9 @@ object PersonalityQuiz {
         ELEPHANT to intArrayOf(1, 3, 2, 1, 2, 3),
         TIGER to intArrayOf(2, 0, 1, 0, 3, 1),
         TILAPIA to intArrayOf(0, 3, 1, 3, 1, 0),
+        CAPYBARA to intArrayOf(0, 3, 1, 3, 0, 2),
+        CRAB to intArrayOf(1, 1, 0, 1, 3, 2),
+        FLAMINGO to intArrayOf(2, 3, 1, 2, 0, 3),
     )
 
     /** Raw trait points for the chosen answer index per question. */
@@ -241,15 +244,15 @@ object PersonalityQuiz {
 
     /** Per-pet nudges tuned by simulation so every pet comes up about equally often (~3% each). */
     private val bias: Map<Species, Float> = mapOf(
-        SPROUT to 0.035f, KITTY to -0.074f, DRAKE to -0.022f, BUNNY to -0.001f,
-        PUP to -0.003f, OWL to -0.057f, TURTLE to 0.077f, FOX to -0.053f,
-        FROG to 0.056f, BEAR to -0.021f, PENGUIN to 0.092f, HEDGEHOG to 0.031f,
-        BAT to -0.095f, DEER to 0.026f, OTTER to 0.015f, PANDA to 0.108f,
-        LIZARD to -0.013f, RACCOON to -0.066f, HAMSTER to 0.030f, PARROT to -0.061f,
-        AXOLOTL to 0.002f, MOLE to -0.014f, KOALA to 0.066f, SHARK to -0.002f,
-        CHAMELEON to -0.048f, BEAVER to -0.007f, MONKEY to -0.003f, KANGAROO to 0.049f,
-        EAGLE to -0.079f, SEAL to 0.058f, ELEPHANT to -0.066f, TIGER to -0.014f,
-        TILAPIA to 0.056f,
+        SPROUT to 0.043f, KITTY to -0.088f, DRAKE to 0.002f, BUNNY to -0.004f,
+        PUP to 0.042f, OWL to -0.061f, TURTLE to 0.097f, FOX to -0.067f,
+        FROG to 0.054f, BEAR to 0.030f, PENGUIN to 0.050f, HEDGEHOG to -0.024f,
+        BAT to -0.122f, DEER to -0.004f, OTTER to 0.021f, PANDA to 0.147f,
+        LIZARD to -0.054f, RACCOON to -0.079f, HAMSTER to 0.012f, PARROT to -0.059f,
+        AXOLOTL to -0.018f, MOLE to -0.095f, KOALA to 0.113f, SHARK to -0.042f,
+        CHAMELEON to -0.070f, BEAVER to 0.037f, MONKEY to -0.045f, KANGAROO to 0.029f,
+        EAGLE to -0.111f, SEAL to 0.115f, ELEPHANT to -0.081f, TIGER to -0.023f,
+        TILAPIA to 0.003f, CAPYBARA to 0.110f, CRAB to 0.036f, FLAMINGO to 0.108f,
     )
 
     /** [choices] = chosen answer index per question. Ties are broken at random. */
