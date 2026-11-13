@@ -108,6 +108,7 @@ internal fun DrawScope.drawUniqueFx(m: Move, origin: Offset, impact: Offset, aft
     val R = 40.dp.toPx()
     val col = m.tint()
     val acc = m.coreTint()
+    drawDelivery(m, origin, impact, after)
     if (after < 0) {
         val prog = ((m.windupMs + after) / m.windupMs.toFloat().coerceAtLeast(1f)).coerceIn(0f, 1f)
         drawCircle(Brush.radialGradient(listOf(EmberGold.copy(alpha = 0.35f * prog), col.copy(alpha = 0.2f * prog), Color.Transparent),
@@ -120,9 +121,8 @@ internal fun DrawScope.drawUniqueFx(m: Move, origin: Offset, impact: Offset, aft
     }
     val t = after / UNIQUE_FX_MS
     if (t > 1f) return
-    piece(sig.main, origin, impact, t, R, col, acc, sig.parts, sig.spin, m.ordinal)
-    val at = (t - 0.15f) / 0.85f
-    if (at > 0f) piece(sig.accent, origin, impact, at, R * 0.65f, acc, col, sig.parts, -sig.spin, m.ordinal + 1)
+    // The delivery (thrown object, summoned creature...) is the star; the set piece backs it up smaller.
+    piece(sig.main, origin, impact, t, R * 0.7f, col, acc, sig.parts, sig.spin, m.ordinal)
 }
 
 private fun DrawScope.piece(k: Piece, o: Offset, c: Offset, t: Float, R: Float, col: Color, acc: Color, n: Int, spin: Int, seed: Int) {

@@ -115,3 +115,12 @@ class RaidTest {
         assertEquals("Time ran out", Raid.failReason(snap(0, 10, 50), 2))
     }
 }
+
+class OnlineBotTest {
+    @Test fun onlineBotIsLv50WithDoubleHp() {
+        val bot = CpuOpponent.onlineBot(Random(7))
+        assertEquals(50, bot.level)
+        assertEquals(Stage.ADULT, bot.stage)
+        assertEquals(BattleStats.maxHp(bot.copy(maxHpOverride = 0)) * 2, BattleStats.maxHp(bot))
+    }
+}

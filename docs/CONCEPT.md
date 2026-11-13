@@ -29,7 +29,7 @@ Only verifiable activity pays, so shaking the phone or farming the CPU won't get
 - **Stage passives.** Every species has exactly one passive per stage (Baby, Kid, Teen, Adult). Hatching or evolving swaps in the new stage's passive.
 - Each species learns Normal moves, its own types (Bunny, Bear and Panda also have Fighting), and a few off-type moves. Some moves are banned for the body type (no punches without fists, no flying without wings).
 - Combo moves have two types (Thunder Punch is Electric/Fighting, also Fire Punch, Ice Punch, Aqua Fist, Rock Smash, Sky Uppercut) and can be learned by a pet of either type.
-- **Categories:** Normal moves just have a cooldown. Specials also need a full energy bar, which they empty. Uniques are slot 5.
+- **Categories:** Normal moves just have a cooldown. Specials also need a full energy bar, which they empty. Uniques are slot 5 and need a full energy bar; trap uniques (Timber Trap, Hedge Maze, Tunnel Net) need only 50.
 
 The full list with stats is in [MOVES.md](MOVES.md).
 
@@ -74,7 +74,7 @@ After a match, **Battle again** starts a rematch on the next map. Linked: both p
 |---|---|---|
 | 1v1 | 2 | You vs a friend, or vs a random CPU pet at your level |
 | Duo 2v2 | 4 | Two teams of two. Pets target the nearest enemy, and cones, beams and other area moves can hit both. A team loses when both its pets are knocked out. |
-| Raid | 2–4 | 10-floor co-op dungeon: skeleton packs, wild pets, then a 1000 HP boss. Fainted pets stay out. See [RAIDS.md](RAIDS.md). |
+| Raid | 1–4 | 10-floor solo or co-op dungeon: skeleton packs, wild pets, then a 1000 HP boss. Fainted pets stay out. See [RAIDS.md](RAIDS.md). |
 
 Any seat without a person gets a **CPU**: a random species at the matching level with a random learned loadout. In Duo you can practice with a CPU partner against 2 CPUs. With a friend linked, they join as your rival (you + CPU vs friend + CPU) or your partner (you + friend vs 2 CPUs).
 

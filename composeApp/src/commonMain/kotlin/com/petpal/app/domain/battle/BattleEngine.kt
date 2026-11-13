@@ -108,11 +108,16 @@ data class TrapSnap(val x: Float, val y: Float, val ageMs: Long, val element: El
 /** Tunables for the newer move mechanics. */
 object Mechanics {
     const val MARK_MS = 5000L
-    const val MARK_BONUS = 1.25f
-    const val DISRUPT_MS = 2000L
+    const val MARK_BONUS = 1.3f
+    const val DISRUPT_MS = 2500L
     const val SHIELD_MS = 6000L
     const val AID_HEAL = 0.12f
     const val CHAIN_REACH = 0.35f
+    /** Weakened pets deal this much of their damage. */
+    const val WEAKEN_SCALE = 0.65f
+    /** Paralyzed pets freeze in place for [PARALYZE_TWITCH_MS] out of every [PARALYZE_TWITCH_EVERY]. */
+    const val PARALYZE_TWITCH_EVERY = 1000L
+    const val PARALYZE_TWITCH_MS = 220L
 
     /** Fraction of max HP a shield move soaks up. */
     fun shieldFraction(m: Move) = when (m.category) {
@@ -309,7 +314,7 @@ class BattleEngine(
         val me = f[i]
         return !ended && alive(i) && (demo || m in me.info.loadout) && now >= me.busyUntil && now >= me.stunUntil &&
             now >= me.readyAt[m.ordinal] && me.projectile == null &&
-            (m.category != MoveCategory.UNIQUE || me.energy >= BattleRules.MAX_ENERGY)
+            (m.category != MoveCategory.UNIQUE || me.energy >= m.energyCost)
     }
 
     fun canEvade(i: Int, now: Long): Boolean {
@@ -388,7 +393,7 @@ class BattleEngine(
         if (now < me.paralyzeUntil) cdScale *= 1.5f
         me.readyAt[m.ordinal] = now + (BattleStats.cooldown(me.info, m, terrain) * cdScale).toLong()
         if (m.effect == Effect.VANISH) me.vanishUntil = now + m.windupMs
-        if (m.category == MoveCategory.UNIQUE) me.energy = 0f
+        if (m.category == MoveCategory.UNIQUE) me.energy = maxOf(0f, me.energy - m.energyCost)
         me.busyUntil = now + m.windupMs + m.recoverMs
         me.pendingHit = true
         if (m.effect == Effect.TWIN_SLASH) { me.slashesLeft = 2; stepForward(me, opp, now, m.windupMs) }
@@ -428,7 +433,7 @@ class BattleEngine(
             if (!alive(i)) return@forEachIndexed
             val opp = target(me)
             val dot = 1 - me.passive[Trait.ENDURANCE]
-            if (now < me.burnUntil) hurt(me, 2f * dot * dt, now, events, silent = true)
+            if (now < me.burnUntil) hurt(me, 3f * dot * dt, now, events, silent = true)
             if (now < me.leechUntil && me.hp > 0) {
                 hurt(me, 1.5f * dot * dt, now, events, silent = true)
                 val by = f[me.leechBy]
@@ -548,8 +553,9 @@ class BattleEngine(
         }
         if (!evading) {
             if (now < me.hasteUntil) speed *= 1.5f
-            if (now < me.slowUntil) speed *= 0.5f
-            if (now < me.paralyzeUntil) speed *= 0.7f
+            if (now < me.slowUntil) speed *= 0.4f
+            // Paralysis: slower, and the body locks up for a beat every second.
+            if (now < me.paralyzeUntil) speed *= if (now % Mechanics.PARALYZE_TWITCH_EVERY < Mechanics.PARALYZE_TWITCH_MS) 0f else 0.6f
             if (me.homeTurf) speed *= Terrain.HOME_SPEED
             if (me.hp < me.maxHp * 0.3f) speed *= 1 + me.passive[Trait.DESPERATE]
             speed *= terrain.speedScale
@@ -700,7 +706,7 @@ class BattleEngine(
         if (now < me.burnUntil || now < me.slowUntil || now < me.paralyzeUntil) dmg *= 1 + mp[Trait.GUTS]
         dmg *= 1f + mp[Trait.BERSERK] * (1f - me.hp / me.maxHp).coerceIn(0f, 1f)
         if (opp.hp < opp.maxHp / 2f) dmg *= 1 - op[Trait.GRIT]
-        if (now < me.weakenUntil) dmg *= 0.7f
+        if (now < me.weakenUntil) dmg *= Mechanics.WEAKEN_SCALE
         if (me.hp < me.maxHp / 2f) dmg *= 1 + mp[Trait.LOW_HP_POWER]
         if (m.effect == Effect.EXECUTE && opp.hp < opp.maxHp * 0.3f) dmg *= 2f
         if (now < opp.markUntil) dmg *= Mechanics.MARK_BONUS

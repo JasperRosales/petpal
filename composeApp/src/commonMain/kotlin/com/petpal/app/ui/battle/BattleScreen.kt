@@ -69,7 +69,7 @@ fun BattleScreen(vm: BattleViewModel = koinViewModel()) {
             ?: Waiting("Opening the room...", hostHint(s.link), vm::leave)
         BattleScreenMode.FIGHT -> s.fight?.let { Fight(it, vm) }
         BattleScreenMode.MATCHMAKING -> Waiting("Finding an opponent online...",
-            "Ranked 1v1 against a random player. If nobody's been online for a while the server needs up to a minute to wake up.", vm::leave)
+            "Ranked 1v1 against a random player. If nobody shows up within 25s, a Lv ${CpuOpponent.ONLINE_BOT_LEVEL} bot with double HP fights you instead (unranked).", vm::leave)
         BattleScreenMode.LEADERBOARD -> LeaderboardScreen(s, vm)
     }
 }
@@ -97,14 +97,14 @@ private fun Lobby(vm: BattleViewModel, message: String?, format: BattleFormat) {
         if (vm.hasOnline) OnlineCard(vm)
         FormatPicker(format, vm::setFormat)
         LinkKind.entries.forEach { kind -> LinkCard(kind, vm) }
-        if (format != BattleFormat.RAID) NeuButton(outlined = true,
+        NeuButton(outlined = true,
             onClick = vm::practice,
             icon = Icons.Rounded.SmartToy,
             text = when (format) {
                 BattleFormat.SOLO -> "Practice vs CPU"
                 BattleFormat.TEAMS -> "3v3 vs CPUs (with CPU partners)"
                 BattleFormat.FFA -> "Free-for-all vs 3 CPUs"
-                BattleFormat.RAID -> "Raid"
+                BattleFormat.RAID -> "Solo raid"
             },
             modifier = Modifier.fillMaxWidth(),
         )
@@ -153,8 +153,8 @@ private fun FormatPicker(format: BattleFormat, onPick: (BattleFormat) -> Unit) {
         if (format != BattleFormat.SOLO) Text(
             when (format) {
                 BattleFormat.TEAMS -> "Up to $MAX_PLAYERS players join your room and pick a team. You start when both teams have someone."
-                BattleFormat.RAID -> "2–${Raid.MAX_PLAYERS} players, 10 floors, fainted pets stay out. " +
-                    "Everyone needs a Lv ${Raid.MIN_LEVEL}+ pet. Clearing the boss unlocks a pet once a day."
+                BattleFormat.RAID -> "Solo or up to ${Raid.MAX_PLAYERS} players, 10 floors, fainted pets stay out. " +
+                    "Clearing the boss unlocks a pet once a day."
                 else -> "Up to $MAX_PLAYERS players join your room, everyone for themselves. Last pet standing wins."
             } + " The host picks the format.",
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -166,7 +166,6 @@ private fun FormatPicker(format: BattleFormat, onPick: (BattleFormat) -> Unit) {
 @Composable
 private fun Room(r: RoomUi, link: LinkKind?, vm: BattleViewModel) {
     val maxPlayers = if (r.raid) Raid.MAX_PLAYERS else MAX_PLAYERS
-    val lowLevel = r.players.filter { it.level < Raid.MIN_LEVEL }
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -179,18 +178,14 @@ private fun Room(r: RoomUi, link: LinkKind?, vm: BattleViewModel) {
         Text(
             when {
                 r.raid && r.host -> (hostHint(link)?.let { "$it " } ?: "") +
-                    "Everyone needs a Lv ${Raid.MIN_LEVEL}+ pet. Tap Start once 2–${Raid.MAX_PLAYERS} raiders are in."
-                r.raid -> "Waiting for the host to start. Raids need 2–${Raid.MAX_PLAYERS} raiders, all Lv ${Raid.MIN_LEVEL}+."
+                    "Up to ${Raid.MAX_PLAYERS} raiders. Tap Start when ready, even alone."
+                r.raid -> "Waiting for the host to start the raid..."
                 r.host -> (hostHint(link)?.let { "$it " } ?: "") +
                     if (r.ffa) "Tap Start when everyone is in." else "Tap a player to move them to the other team."
                 r.ffa -> "Waiting for the host to start..."
                 else -> "Waiting for the host to start. You can switch teams until then."
             },
             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        if (r.raid && lowLevel.isNotEmpty()) Text(
-            "Needs Lv ${Raid.MIN_LEVEL}+: " + lowLevel.joinToString { "${it.name} (Lv ${it.level})" },
-            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error,
         )
         @Composable
         fun PlayerRow(i: Int, color: Color) {
@@ -201,9 +196,6 @@ private fun Room(r: RoomUi, link: LinkKind?, vm: BattleViewModel) {
                 supportingContent = { Text("Lv ${p.level}") },
                 leadingContent = { Icon(Icons.Rounded.Pets, null, tint = color) },
                 trailingContent = when {
-                    r.raid && p.level < Raid.MIN_LEVEL -> {
-                        { Icon(Icons.Rounded.Warning, "Needs Lv ${Raid.MIN_LEVEL}+", tint = MaterialTheme.colorScheme.error) }
-                    }
                     r.host && !r.ffa && !r.raid -> { { Icon(Icons.Rounded.SwapHoriz, "Switch team") } }
                     else -> null
                 },
@@ -229,9 +221,7 @@ private fun Room(r: RoomUi, link: LinkKind?, vm: BattleViewModel) {
         if (r.host) NeuButton(outlined = true,
             onClick = vm::startRoom, enabled = r.canStart, filled = true, icon = Icons.Rounded.PlayArrow,
             text = when {
-                r.canStart -> if (r.raid) "Start raid (${r.players.size} raiders)" else "Start (${r.players.size} players)"
-                r.raid && r.players.size < 2 -> "Need at least 2 raiders"
-                r.raid -> "Everyone needs Lv ${Raid.MIN_LEVEL}+"
+                r.canStart -> if (r.raid) (if (r.players.size == 1) "Start solo raid" else "Start raid (${r.players.size} raiders)") else "Start (${r.players.size} players)"
                 r.ffa -> "Need at least 2 players"
                 else -> "Need someone on each team"
             },
@@ -618,7 +608,7 @@ private fun EvadeButton(me: FighterSnap, modifier: Modifier, onClick: () -> Unit
 
 @Composable
 private fun MoveButton(m: Move, cd: Long, info: FighterInfo, me: FighterSnap, terrain: Terrain, modifier: Modifier, onClick: () -> Unit) {
-    val needsEnergy = m.category == MoveCategory.UNIQUE && me.energy < BattleRules.MAX_ENERGY
+    val needsEnergy = m.category == MoveCategory.UNIQUE && me.energy < m.energyCost
     val enabled = cd == 0L && !needsEnergy && !me.has(Status.STUN)
     val accent = m.tint()
     val total = BattleStats.cooldown(info, m, terrain).coerceAtLeast(1)
@@ -1073,8 +1063,9 @@ internal fun Move.coreTint(): Color = when (element) {
 }
 
 @Composable
-internal fun Arena(fight: FightState, modifier: Modifier) {
+internal fun Arena(fight: FightState, modifier: Modifier, alerts: Boolean = true) {
     val f = fight.copy(snap = rememberSmoothSnap(fight.snap))
+    val fxMs = rememberFxClock()
     val bob by rememberInfiniteTransition().animateFloat(
         0f, 1f, infiniteRepeatable(tween(500), RepeatMode.Reverse),
     )
@@ -1119,30 +1110,13 @@ internal fun Arena(fight: FightState, modifier: Modifier) {
                     drawCircle(Color(0xFF7FD3FF).copy(alpha = 0.18f), r * 1.1f, c)
                     drawCircle(Color(0xFF7FD3FF).copy(alpha = 0.8f), r * 1.1f, c, style = Stroke(2.5.dp.toPx()))
                 }
-                if (s.has(Status.MARKED)) { // crosshair over the pet
-                    val mr = r * 0.55f
-                    val my = c.y - r * 1.05f
-                    val red = Color(0xFFE53935).copy(alpha = 0.85f)
-                    drawCircle(red, mr * 0.5f, Offset(c.x, my), style = Stroke(2.dp.toPx()))
-                    drawLine(red, Offset(c.x - mr * 0.7f, my), Offset(c.x + mr * 0.7f, my), 2.dp.toPx())
-                    drawLine(red, Offset(c.x, my - mr * 0.7f), Offset(c.x, my + mr * 0.7f), 2.dp.toPx())
-                }
-                if (s.has(Status.ROOT)) drawCircle(Color(0xFF3F9A4A).copy(alpha = 0.5f), r * 0.95f, c, style = Stroke(5.dp.toPx()))
-                if (s.has(Status.PARALYZE)) drawCircle(Sunflower.copy(alpha = 0.35f), r, c, style = Stroke(2.dp.toPx()))
                 if (s.has(Status.GUARD)) drawCircle(ClearSky.copy(alpha = 0.7f), r, c, style = Stroke(4.dp.toPx()))
                 if (s.has(Status.HARDEN)) drawCircle(Color(0xFF8D8D8D).copy(alpha = 0.6f), r * 1.05f, c, style = Stroke(6.dp.toPx()))
-                if (s.has(Status.SLOW)) drawCircle(Color(0xFF7FC8E8).copy(alpha = 0.25f), r * 0.9f, c)
                 if (s.has(Status.RAGE)) drawCircle(Color(0xFFD9534F).copy(alpha = 0.5f), r * 1.1f, c, style = Stroke(2.dp.toPx()))
                 if (s.has(Status.HASTE)) for (k in 0..2) {
                     val y = c.y - 10.dp.toPx() + k * 10.dp.toPx()
                     val x0 = c.x - s.facing * (r + 4.dp.toPx())
                     drawLine(Color.White.copy(alpha = 0.7f), Offset(x0, y), Offset(x0 - s.facing * 14.dp.toPx(), y), 2.dp.toPx(), StrokeCap.Round)
-                }
-                if (s.has(Status.BURN)) for (k in 0..2) {
-                    drawCircle(Color(0xFFE5532D), 3.dp.toPx(), Offset(c.x - 10.dp.toPx() + k * 10.dp.toPx(), c.y - r - (k % 2) * 4.dp.toPx()))
-                }
-                if (s.has(Status.STUN)) for (k in 0..2) {
-                    drawCircle(Sunflower, 3.dp.toPx(), Offset(c.x - 12.dp.toPx() + k * 12.dp.toPx(), c.y - r - 6.dp.toPx()))
                 }
                 drawMove(s, info, sx, sy)
             }
@@ -1153,7 +1127,8 @@ internal fun Arena(fight: FightState, modifier: Modifier) {
         f.snap.fighters.forEachIndexed { i, s ->
             val info = f.fighters[i]
             val hurt = s.hurtAgeMs < 300
-            val c = pos(s)
+            val c = pos(s) + statusShake(s, fxMs, density.density)
+            val (scX, scY) = statusScale(s)
             PetSprite(
                 stage = info.stage,
                 mood = if (s.hp < s.maxHp * 0.3f) Mood.SAD else Mood.HAPPY,
@@ -1164,7 +1139,9 @@ internal fun Arena(fight: FightState, modifier: Modifier) {
                 modifier = Modifier
                     .offset { IntOffset(c.x.roundToInt() - half, c.y.roundToInt() - half) }
                     .graphicsLayer {
-                        scaleX = s.facing.toFloat()
+                        scaleX = s.facing * scX
+                        scaleY = scY
+                        transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 1f)
                         alpha = when {
                             s.hp <= 0 && f.snap.fighters.size > 2 -> 0.25f // knocked out
                             s.has(Status.VANISH) -> 0f // flying high or underground
@@ -1174,6 +1151,11 @@ internal fun Arena(fight: FightState, modifier: Modifier) {
                         }
                     },
             )
+        }
+        // Debuffs sit on top of the sprites so they read clearly.
+        if (f.snap.fighters.any { it.status and DEBUFFS != 0 }) Canvas(Modifier.matchParentSize()) {
+            val r = 38.dp.toPx()
+            f.snap.fighters.forEach { s -> drawStatusFx(s, pos(s), r, fxMs) }
         }
         // Smokescreen clouds drift over the pets: puffs swell in, then thin out before vanishing.
         if (f.snap.smokes.isNotEmpty()) Canvas(Modifier.matchParentSize()) {
@@ -1226,6 +1208,7 @@ internal fun Arena(fight: FightState, modifier: Modifier) {
                 modifier = Modifier.background(meColor, RoundedCornerShape(6.dp)).padding(horizontal = 6.dp, vertical = 1.dp))
             Icon(Icons.Rounded.ArrowDropDown, null, Modifier.size(20.dp).offset(y = (-6).dp), tint = meColor)
         }
+        if (alerts) DebuffAlert(f.snap.fighters.getOrNull(f.me), fxMs)
     }
 }
 

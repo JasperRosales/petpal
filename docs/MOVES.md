@@ -4,7 +4,7 @@ _Generated from the game data by `DocsGenerator`. Don't edit by hand._
 
 465 moves. Ranges are in arena widths (the arena is 1.0 wide and 1.2 tall).
 Normal moves have short cooldowns and Specials long ones. Uniques are species signatures in
-slot 5 with no cooldown: they need a full energy bar, which only fills by dealing and taking hits.
+slot 5 with no cooldown: they need a full energy bar, which only fills by dealing and taking hits. Trap uniques need only 50 energy.
 
 ## Effects
 
@@ -13,8 +13,8 @@ slot 5 with no cooldown: they need a full energy bar, which only fills by dealin
 | lunge | Dashes at the target during the wind-up |
 | 2 stepping slashes | Two short steps forward, slashing after each one |
 | drain | Heals for half the damage dealt |
-| burn | Damage over time for 3s |
-| slow | Halves the target's speed for 3s |
+| burn | 3 HP/s for 3s |
+| slow | Cuts the target's speed by 60% for 3s |
 | stun | Target can't move or act for 0.8s |
 | freeze | Target can't move or act for 1.5s |
 | knockback | Pushes the target away |
@@ -23,16 +23,16 @@ slot 5 with no cooldown: they need a full energy bar, which only fills by dealin
 | recoil | User takes a quarter of the damage dealt |
 | hits 2-4x | Hits 2-4 times (damage is per hit) |
 | leech | Target loses HP to the user for 5s |
-| paralyze | Target moves slower and its cooldowns run 50% longer for 4s |
-| weaken | Target deals 30% less damage for 5s |
+| paralyze | For 4s the target moves 40% slower, locks up for a beat every second, and its cooldowns run 50% longer |
+| weaken | Target deals 35% less damage for 5s |
 | root | Target can't move for 2.5s (can still act) |
 | steal energy | Steals up to 40 energy |
 | execute | Double damage on targets below 30% HP |
 | recharge | User is stunned for 1.5s afterwards |
-| mark | Target takes 25% more damage from everyone for 5s |
+| mark | Target takes 30% more damage from everyone for 5s |
 | chain | Arcs to another enemy within reach for half damage; with nobody to jump to, zaps the target again for a third |
 | swap places | User and target trade places |
-| disrupt | Adds 2s to every cooldown the target has |
+| disrupt | Adds 2.5s to every cooldown the target has |
 | trap | Lays a snare at the target's feet (up to the move's range). It arms after 0.5s, lasts 8s, and the first enemy to step on it takes the damage and is rooted for 2s |
 | shield | Barrier that soaks up 20% max HP (Special 30%, Unique 35%) for 6s |
 | team heal | Heals the user and its teammates 12% |

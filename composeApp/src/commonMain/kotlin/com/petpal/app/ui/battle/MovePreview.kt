@@ -76,7 +76,7 @@ fun MovePreview(pet: Pet, move: Move, modifier: Modifier = Modifier) {
 
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Box(Modifier.fillMaxWidth().height(220.dp).clip(MaterialTheme.shapes.medium).background(EmberCanvas)) {
-            fight?.let { Arena(it, Modifier.fillMaxSize()) }
+            fight?.let { Arena(it, Modifier.fillMaxSize(), alerts = false) }
         }
         Text(fight?.log?.lastOrNull() ?: " ", style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
@@ -106,21 +106,21 @@ internal fun whatItDoes(me: FighterInfo, m: Move): String {
         Effect.LUNGE -> "dashes at the target"
         Effect.VANISH -> "vanishes during the wind-up and reappears next to the target"
         Effect.DRAIN -> "heals you half the damage dealt"
-        Effect.BURN -> "burns for ${secs(burnMs)} (${(2 * burnMs / 1000f).roundToInt()} HP over time)"
-        Effect.SLOW -> "halves the target's speed for 3s"
+        Effect.BURN -> "burns for ${secs(burnMs)} (${(3 * burnMs / 1000f).roundToInt()} HP over time)"
+        Effect.SLOW -> "cuts the target's speed by 60% for 3s"
         Effect.STUN -> "stuns for 0.8s"
         Effect.FREEZE -> "freezes the target for 1.5s"
         Effect.KNOCKBACK -> "knocks the target back"
         Effect.PULL -> "pulls the target closer"
         Effect.RECOIL -> "you take a quarter of the damage dealt"
         Effect.LEECH -> "drains 1.5 HP/s from the target to you for 5s"
-        Effect.PARALYZE -> "paralyzes for 4s (slower, cooldowns 50% longer)"
-        Effect.WEAKEN -> "target deals 30% less damage for 5s"
+        Effect.PARALYZE -> "paralyzes for 4s (slower, locks up every second, cooldowns 50% longer)"
+        Effect.WEAKEN -> "target deals 35% less damage for 5s"
         Effect.ROOT -> "roots the target in place for 2.5s"
         Effect.SIPHON -> "steals up to 40 energy"
         Effect.EXECUTE -> "double damage on targets below 30% HP"
         Effect.RECHARGE -> "you must recharge for 1.5s after"
-        Effect.MARK -> "marked target takes 25% more damage for ${secs(Mechanics.MARK_MS)}"
+        Effect.MARK -> "marked target takes 30% more damage for ${secs(Mechanics.MARK_MS)}"
         Effect.CHAIN -> "arcs to a nearby enemy for half damage (or zaps the same one again for a third)"
         Effect.SWAP -> "you and the target swap places"
         Effect.DISRUPT -> "adds ${secs(Mechanics.DISRUPT_MS)} to all the target's cooldowns"
@@ -160,7 +160,7 @@ private fun howItWorks(m: Move): String = buildString {
     append(" Wind-up ${m.windupMs} ms: a target that moves away in time dodges it.")
     when (m.category) {
         MoveCategory.SPECIAL -> append(" Strong, with a long cooldown.")
-        MoveCategory.UNIQUE -> append(" No cooldown: needs a full energy bar and empties it.")
+        MoveCategory.UNIQUE -> append(if (m.energyCost < BattleRules.MAX_ENERGY) " No cooldown: needs ${m.energyCost} energy and spends it." else " No cooldown: needs a full energy bar and empties it.")
         MoveCategory.NORMAL -> {}
     }
 }

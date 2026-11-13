@@ -146,13 +146,17 @@ class BattleViewModel(
     fun practice(): Unit = start {
         again = ::practice
         val me = myInfo()
+        if (format.isRaid) {
+            again = null
+            return@start runRaidHost(listOf(me), remotes = emptyMap(), terrain = nextTerrain())
+        }
         val ally = { CpuOpponent.random(me, prefix = "CPU") }
         val foe = { CpuOpponent.random(me) }
         val (infos, teams) = when (format) {
             BattleFormat.SOLO -> listOf(me, foe()).let { it to BattleEngine.defaultTeams(2) }
             BattleFormat.FFA -> listOf(me, foe(), foe(), foe()).let { it to BattleEngine.freeForAll(4) }
             BattleFormat.TEAMS -> listOf(me, ally(), ally(), foe(), foe(), foe()).let { it to BattleEngine.defaultTeams(6) }
-            BattleFormat.RAID -> error("Raids are co-op. Host a room instead.")
+            BattleFormat.RAID -> error("handled above")
         }
         runHost(infos, remotes = emptyMap(), terrain = nextTerrain(), teams = teams)
     }
@@ -218,8 +222,7 @@ class BattleViewModel(
         val members = mutableListOf(Member(null, me, 0))
         val events = Channel<RoomEv>(Channel.UNLIMITED)
         roomEvents = events
-        fun canStart() = members.size >= 2 && when {
-            raid -> members.all { it.info.level >= Raid.MIN_LEVEL }
+        fun canStart() = raid || members.size >= 2 && when {
             ffa -> true
             else -> members.map { it.team }.toSet().size == 2
         }
@@ -353,7 +356,13 @@ class BattleViewModel(
         again = ::findOnline
         _state.value = BattleUiState(mode = BattleScreenMode.MATCHMAKING, format = BattleFormat.SOLO)
         val me = myInfo()
-        val match = service.findMatch(me)
+        // Nobody else queueing: a Lv 50 bot with twice the HP steps in (unranked, CPU rewards).
+        val match = withTimeoutOrNull(ONLINE_WAIT_MS) { service.findMatch(me) }
+        if (match == null) {
+            _state.update { it.copy(mode = BattleScreenMode.CONNECTING, message = "a Lv ${CpuOpponent.ONLINE_BOT_LEVEL} bot (no players online)") }
+            delay(1200)
+            return@start runHost(listOf(me, CpuOpponent.onlineBot()), remotes = emptyMap(), terrain = nextTerrain())
+        }
         val c = match.conn
         conns += c
         _state.update { it.copy(mode = BattleScreenMode.CONNECTING, message = "${match.opponent} (online)") }
@@ -729,6 +738,8 @@ class BattleViewModel(
 }
 
 private const val TICK_MS = 50L
+/** How long online matchmaking waits for a real player before a bot steps in. */
+private const val ONLINE_WAIT_MS = 25_000L
 
 /** Latest-state-wins sender: events are kept, but only the newest state is written; one flush per batch. */
 private class Outbox(private val c: BattleConnection) {

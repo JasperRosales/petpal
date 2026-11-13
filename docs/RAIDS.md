@@ -1,7 +1,7 @@
 # Raids
 
-A raid is a co-op dungeon for **2–4 players**: one host and up to three allies, linked over
-a hotspot like every other battle. The party fights through **10 floors** of increasing danger
+A raid is a dungeon for **1–4 players**: play it solo from the Battle tab, or host a room
+for up to three allies, linked over a hotspot like every other battle. The party fights through **10 floors** of increasing danger
 and ends with a single raid boss. Pets that faint stay down for the rest of the run. Clearing
 floor 10 unlocks a random pet.
 
@@ -11,30 +11,32 @@ linked battles.
 
 | | |
 |---|---|
-| Party | 2–4 players, no CPU allies |
-| Entry | every raider's active pet is **Lv 35+** |
+| Party | 1–4 players (solo or a room), no CPU allies |
+| Entry | any level |
 | Floors | 10 (4 skeleton floors, 5 wild-pet floors, 1 boss) |
 | Floor timer | 90s, 120s for the boss |
 | Run length | roughly 15–25 minutes |
 | Knockouts | a fainted pet is out until the raid ends |
 | Reward | random pet unlock, first clear per day |
 
-Four is a deliberate cap: the 1000 HP boss is tuned for 2–4 raiders. Opening raids to six would
+Four is a deliberate cap: the 1000 HP boss is tuned for 1–4 raiders. Opening raids to six would
 need to scale the boss or it dies in seconds.
 
 ## Lobby
 
 - The host picks **Raid** on the Battle tab, then opens a room with the usual hotspot
   transport.
-- Allies join the room. The room shows each raider's active pet name and level, and flags
-  anyone below the entry level.
-- The host can start once at least two raiders are in. The raid plan (skeleton count, wild
+- Allies join the room. The room shows each raider's active pet name and level.
+- The host can start at any time, even alone. The raid plan (skeleton count, wild
   species, boss species) is rolled once at start from the host's RNG, so every phone sees the
   same dungeon.
 - No mid-run joins. A raid is a single sealed run; leaving the room before Start is fine.
 
-Raid-only rule: a raider cannot start with a pet below Lv 35. Wild floors start at Lv 35 and
-the boss is Lv 50, so a lower pet would just be a liability to the team.
+Any pet level can enter. Wild floors start at Lv 35 and the boss is Lv 50, so low-level pets
+will struggle, but that is the raider's call.
+
+**Solo:** with Raid selected, *Solo raid* starts immediately with no room. A room can also be
+started with only the host in it. Solo floors 1–4 have one skeleton each.
 
 ## The run
 
@@ -162,7 +164,7 @@ accounts, host-authoritative like every other linked battle.
   `RewardRepository.claimRaid()` uses the daily `raid:<date>` key and the existing
   `grantRandomPet()`. Each device records and claims locally, so a host and every guest get
   their own pet.
-- **UI:** a Raid format button, raid room with level warnings, floor/ boss HUD, a spectator panel
+- **UI:** a Raid format button, a Solo raid button, raid room, floor/ boss HUD, a spectator panel
   for downed raiders, downed markers on ally bars, a "floor cleared" banner, and a bone-white
   sprite palette for skeletons.
 - **Tests:** floor plan (skeleton count = party size, levels 35–50), boss stats (Lv 50, 1000 HP,

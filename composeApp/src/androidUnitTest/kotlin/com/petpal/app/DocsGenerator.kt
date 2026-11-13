@@ -40,7 +40,7 @@ class DocsGenerator {
         appendLine()
         appendLine("${Move.entries.size} moves. Ranges are in arena widths (the arena is 1.0 wide and 1.2 tall).")
         appendLine("Normal moves have short cooldowns and Specials long ones. Uniques are species signatures in")
-        appendLine("slot 5 with no cooldown: they need a full energy bar, which only fills by dealing and taking hits.")
+        appendLine("slot 5 with no cooldown: they need a full energy bar, which only fills by dealing and taking hits. Trap uniques need only ${BattleRules.TRAP_ENERGY} energy.")
         appendLine()
         appendLine("## Effects")
         appendLine()
@@ -115,8 +115,8 @@ class DocsGenerator {
             Effect.LUNGE to "Dashes at the target during the wind-up",
             Effect.TWIN_SLASH to "Two short steps forward, slashing after each one",
             Effect.DRAIN to "Heals for half the damage dealt",
-            Effect.BURN to "Damage over time for 3s",
-            Effect.SLOW to "Halves the target's speed for 3s",
+            Effect.BURN to "3 HP/s for 3s",
+            Effect.SLOW to "Cuts the target's speed by 60% for 3s",
             Effect.STUN to "Target can't move or act for 0.8s",
             Effect.FREEZE to "Target can't move or act for 1.5s",
             Effect.KNOCKBACK to "Pushes the target away",
@@ -125,16 +125,16 @@ class DocsGenerator {
             Effect.RECOIL to "User takes a quarter of the damage dealt",
             Effect.MULTI to "Hits 2-4 times (damage is per hit)",
             Effect.LEECH to "Target loses HP to the user for 5s",
-            Effect.PARALYZE to "Target moves slower and its cooldowns run 50% longer for 4s",
-            Effect.WEAKEN to "Target deals 30% less damage for 5s",
+            Effect.PARALYZE to "For 4s the target moves 40% slower, locks up for a beat every second, and its cooldowns run 50% longer",
+            Effect.WEAKEN to "Target deals 35% less damage for 5s",
             Effect.ROOT to "Target can't move for 2.5s (can still act)",
             Effect.SIPHON to "Steals up to 40 energy",
             Effect.EXECUTE to "Double damage on targets below 30% HP",
             Effect.RECHARGE to "User is stunned for 1.5s afterwards",
-            Effect.MARK to "Target takes 25% more damage from everyone for 5s",
+            Effect.MARK to "Target takes 30% more damage from everyone for 5s",
             Effect.CHAIN to "Arcs to another enemy within reach for half damage; with nobody to jump to, zaps the target again for a third",
             Effect.SWAP to "User and target trade places",
-            Effect.DISRUPT to "Adds 2s to every cooldown the target has",
+            Effect.DISRUPT to "Adds 2.5s to every cooldown the target has",
             Effect.TRAP to "Lays a snare at the target's feet (up to the move's range). It arms after 0.5s, lasts 8s, " +
                 "and the first enemy to step on it takes the damage and is rooted for 2s",
             Effect.SHIELD to "Barrier that soaks up 20% max HP (Special 30%, Unique 35%) for 6s",

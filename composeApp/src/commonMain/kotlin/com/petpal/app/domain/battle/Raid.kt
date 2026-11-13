@@ -13,7 +13,6 @@ import kotlin.random.Random
 object Raid {
     const val FLOORS = 10
     const val MAX_PLAYERS = 4
-    const val MIN_LEVEL = 35
 
     const val BOSS_LEVEL = 50
     const val BOSS_HP = 1000

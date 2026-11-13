@@ -1,6 +1,7 @@
 package com.petpal.app.domain.battle
 
 import com.petpal.app.domain.model.Species
+import com.petpal.app.domain.model.Stage
 import kotlin.random.Random
 
 /** Random wild pets for CPU battles, matched to the player's level and stage. */
@@ -15,5 +16,14 @@ object CpuOpponent {
             .take(SpeciesKit.MAX_MOVES)
         val unique = SpeciesKit.uniqueOptions(species, me.stage)?.let { if (rng.nextBoolean()) it.first else it.second }
         return FighterInfo("$prefix ${species.label}", species, me.stage, me.level, picks + listOfNotNull(unique))
+    }
+
+    const val ONLINE_BOT_LEVEL = 50
+    const val ONLINE_BOT_HP_SCALE = 2
+
+    /** Stands in online when nobody else is queueing: a random Lv 50 adult with twice the HP. */
+    fun onlineBot(rng: Random = Random.Default): FighterInfo {
+        val bot = random(FighterInfo("", Species.SPROUT, Stage.ADULT, ONLINE_BOT_LEVEL), rng, prefix = "Bot")
+        return bot.copy(maxHpOverride = BattleStats.maxHp(bot) * ONLINE_BOT_HP_SCALE)
     }
 }

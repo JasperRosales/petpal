@@ -9,7 +9,7 @@ enum class Effect(val label: String, val self: Boolean = false) {
     TWIN_SLASH("2 stepping slashes"), // short step forward + slash, then another step + slash
     DRAIN("drain"),            // heals for half the damage dealt
     BURN("burn"),              // damage over time
-    SLOW("slow"),              // halves target speed
+    SLOW("slow"),              // cuts target speed by 60%
     STUN("stun"),              // target can't move or act briefly
     FREEZE("freeze"),          // long stun
     KNOCKBACK("knockback"),    // big push away
@@ -18,16 +18,16 @@ enum class Effect(val label: String, val self: Boolean = false) {
     RECOIL("recoil"),          // user takes a quarter of the damage dealt
     MULTI("hits 2-4x"),        // damage is per hit
     LEECH("leech"),            // target slowly loses HP to the user
-    PARALYZE("paralyze"),      // target moves slower and its cooldowns run 50% longer
-    WEAKEN("weaken"),          // target deals 30% less damage
+    PARALYZE("paralyze"),      // target moves slower, twitches to a stop every second, cooldowns run 50% longer
+    WEAKEN("weaken"),          // target deals 35% less damage
     ROOT("root"),              // target can't move (can still act)
     SIPHON("steal energy"),    // takes energy from the target
     EXECUTE("execute"),        // double damage on targets below 30% HP
     RECHARGE("recharge"),      // user is stunned after using it
-    MARK("mark"),              // target takes 25% more damage from everyone
+    MARK("mark"),              // target takes 30% more damage from everyone
     CHAIN("chain"),            // arcs to a second enemy (or zaps the same one again)
     SWAP("swap places"),       // user and target trade spots
-    DISRUPT("disrupt"),        // adds 2s to all the target's cooldowns
+    DISRUPT("disrupt"),        // adds 2.5s to all the target's cooldowns
     TRAP("trap", true),         // lays a snare at the target's feet that roots whoever steps on it
     // Self buffs
     SHIELD("shield", true),     // barrier that soaks up damage
@@ -51,7 +51,7 @@ enum class Effect(val label: String, val self: Boolean = false) {
 
 /**
  * NORMAL: short cooldown. SPECIAL: long cooldown.
- * UNIQUE: species signature in slot 5, no cooldown; needs a full energy bar (and empties it).
+ * UNIQUE: species signature in slot 5, no cooldown; needs a full energy bar (and empties it); trap uniques need half a bar.
  */
 enum class MoveCategory(val label: String) { NORMAL("Normal"), SPECIAL("Special"), UNIQUE("Unique") }
 
@@ -592,11 +592,19 @@ enum class Move(
     val effectLabel: String
         get() = if (alsoLunges) "${Effect.LUNGE.label} + ${effect.label}" else effect.label
 
+    /** Energy a unique needs (and spends). Trap uniques only need half a bar. */
+    val energyCost: Int
+        get() = when {
+            category != MoveCategory.UNIQUE -> 0
+            effect == Effect.TRAP -> BattleRules.TRAP_ENERGY
+            else -> BattleRules.MAX_ENERGY
+        }
+
     fun describe(): String = buildString {
         append(typeLabel).append(" · ")
         append(when { damage > 0 -> "$damage dmg"; isBuff -> "Buff"; else -> "Debuff" })
         if (effect != Effect.NONE && effect != Effect.GUARD) append(", ").append(effectLabel)
-        if (category == MoveCategory.UNIQUE) append(", full energy") else append(", ${cooldownMs / 1000.0}s cd")
+        if (category == MoveCategory.UNIQUE) append(if (energyCost < BattleRules.MAX_ENERGY) ", $energyCost energy" else ", full energy") else append(", ${cooldownMs / 1000.0}s cd")
     }
 }
 
@@ -609,6 +617,8 @@ private val PUNCHES by lazy {
 
 object BattleRules {
     const val MAX_ENERGY = 100
+    /** Trap uniques cost half a bar. */
+    const val TRAP_ENERGY = 50
 }
 data class MoveUnlock(val move: Move, val level: Int)
 

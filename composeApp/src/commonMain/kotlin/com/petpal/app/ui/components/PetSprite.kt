@@ -274,6 +274,7 @@ internal object PetArt {
 
     fun draw(species: Species, stage: Stage, mood: Mood): List<String> {
         if (stage == Stage.EGG) return egg(species)
+        custom(species, stage)?.let { return withMood(it, mood) }
         val g = Grid()
         val base = bodyFor(stage)
         val (wx, hy) = species.build().let { (w, h) -> // babies are rounder, the shape shows more as they grow
@@ -688,6 +689,162 @@ internal object PetArt {
             else -> Unit
         }
         return g.rows()
+    }
+
+    // Hand-drawn sprites for species the blob template can't capture. 'E' marks eye pixels (they close when sleepy).
+    private val EAGLE_BABY = listOf(
+        "....................",
+        "....................",
+        "....................",
+        "....................",
+        "........o..o........",
+        ".......ohooho.......",
+        "......oohhhhoo......",
+        "....oohhhhhhhhoo....",
+        "...ohhhhhhhhhhhho...",
+        "...ohhEEhhhhEEhho...",
+        "...ohhEwoyyowEhho...",
+        "...ohhhhoyyohhhho...",
+        "..odhhhhheehhhhhdo..",
+        "..odhhllllllllhhdo..",
+        "..oddhllllllllhddo..",
+        "...odhllllllllhdo...",
+        "...ohhllllllllhho...",
+        "....oohhhhhhhhoo....",
+        "....oyyooooooyyo....",
+        "....................",
+    )
+    private val EAGLE_KID = listOf(
+        "....................",
+        "....................",
+        "....................",
+        ".......oooooo.......",
+        ".....oobbbbbboo.....",
+        "....obblbbbblbbo....",
+        "...obbbbbllbbbbbo...",
+        "...odddbbbbbbdddo...",
+        "...obbEEoyyoEEbbo...",
+        "...obbEwoyyowEbbo...",
+        "..oobbbboyyobbbboo..",
+        ".oddobbboeeobbboddo.",
+        ".odddoblbhhblbodddo.",
+        "odbddobhbbbbhboddbdo",
+        "oddbdbbbhbbhbbbdbddo",
+        ".odbdbbhbbbbhbbdbdo.",
+        ".ododbbbbbbbbbbdodo.",
+        "..o.oobbllllbboo.o..",
+        "....oyyoollooyyo....",
+        "...oyoyooooooyoyo...",
+    )
+    private val EAGLE_TEEN = listOf(
+        "....................",
+        "....................",
+        "......oooooooo......",
+        "....oolllllllloo....",
+        "...ollbllbbllbllo...",
+        "..olllbllbbllblllo..",
+        "..oldddlllllldddlo..",
+        "..ollEEoyyyyoEEllo..",
+        "..ollEwoyyyyowEllo..",
+        ".oobllbloyyolbllboo.",
+        "oddolllloeeolllloddo",
+        "odddoblbboobblbodddo",
+        "oddbdobbbbbbbbodbddo",
+        "odbdbdbhbbbbhbdbdbdo",
+        "oddbdbbbhbbhbbbdbddo",
+        ".odbdbbbbbbbbbbdbdo.",
+        ".ododbdbbbbbbdbdodo.",
+        "..o.oobboooobboo.o..",
+        "....oyyolllloyyo....",
+        "...oyoyoollooyoyo...",
+    )
+    private val EAGLE_ADULT = listOf(
+        "....................",
+        "....................",
+        "......oooooooo......",
+        "....oolllllllloo....",
+        "...ollllllllllllo...",
+        "..ollllllllllllllo..",
+        "..oldddlllllldddlo..",
+        "..ollEEoyyyyoEEllo..",
+        "..ollEwoyyyyowEllo..",
+        ".oollllloyyollllloo.",
+        "oddolllloeeolllloddo",
+        "odddoblbboobblbodddo",
+        "oddbdobbbbbbbbodbddo",
+        "odbdbdbhbbbbhbdbdbdo",
+        "oddbdbbbhbbhbbbdbddo",
+        ".odbdbbbbbbbbbbdbdo.",
+        ".ododbdbbbbbbdbdodo.",
+        "..o.oobboooobboo.o..",
+        "....oyyolllloyyo....",
+        "...oyoyoollooyoyo...",
+    )
+    private val FLAMINGO_BABY = listOf(
+        "....................",
+        "....................",
+        "....................",
+        "....................",
+        "....................",
+        ".......oooo.........",
+        "......ollllo........",
+        "......olEllhoo......",
+        "......ollllhheo.....",
+        ".......ollooo.......",
+        "......olllloooo.....",
+        ".....ollllllllloo...",
+        ".....olllhhhllllo...",
+        ".....ollhhhhhllllo..",
+        ".....olllhhhlllllo..",
+        "......olllllllllo...",
+        ".......oollllloo....",
+        "........od..od......",
+        "........od..od......",
+        ".......odd.odd......",
+    )
+    private val FLAMINGO_ADULT = listOf(
+        "....................",
+        "......oooo..........",
+        ".....obbbbo.........",
+        ".....obEbbhoo.......",
+        ".....obbbbhhho......",
+        "......oobooeeo......",
+        "........obo.oo......",
+        ".......obo..........",
+        "......obo...........",
+        "......obo...........",
+        "......obboooooo.....",
+        ".......obbbbbbboooo.",
+        "......obbbdddbbbddo.",
+        "......obbdddddbbbddo",
+        "......obbbdddbbbbbo.",
+        ".......obbbbbbbbbo..",
+        "........oobbbboooo..",
+        "..........od.oddo...",
+        "..........od...o....",
+        ".........oddd.......",
+    )
+
+    private fun custom(species: Species, stage: Stage): List<String>? = when (species) {
+        Species.EAGLE -> when (stage) {
+            Stage.BABY -> EAGLE_BABY; Stage.KID -> EAGLE_KID; Stage.TEEN -> EAGLE_TEEN; else -> EAGLE_ADULT
+        }
+        Species.FLAMINGO -> if (stage == Stage.BABY) FLAMINGO_BABY else FLAMINGO_ADULT
+        else -> null
+    }
+
+    /** Opens or closes the hand-drawn eyes: awake = ink with a shine, sleepy = a closed line. */
+    private fun withMood(rows: List<String>, mood: Mood): List<String> {
+        val eyeRows = rows.indices.filter { 'E' in rows[it] }
+        val lid = if (mood == Mood.SLEEPY && eyeRows.size > 1) eyeRows.first() else -1
+        return rows.mapIndexed { y, r ->
+            val chars = r.toCharArray()
+            for (x in chars.indices) when (chars[x]) {
+                'E' -> chars[x] = if (y == lid) chars.getOrNull(x - 1)?.takeIf { it != 'E' } ?: chars.getOrElse(x - 2) { 'b' } else 'e'
+                'w' -> if (mood == Mood.SLEEPY && 'E' in r) chars[x] = 'e'
+            }
+            chars.concatToString()
+        }
     }
 
     /** Fried Tilapia: crispy golden fish with an X eye, still steaming. */
