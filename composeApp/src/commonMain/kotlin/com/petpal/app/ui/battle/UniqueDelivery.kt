@@ -35,7 +35,7 @@ internal enum class Delivery {
     SHARK, BIRDS, BATS, STAMPEDE, FISH, TREE_FALL, DIVE, BURROW, WAVE, VINES, HEDGE, SPIKES, ICICLES,
     SKY_BOLT, MOON, CLONES, SOUND, GAZE, FEATHERS, PAW, CLAWS, KICK, FIST, JAWS, TONGUE, TORNADO, VOLCANO, FIRE_RAIN, AFTERIMAGE,
     // on yourself
-    BARRIER, ROCK_ARMOR, ICE_WALL, STAKES, BUBBLE_DOME, HEARTS, BUDDIES, CROWN, WAR_BANNER, RAGE, SPEED, MIRROR, PORTAL, BOLTS, SHOWER,
+    GRAVE, BARRIER, ROCK_ARMOR, ICE_WALL, STAKES, BUBBLE_DOME, HEARTS, BUDDIES, CROWN, WAR_BANNER, RAGE, SPEED, MIRROR, PORTAL, BOLTS, SHOWER,
 }
 
 private val keywords: List<Pair<List<String>, Delivery>> = listOf(
@@ -104,6 +104,7 @@ private fun Move.pickDelivery(): Delivery {
         Effect.BLINK, Effect.SMOKE -> Delivery.PORTAL
         Effect.ENERGIZE -> Delivery.BOLTS
         Effect.CLEANSE -> Delivery.SHOWER
+        Effect.SUMMON -> Delivery.GRAVE
         else -> Delivery.CROWN
     }
     keywords.firstOrNull { (k, _) -> k.any { it in w } }?.let { return it.second }
@@ -233,6 +234,7 @@ internal fun DrawScope.drawDelivery(m: Move, origin: Offset, impact: Offset, aft
         Delivery.VOLCANO -> volcano(s)
         Delivery.FIRE_RAIN -> fireRain(s)
         Delivery.AFTERIMAGE -> afterimage(s)
+        Delivery.GRAVE -> grave(s)
         Delivery.BARRIER -> barrier(s)
         Delivery.HEARTS -> hearts(s)
         Delivery.BUDDIES -> buddies(s)
@@ -1186,4 +1188,26 @@ private fun DrawScope.warBanner(s: Shot) {
     }
     drawPath(flag, s.col.a(s.fade))
     drawCircle(Gold.a(s.fade), s.r * 0.1f, top + Offset(s.r * 0.35f, s.r * 0.3f))
+}
+
+/** A dark circle cracks open beside the caster and bony hands claw their way out. */
+private fun DrawScope.grave(s: Shot) {
+    val spot = s.o + Offset(-s.r * 0.9f, s.r * 0.5f)
+    val g = if (s.hit) 1f else ease(s.pre)
+    val purple = Color(0xFF6A3D9A)
+    drawOval(Color.Black.a(0.55f * s.fade), spot - Offset(s.r * 0.8f * g, s.r * 0.25f * g), Size(s.r * 1.6f * g, s.r * 0.5f * g))
+    drawOval(purple.a(0.8f * s.fade), spot - Offset(s.r * 0.8f * g, s.r * 0.25f * g), Size(s.r * 1.6f * g, s.r * 0.5f * g), style = Stroke(3.dp.toPx()))
+    val bone = Color(0xFFEDE6D3)
+    for (k in 0..1) { // two hands reaching up
+        val x = spot.x + (k * 2 - 1) * s.r * 0.35f
+        val up = s.r * 0.7f * g * (if (s.hit) 1f - s.t * 0.5f else 1f)
+        val wrist = Offset(x, spot.y - up)
+        drawLine(bone.a(s.fade), Offset(x, spot.y), wrist, 4.dp.toPx(), StrokeCap.Round)
+        for (j in -1..1) drawLine(bone.a(s.fade), wrist, wrist + Offset(j * s.r * 0.1f, -s.r * 0.18f), 2.5f.dp.toPx(), StrokeCap.Round)
+    }
+    for (k in 0 until 6) { // ghostly wisps swirling up
+        val f = ((s.pre + s.t) * 1.4f + k / 6f) % 1f
+        val p = spot + Offset(sin(f * 8f + k) * s.r * 0.5f, -f * s.r * 1.6f)
+        drawCircle(purple.a((1f - f) * 0.7f * s.fade), s.r * 0.08f, p)
+    }
 }

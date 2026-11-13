@@ -15,10 +15,13 @@ class EventsTest {
         assertEquals(BattleStats.maxHp(boss.copy(bonusHp = 0)) + 50, BattleStats.maxHp(boss))
     }
 
-    @Test fun monthlyOnlyOnThe1st() {
-        assertTrue(Events.monthlyOpen(LocalDate(2026, 12, 1)))
-        assertFalse(Events.monthlyOpen(LocalDate(2026, 12, 2)))
-        assertEquals("monthly:2026-12", Events.monthlyKey(LocalDate(2026, 12, 1)))
+    @Test fun monthlyOnlyOnTheLastDay() {
+        assertTrue(Events.monthlyOpen(LocalDate(2026, 11, 30)))
+        assertTrue(Events.monthlyOpen(LocalDate(2026, 12, 31)))
+        assertTrue(Events.monthlyOpen(LocalDate(2028, 2, 29)))
+        assertFalse(Events.monthlyOpen(LocalDate(2026, 12, 1)))
+        assertFalse(Events.monthlyOpen(LocalDate(2026, 11, 29)))
+        assertEquals("monthly:2026-11", Events.monthlyKey(LocalDate(2026, 11, 30)))
     }
 
     @Test fun bossClosesInDecember() {

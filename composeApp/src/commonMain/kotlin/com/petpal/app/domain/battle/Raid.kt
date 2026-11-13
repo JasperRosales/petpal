@@ -29,7 +29,7 @@ object Raid {
     val SKELETON_LEVELS = intArrayOf(20, 24, 28, 32)
     val SKELETON_HP = intArrayOf(120, 150, 180, 210)
     val SKELETON_DAMAGE = floatArrayOf(0.9f, 0.95f, 1f, 1.05f)
-    val SKELETON_MOVES = listOf(Move.BONE_RUSH, Move.HEADBUTT, Move.GUARD, Move.GLARE)
+    val SKELETON_MOVES = listOf(Move.BONE_RUSH, Move.HEADBUTT, Move.GUARD, Move.GLARE, Move.RAISE_DEAD)
 
     val WILD_LEVELS = listOf(35, 38, 42, 46, 50)
 
@@ -49,7 +49,9 @@ object Raid {
         require(raiders in 1..MAX_PLAYERS) { "a raid has 1..$MAX_PLAYERS raiders" }
         val floors = mutableListOf<Floor>()
         for (n in 1..4) {
-            floors += Floor(n, title(n), List(raiders) { skeleton(n, it + 1, raiders) })
+            // The pack, plus as many buried skeletons waiting to be raised with Raise Dead.
+            floors += Floor(n, title(n), List(raiders) { skeleton(n, it + 1, raiders * 2) } +
+                List(raiders) { skeleton(n, raiders + it + 1, raiders * 2).copy(reserve = true) })
         }
         WILD_LEVELS.forEachIndexed { i, level ->
             floors += Floor(5 + i, title(5 + i), listOf(wild(level, rng)))

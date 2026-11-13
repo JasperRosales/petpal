@@ -43,7 +43,7 @@ class RewardRepository(
     suspend fun isChampion(): Boolean =
         online?.let { runCatching { it.leaderboard().me?.rank == 1 }.getOrDefault(false) } ?: false
 
-    /** The #1 player on the leaderboard gets a free pet on the 1st of every month. */
+    /** The #1 player on the leaderboard gets a free pet on the last day of every month. */
     suspend fun claimMonthly(): Species? {
         val today = today()
         if (!Events.monthlyOpen(today) || !isChampion()) return null

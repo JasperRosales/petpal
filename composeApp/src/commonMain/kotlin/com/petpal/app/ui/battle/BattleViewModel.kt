@@ -581,8 +581,9 @@ class BattleViewModel(
                         if (i in bots) continue
                         (if (m == null) engine.evade(i, now) else engine.command(i, m, now))?.let(events::add)
                     }
-                    for (b in bots) {
-                        if (b >= raiders.size || engine.isDown(b)) continue
+                    // Every enemy is a CPU, plus any raider whose player left.
+                    for (b in bots.filter { it < raiders.size } + (raiders.size until infos.size)) {
+                        if (engine.isDown(b)) continue
                         if (BattleBot.shouldEvade(engine, b, now, rng)) engine.evade(b, now)?.let(events::add)
                         else BattleBot.pick(engine, b, now, rng)?.let { engine.command(b, it, now)?.let(events::add) }
                     }

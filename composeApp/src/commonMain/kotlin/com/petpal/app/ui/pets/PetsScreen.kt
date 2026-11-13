@@ -32,12 +32,12 @@ data class PetsState(
     val pets: List<Pet> = emptyList(),
     val activeId: Long? = null,
     val lifetimeSteps: Long = 0,
-    /** It's the 1st, you're #1 on the leaderboard, and this month's free pet hasn't been claimed. */
+    /** It's the last day of the month, you're #1 on the leaderboard, and this month's free pet hasn't been claimed. */
     val monthlyGift: Boolean = false,
 )
 
 class PetsViewModel(private val repo: PetRepository, private val rewards: RewardRepository) : ViewModel() {
-    /** Leaderboard #1 check, only made on the 1st. */
+    /** Leaderboard #1 check, only made on the last day of the month. */
     private val champion = flow {
         emit(false)
         if (Events.monthlyOpen(rewards.today())) emit(rewards.isChampion())

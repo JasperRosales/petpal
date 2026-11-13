@@ -148,6 +148,7 @@ class DocsGenerator {
             Effect.BLINK to "Teleports to the far side of the arena",
             Effect.CLEANSE to "Clears debuffs and heals 10%",
             Effect.ENERGIZE to "+50 energy",
+            Effect.SUMMON to "Raises a buried teammate at full HP (raid skeletons only)",
             Effect.BATTLE_CRY to "Rage + haste for 5s",
             Effect.PACK_CALL to "Rage for 6s and heals 25%",
             Effect.FORTRESS to "Guard for 3s and heals 15%",

@@ -2,7 +2,7 @@
 
 _Generated from the game data by `DocsGenerator`. Don't edit by hand._
 
-465 moves. Ranges are in arena widths (the arena is 1.0 wide and 1.2 tall).
+466 moves. Ranges are in arena widths (the arena is 1.0 wide and 1.2 tall).
 Normal moves have short cooldowns and Specials long ones. Uniques are species signatures in
 slot 5 with no cooldown: they need a full energy bar, which only fills by dealing and taking hits. Trap uniques need only 50 energy.
 
@@ -45,6 +45,7 @@ slot 5 with no cooldown: they need a full energy bar, which only fills by dealin
 | teleport | Teleports to the far side of the arena |
 | cleanse | Clears debuffs and heals 10% |
 | energy +50 | +50 energy |
+| summon | Raises a buried teammate at full HP (raid skeletons only) |
 | rage + haste | Rage + haste for 5s |
 | rage + heal | Rage for 6s and heals 25% |
 | guard + heal | Guard for 3s and heals 15% |

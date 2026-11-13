@@ -275,7 +275,7 @@ private fun OnlineCard(vm: BattleViewModel) {
                 Spacer(Modifier.width(10.dp))
                 Text("Online ranked", style = MaterialTheme.typography.titleMedium)
             }
-            Text("1v1 against a random player. Wins raise your rating; the top 10 make the leaderboard. On the 1st of every month, #1 gets a free pet.",
+            Text("1v1 against a random player. Wins raise your rating; the top 10 make the leaderboard. On the last day of every month, #1 gets a free pet.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 NeuButton(outlined = true, onClick = vm::findOnline, text = "Find match", icon = Icons.Rounded.TravelExplore,
@@ -397,7 +397,7 @@ private fun Fight(f: FightState, vm: BattleViewModel) {
     val me = f.snap.fighters[f.me]
     val info = f.fighters[f.me]
     val myTeam = f.snap.fighters.indices.filter { teamOf(f, it) == teamOf(f, f.me) }.sortedBy { it != f.me }
-    val rivals = f.snap.fighters.indices.filter { teamOf(f, it) != teamOf(f, f.me) }
+    val rivals = f.snap.fighters.indices.filter { teamOf(f, it) != teamOf(f, f.me) && !f.snap.fighters[it].has(Status.DORMANT) }
     val crowd = f.fighters.size > 2
     Column(Modifier.fillMaxSize().background(EmberCanvas)) {
         // HUD sits above the arena (never over it) so pets near the top stay visible.
@@ -489,6 +489,16 @@ private fun Fight(f: FightState, vm: BattleViewModel) {
                     Column(Modifier.padding(18.dp), horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text("Floor ${f.raid.floor} cleared", style = MaterialTheme.typography.titleMedium)
+                        if (f.raid.floor < f.raid.floors) {
+                            val left = floorCountdown(f.raid.floor)
+                            Text("Next floor in ${left}s", style = MaterialTheme.typography.headlineMedium, color = EmberGold)
+                            LinearProgressIndicator(
+                                progress = { left / (Raid.BANNER_MS / 1000f) },
+                                modifier = Modifier.width(160.dp).height(6.dp),
+                                color = EmberGold, trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                                strokeCap = StrokeCap.Round, gapSize = 0.dp, drawStopIndicator = {},
+                            )
+                        }
                         Text(
                             if (f.raid.floor < f.raid.floors)
                                 "Survivors heal ${(Raid.HEAL_BETWEEN * 100).toInt()}%.\nNext: floor ${f.raid.floor + 1}, ${Raid.title(f.raid.floor + 1)}"
@@ -1102,6 +1112,7 @@ internal fun Arena(fight: FightState, modifier: Modifier, alerts: Boolean = true
                 val c = pos(s)
                 val info = f.fighters[i]
                 val r = 38.dp.toPx()
+                if (s.has(Status.DORMANT)) return@forEachIndexed
                 if (s.has(Status.VANISH)) { // shadow on the ground where it will reappear from
                     drawOval(Color.Black.copy(alpha = 0.25f), Offset(c.x - r * 0.6f, c.y + r * 0.4f), Size(r * 1.2f, r * 0.4f))
                 }
@@ -1143,6 +1154,7 @@ internal fun Arena(fight: FightState, modifier: Modifier, alerts: Boolean = true
                         scaleY = scY
                         transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 1f)
                         alpha = when {
+                            s.has(Status.DORMANT) -> 0f // still buried
                             s.hp <= 0 && f.snap.fighters.size > 2 -> 0.25f // knocked out
                             s.has(Status.VANISH) -> 0f // flying high or underground
                             s.has(Status.EVADE) -> 0.5f // dashing, can't be hit
@@ -1321,6 +1333,7 @@ fun Move.icon(): ImageVector = when (this) {
         Effect.BLINK -> Icons.Rounded.SwapHoriz
         Effect.CLEANSE -> Icons.Rounded.Autorenew
         Effect.ENERGIZE -> Icons.Rounded.BatteryChargingFull
+        Effect.SUMMON -> Icons.Rounded.PersonAdd
         Effect.VANISH -> if (element == Element.GROUND || element == Element.WATER) Icons.Rounded.VerticalAlignBottom
             else Icons.Rounded.Flight
         Effect.WEAKEN -> Icons.Rounded.ArrowDownward
@@ -1455,4 +1468,20 @@ internal fun DrawScope.drawBlast(c: Offset, r: Float, age: Long) {
         val sm = (t - 0.3f) / 0.7f
         drawCircle(Color(0xFF5A5A5A).copy(alpha = 0.35f * (1f - sm)), r * (0.6f + 0.3f * sm), c - Offset(0f, r * 0.3f * sm))
     }
+}
+
+/** Whole seconds left on the between-floor banner, counting down from [Raid.BANNER_MS] once it shows. */
+@Composable
+private fun floorCountdown(floor: Int): Int {
+    val total = (Raid.BANNER_MS / 1000).toInt()
+    val start = remember(floor) { kotlin.time.TimeSource.Monotonic.markNow() }
+    var left by remember(floor) { mutableIntStateOf(total) }
+    LaunchedEffect(floor) {
+        while (left > 0) {
+            val ms = Raid.BANNER_MS - start.elapsedNow().inWholeMilliseconds
+            left = ((ms + 999) / 1000).toInt().coerceIn(0, total)
+            kotlinx.coroutines.delay(100)
+        }
+    }
+    return left
 }

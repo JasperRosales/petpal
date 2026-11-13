@@ -79,7 +79,11 @@ private fun spriteBitmap(stage: Stage, mood: Mood, species: Species, fried: Bool
     val key = if (fried) -1L else ((species.ordinal.toLong() shl 16) or (stage.ordinal.toLong() shl 8) or mood.ordinal.toLong()) or
         (if (bone) 1L shl 40 else 0L)
     return spriteCache.getOrPut(key) {
-        val grid = if (fried) PetArt.friedFish() else PetArt.draw(species, stage, mood)
+        val grid = when {
+            fried -> PetArt.friedFish()
+            bone -> PetArt.SKELETON
+            else -> PetArt.draw(species, stage, mood)
+        }
         val palette = when {
             fried -> FRIED_PALETTE
             bone -> BONE_PALETTE
@@ -846,6 +850,30 @@ internal object PetArt {
             chars.concatToString()
         }
     }
+
+    /** Raid skeleton: skull with hollow eyes, ribcage, bony arms and legs. */
+    val SKELETON = listOf(
+        "....................",
+        "......oooooooo......",
+        ".....obbbbbbbbo.....",
+        "....obbbbbbbbbbo....",
+        "....obeebbbbeebo....",
+        "....oeeebbbbeeeo....",
+        "....obbbbeebbbbo....",
+        ".....obbbbbbbbo.....",
+        ".....obebeebebo.....",
+        "......oooooooo......",
+        "........obbo........",
+        "...oooooobboooooo...",
+        "..obbbbbobbobbbbbo..",
+        "..ob.oooobboooo.bo..",
+        "..ob.obbbbbbbbo.bo..",
+        "..ob..ooobbooo..bo..",
+        "..ob.obbbbbbbbo.bo..",
+        "..oo..oobbbboo..oo..",
+        "......obboobbo......",
+        "......ob....bo......",
+    )
 
     /** Fried Tilapia: crispy golden fish with an X eye, still steaming. */
     fun friedFish(): List<String> {

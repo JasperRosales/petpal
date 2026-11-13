@@ -42,7 +42,7 @@ started with only the host in it. Solo floors 1–4 have one skeleton each.
 
 | Floor | Encounter | Enemies |
 |---|---|---|
-| 1 | Skeleton pack | one skeleton per raider who started the raid |
+| 1 | Skeleton pack | one skeleton per raider who started the raid, plus as many buried ones |
 | 2 | Skeleton pack | same |
 | 3 | Skeleton pack | same |
 | 4 | Skeleton pack | same |
@@ -60,8 +60,8 @@ the dungeon harder instead of easier.
 ### Floors 1–4: skeletons
 
 Skeletons are raid-only combatants, **not a discoverable species**: they have no dex entry, no
-quiz profile, no passive, and can never be unlocked. They are drawn as a bone-white variant of
-the generic pet body.
+quiz profile, no passive, and can never be unlocked. They are drawn as a pixel skeleton:
+skull with hollow eyes, ribcage, bony arms and legs.
 
 | Floor | Level | HP each | Damage |
 |---|---|---|---|
@@ -70,9 +70,13 @@ the generic pet body.
 | 3 | 28 | 180 | 1.0× |
 | 4 | 32 | 210 | 1.05× |
 
-- Type: Normal. Fixed loadout of four existing moves: Bone Rush, Headbutt, Guard, Glare.
-- No passives, no unique, no energy bar for specials.
-- They spawn as one enemy team, all at once. Clear every skeleton to open the next floor.
+- Type: Normal. Fixed loadout: Bone Rush, Headbutt, Guard, Glare, plus their own unique **Raise Dead**.
+- No passives. They gain 4 energy per second on their own; Raise Dead costs 40 and pulls one of the
+  floor's **buried skeletons** out of the ground at full HP next to the caster.
+- Each skeleton floor buries one extra skeleton per raider, so a pack can at most double in size.
+  Buried skeletons are hidden and untargetable until raised.
+- Every enemy is CPU-controlled and fights back. Clear every standing skeleton (buried ones don't count)
+  to open the next floor.
 - Because they are Normal-type and numerous, area moves (cones, beams, explosions) are the
   intended answer — this is the floor set that teaches parties to fight groups.
 

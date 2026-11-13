@@ -47,6 +47,7 @@ enum class Effect(val label: String, val self: Boolean = false) {
     ALPHA("rage + haste + heal", true),
     CITADEL("guard + harden + heal", true),
     SMOKE("smoke cloud + back off", true), // leaves a cloud that slows enemies near it, then dashes away
+    SUMMON("summon", true),     // raises a dormant teammate (raid skeletons)
 }
 
 /**
@@ -577,6 +578,9 @@ enum class Move(
     SHRIMP_SNACK("Shrimp Snack", U, Element.WATER, 0, 0, 0.00f, 0, 300, 200, Effect.HEAL),
     SUNSET_DIVE("Sunset Dive", U, Element.FLYING, 0, 33, 0.50f, 0, 800, 300, Effect.VANISH, element2 = Element.WATER),
     FLAMINGO_WALTZ("Flamingo Waltz", U, Element.FLYING, 0, 0, 0.00f, 0, 400, 200, Effect.BATTLE_CRY),
+
+    // Raid-only: skeletons raise another skeleton from the ground. Not owned by any species.
+    RAISE_DEAD("Raise Dead", U, Element.NORMAL, 0, 0, 0.00f, 0, 600, 250, Effect.SUMMON),
     ;
 
     /** Buffs target the user; everything else (including 0-damage debuffs) targets the opponent. */
@@ -597,6 +601,7 @@ enum class Move(
         get() = when {
             category != MoveCategory.UNIQUE -> 0
             effect == Effect.TRAP -> BattleRules.TRAP_ENERGY
+            effect == Effect.SUMMON -> BattleRules.SUMMON_ENERGY
             else -> BattleRules.MAX_ENERGY
         }
 
@@ -619,6 +624,8 @@ object BattleRules {
     const val MAX_ENERGY = 100
     /** Trap uniques cost half a bar. */
     const val TRAP_ENERGY = 50
+    /** Raise Dead (raid skeletons). */
+    const val SUMMON_ENERGY = 40
 }
 data class MoveUnlock(val move: Move, val level: Int)
 

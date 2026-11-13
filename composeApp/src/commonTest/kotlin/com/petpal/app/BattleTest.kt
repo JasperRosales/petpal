@@ -98,7 +98,7 @@ class BattleTest {
         assertTrue(Move.entries.size >= 100)
         val uniques = Species.entries.flatMap { SpeciesKit.allUniques(it) }
         assertEquals(uniques.size, uniques.toSet().size) // no unique is shared
-        assertEquals(uniques.toSet(), Move.entries.filter { it.category == MoveCategory.UNIQUE }.toSet())
+        assertEquals(uniques.toSet(), Move.entries.filter { it.category == MoveCategory.UNIQUE }.toSet() - Move.RAISE_DEAD) // Raise Dead is raid-only
         Species.entries.forEach { s ->
             val set = SpeciesKit.learnset(s).map { it.move }
             assertEquals(SpeciesKit.STARTERS, SpeciesKit.learnset(s).count { it.level <= 1 }, s.name)

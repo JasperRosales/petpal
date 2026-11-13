@@ -4,10 +4,12 @@ import com.petpal.app.domain.battle.CpuOpponent
 import com.petpal.app.domain.battle.FighterInfo
 import com.petpal.app.domain.model.Species
 import com.petpal.app.domain.model.Stage
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.plus
 import kotlin.random.Random
 
-/** Limited-time boss fight and the free pet on the 1st of every month. */
+/** Limited-time boss fight and the free pet on the last day of every month. */
 object Events {
     /** One-time boss: beat it once before [BOSS_ENDS] for a random pet. */
     const val BOSS_KEY = "boss:2026-11"
@@ -23,7 +25,7 @@ object Events {
         return CpuOpponent.random(template, rng, prefix = "Boss").copy(bonusHp = BOSS_BONUS_HP)
     }
 
-    /** The monthly gift for the leaderboard #1 can only be claimed on the 1st. */
-    fun monthlyOpen(today: LocalDate) = today.dayOfMonth == 1
+    /** The monthly gift for the leaderboard #1 can only be claimed on the last day of the month. */
+    fun monthlyOpen(today: LocalDate) = today.plus(1, DateTimeUnit.DAY).dayOfMonth == 1
     fun monthlyKey(today: LocalDate) = "monthly:${today.year}-${today.monthNumber.toString().padStart(2, '0')}"
 }

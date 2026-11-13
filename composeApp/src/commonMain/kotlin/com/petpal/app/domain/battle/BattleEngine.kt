@@ -34,6 +34,8 @@ data class FighterInfo(
     val maxHpOverride: Int = 0,
     /** HP to start the floor with (raids carry damage); -1 = full. Local only. */
     val startHp: Int = -1,
+    /** Starts hidden and out of the fight until a teammate summons it (raid skeletons). Local only. */
+    val reserve: Boolean = false,
 ) {
     val passive get() = if (variant == FighterVariant.SKELETON) Passive.NEUTRAL else SpeciesKit.passive(species, stage)
     /** Learned moves the species can really use at this level, plus the stage's unique. */
@@ -93,6 +95,8 @@ object Status {
     const val SHIELD = 16384
     const val MARKED = 32768
     const val FRIED = 65536
+    /** Not summoned yet: hidden, untargetable, not part of the fight. */
+    const val DORMANT = 131072
 }
 
 /** Snares laid by TRAP moves: arm after a moment, then root and hurt the first enemy to step on one. */
@@ -115,6 +119,8 @@ object Mechanics {
     const val CHAIN_REACH = 0.35f
     /** Weakened pets deal this much of their damage. */
     const val WEAKEN_SCALE = 0.65f
+    /** Energy per second raid skeletons gain on their own (Raise Dead costs 40). */
+    const val SKELETON_ENERGY_PER_SEC = 4f
     /** Paralyzed pets freeze in place for [PARALYZE_TWITCH_MS] out of every [PARALYZE_TWITCH_EVERY]. */
     const val PARALYZE_TWITCH_EVERY = 1000L
     const val PARALYZE_TWITCH_MS = 220L
@@ -210,7 +216,8 @@ class BattleEngine(
 
     private inner class Fighter(val info: FighterInfo, var x: Float, var y: Float) {
         val maxHp = BattleStats.maxHp(info)
-        var hp = (if (info.startHp >= 0) info.startHp else maxHp).coerceIn(0, maxHp).toFloat()
+        var dormant = info.reserve
+        var hp = (if (dormant) 0 else if (info.startHp >= 0) info.startHp else maxHp).coerceIn(0, maxHp).toFloat()
         var tx = x; var ty = y
         var nextWanderAt = 0L
         var action: Move? = null
@@ -294,6 +301,7 @@ class BattleEngine(
     }
 
     private fun alive(i: Int) = f[i].hp > 0f
+    private fun dormantMate(i: Int) = f.indices.firstOrNull { it != i && teams[it] == teams[i] && f[it].dormant }
     fun isDown(i: Int) = !alive(i)
 
     /** Nearest standing enemy of [i] (falls back to any enemy once they're all down). */
@@ -309,12 +317,15 @@ class BattleEngine(
 
     fun distance(i: Int) = targetOf(i).let { hypot(f[i].x - f[it].x, f[i].y - f[it].y) }
     fun hpFraction(i: Int) = f[i].hp / f[i].maxHp
+    /** Damage multiplier [m] gets from [i]'s current target's passive (resistances). */
+    fun effectiveness(i: Int, m: Move) = f[targetOf(i)].passive.resist(m)
 
     fun isReady(i: Int, m: Move, now: Long): Boolean {
         val me = f[i]
         return !ended && alive(i) && (demo || m in me.info.loadout) && now >= me.busyUntil && now >= me.stunUntil &&
             now >= me.readyAt[m.ordinal] && me.projectile == null &&
-            (m.category != MoveCategory.UNIQUE || me.energy >= m.energyCost)
+            (m.category != MoveCategory.UNIQUE || me.energy >= m.energyCost) &&
+            (m.effect != Effect.SUMMON || dormantMate(i) != null)
     }
 
     fun canEvade(i: Int, now: Long): Boolean {
@@ -448,6 +459,8 @@ class BattleEngine(
                 me.hp = minOf(me.maxHp.toFloat(), me.hp + regen * dt)
             }
             if (me.fried) me.hp = (minOf(me.hp, Fried.HP) - Fried.DECAY_PER_SEC * dt).coerceAtLeast(0f)
+            // Raid skeletons slowly gather dark energy, so they keep raising the dead all floor long.
+            if (me.info.variant == FighterVariant.SKELETON && me.hp > 0) me.energy = minOf(BattleRules.MAX_ENERGY.toFloat(), me.energy + Mechanics.SKELETON_ENERGY_PER_SEC * dt)
             if (now >= me.shieldUntil) me.shield = 0f
             move(me, opp, now, dt)
         }
@@ -604,6 +617,17 @@ class BattleEngine(
                 me.burnUntil = 0; me.slowUntil = 0; me.rootUntil = 0
                 me.weakenUntil = 0; me.paralyzeUntil = 0; me.leechUntil = 0; me.markUntil = 0
                 heal(0.10f)
+            }
+            Effect.SUMMON -> dormantMate(f.indexOf(me))?.let { k ->
+                val s = f[k]
+                s.dormant = false
+                s.knockedOut = false
+                s.hp = s.maxHp.toFloat()
+                s.x = (me.x - me.facing * 0.1f).coerceIn(0.05f, ARENA_W - 0.05f)
+                s.y = (me.y + if (me.y < ARENA_H / 2) 0.1f else -0.1f).coerceIn(0.05f, ARENA_H - 0.05f)
+                s.tx = s.x; s.ty = s.y
+                s.busyUntil = now + 400 // climbing out of the ground
+                events += "$name raises ${s.info.name}!"
             }
             Effect.ENERGIZE -> {
                 me.energy = minOf(BattleRules.MAX_ENERGY.toFloat(), me.energy + 50f)
@@ -917,6 +941,7 @@ class BattleEngine(
             if (me.shield > 0f && now < me.shieldUntil) status = status or Status.SHIELD
             if (now < me.markUntil) status = status or Status.MARKED
             if (me.fried) status = status or Status.FRIED
+            if (me.dormant) status = status or Status.DORMANT
             FighterSnap(
                 x = me.x, y = me.y,
                 hp = kotlin.math.ceil(me.hp).toInt(), maxHp = me.maxHp,
@@ -944,25 +969,28 @@ object BattleBot {
     /** Back off from incoming attacks now and then, more often when hurt. */
     fun shouldEvade(engine: BattleEngine, me: Int, now: Long, rng: Random): Boolean =
         engine.canEvade(me, now) && engine.threatened(me, now) &&
-            rng.nextFloat() < if (engine.hpFraction(me) < 0.4f) 0.12f else 0.06f
+            rng.nextFloat() < if (engine.hpFraction(me) < 0.4f) 0.35f else 0.22f
 
     fun pick(engine: BattleEngine, me: Int, now: Long, rng: Random): Move? {
-        if (rng.nextFloat() > 0.06f) return null // think roughly 1x/second at 20 ticks/s
+        if (rng.nextFloat() > 0.2f) return null // think roughly 4x/second at 20 ticks/s
         val info = engine.infos[me]
         val ready = info.loadout.filter { engine.isReady(me, it, now) }
         val hp = engine.hpFraction(me)
+        ready.firstOrNull { it.effect == Effect.SUMMON && rng.nextFloat() < 0.6f }?.let { return it }
         ready.firstOrNull { it.effect == Effect.HEAL && hp < 0.45f }?.let { return it }
         ready.firstOrNull { it.effect in BIG_HEALS && hp < 0.4f }?.let { return it }
         ready.firstOrNull { it.effect == Effect.AID && hp < 0.6f }?.let { return it }
-        ready.firstOrNull { it.effect in BUFFS && rng.nextFloat() < 0.25f }?.let { return it }
+        ready.firstOrNull { it.effect in BUFFS && rng.nextFloat() < 0.4f }?.let { return it }
         val d = engine.distance(me)
         ready.firstOrNull { it.effect == Effect.SMOKE && d < 0.25f && rng.nextFloat() < 0.3f }?.let { return it }
         ready.firstOrNull { it.effect == Effect.TRAP && d <= BattleStats.range(info, it) && rng.nextFloat() < 0.3f }?.let { return it }
         ready.firstOrNull { it.effect == Effect.COUNTER && d < 0.3f && rng.nextFloat() < 0.2f }?.let { return it }
         ready.firstOrNull { it.effect == Effect.BLINK && hp < 0.3f && d < 0.25f }?.let { return it }
-        ready.firstOrNull { !it.isBuff && it.damage == 0 && d <= BattleStats.range(info, it) * 0.9f && rng.nextFloat() < 0.3f }
+        ready.firstOrNull { !it.isBuff && it.damage == 0 && d <= BattleStats.range(info, it) * 0.9f && rng.nextFloat() < 0.5f }
             ?.let { return it }
-        return ready.filter { !it.isBuff && d <= BattleStats.range(info, it) * 0.9f }.maxByOrNull { it.damage }
+        // Uniques and big hits first: expected damage with effectiveness on the current target.
+        return ready.filter { !it.isBuff && d <= BattleStats.range(info, it) * 0.9f }
+            .maxByOrNull { it.damage * (if (it.category == MoveCategory.UNIQUE) 1.5f else 1f) * engine.effectiveness(me, it) }
             ?: Move.GUARD.takeIf { it in ready && d < 0.3f && rng.nextFloat() < 0.3f }
     }
 }

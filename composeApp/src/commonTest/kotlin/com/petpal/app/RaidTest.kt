@@ -11,7 +11,10 @@ class RaidTest {
             val plan = Raid.plan(party, Random(party))
             assertEquals(Raid.FLOORS, plan.floors.size)
             assertEquals((1..10).toList(), plan.floors.map { it.number })
-            plan.floors.take(4).forEach { assertEquals(party, it.enemies.size) }
+            plan.floors.take(4).forEach { fl ->
+                assertEquals(party, fl.enemies.count { !it.reserve })
+                assertEquals(party, fl.enemies.count { it.reserve })
+            }
             plan.floors.drop(4).forEach { assertEquals(1, it.enemies.size) }
         }
     }
@@ -104,7 +107,7 @@ class RaidTest {
         plan.floors.forEach { assertEquals(Raid.title(it.number), it.title) }
         assertEquals("Raid boss", Raid.title(10))
         assertEquals("Wild pet Lv 42", Raid.title(7))
-        assertEquals(listOf("Skeleton 1", "Skeleton 2", "Skeleton 3"), plan.floors[0].enemies.map { it.name })
+        assertEquals(listOf("Skeleton 1", "Skeleton 2", "Skeleton 3"), plan.floors[0].enemies.take(3).map { it.name })
     }
 
     @Test fun failReasonTellsWipeFromTimeout() {
@@ -122,5 +125,26 @@ class OnlineBotTest {
         assertEquals(50, bot.level)
         assertEquals(Stage.ADULT, bot.stage)
         assertEquals(BattleStats.maxHp(bot.copy(maxHpOverride = 0)) * 2, BattleStats.maxHp(bot))
+    }
+}
+
+class RaiseDeadTest {
+    @Test fun skeletonsRaiseABuriedSkeleton() {
+        val raider = FighterInfo("Up", com.petpal.app.domain.model.Species.PUP, Stage.TEEN, 40)
+        val a = Raid.skeleton(1, 1, 2)
+        val buried = Raid.skeleton(1, 2, 2).copy(reserve = true)
+        val e = BattleEngine(listOf(raider, a, buried), teamIds = listOf(0, 1, 1))
+        val snap0 = e.snapshot(0)
+        assertTrue(snap0.fighters[2].has(Status.DORMANT))
+        assertTrue(e.isDown(2))
+        assertFalse(e.isReady(1, Move.RAISE_DEAD, 0)) // no energy yet
+        var t = 0L
+        while (!e.isReady(1, Move.RAISE_DEAD, t) && t < 30_000) { t += 50; e.tick(t) }
+        assertTrue(e.isReady(1, Move.RAISE_DEAD, t), "skeleton never charged Raise Dead")
+        e.command(1, Move.RAISE_DEAD, t)
+        repeat(30) { t += 50; e.tick(t) }
+        assertFalse(e.isDown(2))
+        assertFalse(e.snapshot(t).fighters[2].has(Status.DORMANT))
+        assertFalse(e.isReady(1, Move.RAISE_DEAD, t + 60_000)) // nobody left to raise
     }
 }

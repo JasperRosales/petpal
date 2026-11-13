@@ -136,6 +136,7 @@ internal fun whatItDoes(me: FighterInfo, m: Move): String {
         Effect.BLINK -> "teleports to the far side of the arena"
         Effect.CLEANSE -> "clears your debuffs and " + heal(0.10f)
         Effect.ENERGIZE -> "+50 energy"
+        Effect.SUMMON -> "raises a buried teammate from the ground at full HP"
         Effect.BATTLE_CRY -> "+30% damage and +50% speed for 5s"
         Effect.PACK_CALL -> "+30% damage for 6s and " + heal(0.25f)
         Effect.FORTRESS -> "take 60% less damage for 3s and " + heal(0.15f)
