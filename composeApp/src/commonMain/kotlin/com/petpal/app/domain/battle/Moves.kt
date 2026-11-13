@@ -596,6 +596,13 @@ enum class Move(
     val effectLabel: String
         get() = if (alsoLunges) "${Effect.LUNGE.label} + ${effect.label}" else effect.label
 
+    /**
+     * Cooldown actually used in battle. Pure buffs and debuffs (no damage) wait [BattleRules.STATUS_COOLDOWN_SCALE]
+     * times longer than listed so they can't be spammed. Energy moves (Focus Energy, Charge) keep their 12s.
+     */
+    val cooldown: Long
+        get() = if (damage == 0 && category != MoveCategory.UNIQUE && effect != Effect.ENERGIZE) (cooldownMs * BattleRules.STATUS_COOLDOWN_SCALE).toLong() else cooldownMs.toLong()
+
     /** Energy a unique needs (and spends). Trap uniques only need half a bar. */
     val energyCost: Int
         get() = when {
@@ -609,7 +616,7 @@ enum class Move(
         append(typeLabel).append(" · ")
         append(when { damage > 0 -> "$damage dmg"; isBuff -> "Buff"; else -> "Debuff" })
         if (effect != Effect.NONE && effect != Effect.GUARD) append(", ").append(effectLabel)
-        if (category == MoveCategory.UNIQUE) append(if (energyCost < BattleRules.MAX_ENERGY) ", $energyCost energy" else ", full energy") else append(", ${cooldownMs / 1000.0}s cd")
+        if (category == MoveCategory.UNIQUE) append(if (energyCost < BattleRules.MAX_ENERGY) ", $energyCost energy" else ", full energy") else append(", ${cooldown / 1000.0}s cd")
     }
 }
 
@@ -624,6 +631,8 @@ object BattleRules {
     const val MAX_ENERGY = 100
     /** Trap uniques cost half a bar. */
     const val TRAP_ENERGY = 50
+    /** Buff/debuff moves (no damage) cool down this much longer. */
+    const val STATUS_COOLDOWN_SCALE = 1.6f
     /** Raise Dead (raid skeletons). */
     const val SUMMON_ENERGY = 40
 }

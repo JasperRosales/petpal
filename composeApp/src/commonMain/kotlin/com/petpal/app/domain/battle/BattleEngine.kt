@@ -69,7 +69,7 @@ object BattleStats {
     fun range(f: FighterInfo, m: Move) = m.range * (1 + f.passive[Trait.RANGE])
 
     fun cooldown(f: FighterInfo, m: Move, terrain: Terrain = Terrain.ARENA): Long {
-        var cd = m.cooldownMs * terrain.cooldownScale * (1 - f.passive[Trait.COOLDOWN])
+        var cd = m.cooldown * terrain.cooldownScale * (1 - f.passive[Trait.COOLDOWN])
         if (m.effect == Effect.VANISH) cd *= 1 - f.passive[Trait.VANISH_CD]
         return cd.toLong()
     }
@@ -121,6 +121,8 @@ object Mechanics {
     const val WEAKEN_SCALE = 0.65f
     /** Energy per second raid skeletons gain on their own (Raise Dead costs 40). */
     const val SKELETON_ENERGY_PER_SEC = 4f
+    /** Raised skeletons climb out with this fraction of their max HP. */
+    const val RAISED_HP = 0.5f
     /** Paralyzed pets freeze in place for [PARALYZE_TWITCH_MS] out of every [PARALYZE_TWITCH_EVERY]. */
     const val PARALYZE_TWITCH_EVERY = 1000L
     const val PARALYZE_TWITCH_MS = 220L
@@ -622,7 +624,7 @@ class BattleEngine(
                 val s = f[k]
                 s.dormant = false
                 s.knockedOut = false
-                s.hp = s.maxHp.toFloat()
+                s.hp = s.maxHp * Mechanics.RAISED_HP
                 s.x = (me.x - me.facing * 0.1f).coerceIn(0.05f, ARENA_W - 0.05f)
                 s.y = (me.y + if (me.y < ARENA_H / 2) 0.1f else -0.1f).coerceIn(0.05f, ARENA_H - 0.05f)
                 s.tx = s.x; s.ty = s.y

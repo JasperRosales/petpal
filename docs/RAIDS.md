@@ -72,7 +72,7 @@ skull with hollow eyes, ribcage, bony arms and legs.
 
 - Type: Normal. Fixed loadout: Bone Rush, Headbutt, Guard, Glare, plus their own unique **Raise Dead**.
 - No passives. They gain 4 energy per second on their own; Raise Dead costs 40 and pulls one of the
-  floor's **buried skeletons** out of the ground at full HP next to the caster.
+  floor's **buried skeletons** out of the ground at half HP next to the caster.
 - Each skeleton floor buries one extra skeleton per raider, so a pack can at most double in size.
   Buried skeletons are hidden and untargetable until raised.
 - Every enemy is CPU-controlled and fights back. Clear every standing skeleton (buried ones don't count)

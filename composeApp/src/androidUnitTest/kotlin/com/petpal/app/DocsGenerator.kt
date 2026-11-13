@@ -21,7 +21,7 @@ class DocsGenerator {
 
     private fun Move.row(level: String = this.level.toString()) =
         "| $label | ${element.label} | ${category.label} | $level | ${if (damage == 0) "-" else damage} | " +
-            "${if (range == 0f) "self" else "%.2f".format(range)} | ${cooldownMs / 1000.0}s | ${windupMs}ms | " +
+            "${if (range == 0f) "self" else "%.2f".format(range)} | ${cooldown / 1000.0}s | ${windupMs}ms | " +
             "${shape.name.lowercase()} | ${effectLabel.ifEmpty { "-" }} |"
 
     private val header = "| Move | Type | Category | Lv | Dmg | Range | Cooldown | Wind-up | Hitbox | Effect |\n" +
@@ -41,6 +41,7 @@ class DocsGenerator {
         appendLine("${Move.entries.size} moves. Ranges are in arena widths (the arena is 1.0 wide and 1.2 tall).")
         appendLine("Normal moves have short cooldowns and Specials long ones. Uniques are species signatures in")
         appendLine("slot 5 with no cooldown: they need a full energy bar, which only fills by dealing and taking hits. Trap uniques need only ${BattleRules.TRAP_ENERGY} energy.")
+        appendLine("Buff and debuff moves (no damage) already show their longer battle cooldown: ${BattleRules.STATUS_COOLDOWN_SCALE}x the base (energy moves excepted).")
         appendLine()
         appendLine("## Effects")
         appendLine()
@@ -148,7 +149,7 @@ class DocsGenerator {
             Effect.BLINK to "Teleports to the far side of the arena",
             Effect.CLEANSE to "Clears debuffs and heals 10%",
             Effect.ENERGIZE to "+50 energy",
-            Effect.SUMMON to "Raises a buried teammate at full HP (raid skeletons only)",
+            Effect.SUMMON to "Raises a buried teammate at half HP (raid skeletons only)",
             Effect.BATTLE_CRY to "Rage + haste for 5s",
             Effect.PACK_CALL to "Rage for 6s and heals 25%",
             Effect.FORTRESS to "Guard for 3s and heals 15%",

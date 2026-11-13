@@ -145,6 +145,17 @@ class RaiseDeadTest {
         repeat(30) { t += 50; e.tick(t) }
         assertFalse(e.isDown(2))
         assertFalse(e.snapshot(t).fighters[2].has(Status.DORMANT))
+        e.snapshot(t).fighters[2].let { assertEquals(it.maxHp / 2, it.hp) } // raised at half HP
         assertFalse(e.isReady(1, Move.RAISE_DEAD, t + 60_000)) // nobody left to raise
+    }
+}
+
+class StatusCooldownTest {
+    @Test fun buffsAndDebuffsCoolDownLonger() {
+        assertEquals((Move.GROWL.cooldownMs * BattleRules.STATUS_COOLDOWN_SCALE).toLong(), Move.GROWL.cooldown)
+        val hit = Move.entries.first { it.damage > 0 && it.category != MoveCategory.UNIQUE }
+        assertEquals(hit.cooldownMs, hit.cooldown)
+        assertEquals(12_000L, Move.FOCUS_ENERGY.cooldown)
+        assertEquals(12_000L, Move.CHARGE.cooldown)
     }
 }

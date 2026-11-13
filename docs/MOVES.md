@@ -5,6 +5,7 @@ _Generated from the game data by `DocsGenerator`. Don't edit by hand._
 466 moves. Ranges are in arena widths (the arena is 1.0 wide and 1.2 tall).
 Normal moves have short cooldowns and Specials long ones. Uniques are species signatures in
 slot 5 with no cooldown: they need a full energy bar, which only fills by dealing and taking hits. Trap uniques need only 50 energy.
+Buff and debuff moves (no damage) already show their longer battle cooldown: 1.6x the base (energy moves excepted).
 
 ## Effects
 
@@ -45,7 +46,7 @@ slot 5 with no cooldown: they need a full energy bar, which only fills by dealin
 | teleport | Teleports to the far side of the arena |
 | cleanse | Clears debuffs and heals 10% |
 | energy +50 | +50 energy |
-| summon | Raises a buried teammate at full HP (raid skeletons only) |
+| summon | Raises a buried teammate at half HP (raid skeletons only) |
 | rage + haste | Rage + haste for 5s |
 | rage + heal | Rage for 6s and heals 25% |
 | guard + heal | Guard for 3s and heals 15% |
@@ -58,41 +59,41 @@ slot 5 with no cooldown: they need a full energy bar, which only fills by dealin
 | Move | Type | Category | Lv | Dmg | Range | Cooldown | Wind-up | Hitbox | Effect |
 |---|---|---|---|---|---|---|---|---|---|
 | Tackle | Normal | Normal | 1 | 8 | 0.24 | 1.3s | 250ms | melee | lunge |
-| Guard | Normal | Normal | 1 | - | self | 3.5s | 0ms | self | guard |
-| Growl | Normal | Normal | 2 | - | 0.45 | 6.0s | 250ms | cone | weaken |
+| Guard | Normal | Normal | 1 | - | self | 5.6s | 0ms | self | guard |
+| Growl | Normal | Normal | 2 | - | 0.45 | 9.6s | 250ms | cone | weaken |
 | Punch | Normal | Normal | 3 | 6 | 0.16 | 0.7s | 150ms | melee | - |
 | Claw Swipe | Normal | Normal | 4 | 7 | 0.18 | 0.85s | 150ms | melee | - |
 | Quick Attack | Normal | Normal | 5 | 6 | 0.30 | 1.0s | 100ms | melee | lunge |
 | Bite | Normal | Normal | 6 | 8 | 0.15 | 1.2s | 200ms | melee | drain |
 | Rapid Spin | Normal | Normal | 7 | 6 | 0.20 | 2.5s | 200ms | melee | knockback |
-| Howl | Normal | Normal | 8 | - | self | 9.0s | 300ms | self | rage |
+| Howl | Normal | Normal | 8 | - | self | 14.4s | 300ms | self | rage |
 | Fury Swipes | Normal | Normal | 9 | 7 | 0.20 | 1.8s | 180ms | melee | 2 stepping slashes |
 | Pounce | Normal | Normal | 11 | 9 | 0.32 | 1.8s | 300ms | melee | lunge |
 | Quick Jab | Normal | Normal | 12 | 5 | 0.17 | 0.5s | 100ms | melee | - |
-| Distract | Normal | Normal | 13 | - | 0.45 | 8.0s | 250ms | cone | disrupt |
+| Distract | Normal | Normal | 13 | - | 0.45 | 12.8s | 250ms | cone | disrupt |
 | Headbutt | Normal | Normal | 14 | 9 | 0.18 | 2.4s | 300ms | melee | stun |
-| Glare | Normal | Normal | 15 | - | 0.50 | 7.0s | 250ms | cone | paralyze |
-| Lock-On | Normal | Normal | 16 | - | 0.50 | 7.0s | 250ms | cone | mark |
-| Zoomies | Normal | Normal | 17 | - | self | 9.0s | 200ms | self | haste |
-| Counter | Normal | Normal | 18 | - | self | 7.0s | 100ms | self | counter |
+| Glare | Normal | Normal | 15 | - | 0.50 | 11.2s | 250ms | cone | paralyze |
+| Lock-On | Normal | Normal | 16 | - | 0.50 | 11.2s | 250ms | cone | mark |
+| Zoomies | Normal | Normal | 17 | - | self | 14.4s | 200ms | self | haste |
+| Counter | Normal | Normal | 18 | - | self | 11.2s | 100ms | self | counter |
 | Switcheroo | Normal | Normal | 19 | 5 | 0.45 | 6.0s | 200ms | projectile | swap places |
-| Heal | Normal | Normal | 20 | - | self | 8.0s | 400ms | self | heal |
-| Cheer | Normal | Normal | 21 | - | self | 9.0s | 300ms | self | team heal |
+| Heal | Normal | Normal | 20 | - | self | 12.8s | 400ms | self | heal |
+| Cheer | Normal | Normal | 21 | - | self | 14.4s | 300ms | self | team heal |
 | Double-Edge | Normal | Normal | 22 | 15 | 0.22 | 2.4s | 300ms | melee | recoil |
 | Body Slam | Normal | Normal | 23 | 12 | 0.20 | 2.6s | 350ms | melee | lunge + knockback |
 | Sucker Punch | Normal | Normal | 24 | 10 | 0.25 | 2.2s | 100ms | melee | lunge |
-| Harden | Normal | Normal | 25 | - | self | 9.0s | 300ms | self | harden |
-| Barrier | Normal | Normal | 26 | - | self | 10.0s | 250ms | self | shield |
-| Teleport | Normal | Normal | 27 | - | self | 6.0s | 150ms | self | teleport |
+| Harden | Normal | Normal | 25 | - | self | 14.4s | 300ms | self | harden |
+| Barrier | Normal | Normal | 26 | - | self | 16.0s | 250ms | self | shield |
+| Teleport | Normal | Normal | 27 | - | self | 9.6s | 150ms | self | teleport |
 | Double Kick | Normal | Normal | 28 | 5 | 0.22 | 1.6s | 200ms | melee | hits 2-4x |
 | Focus Energy | Normal | Normal | 30 | - | self | 12.0s | 400ms | self | energy +50 |
 | Finishing Blow | Normal | Normal | 31 | 10 | 0.20 | 2.6s | 250ms | melee | execute |
-| Refresh | Normal | Normal | 33 | - | self | 9.0s | 300ms | self | cleanse |
-| Battle Cry | Normal | Special | 35 | - | self | 18.0s | 300ms | self | rage + haste |
+| Refresh | Normal | Normal | 33 | - | self | 14.4s | 300ms | self | cleanse |
+| Battle Cry | Normal | Special | 35 | - | self | 28.8s | 300ms | self | rage + haste |
 | Hyper Fang | Normal | Special | 38 | 16 | 0.20 | 10.5s | 300ms | melee | drain |
-| Second Wind | Normal | Normal | 42 | - | self | 6.5s | 300ms | self | heal |
+| Second Wind | Normal | Normal | 42 | - | self | 10.4s | 300ms | self | heal |
 | Giga Impact | Normal | Special | 45 | 22 | 0.25 | 13.5s | 600ms | melee | knockback |
-| Last Stand | Normal | Special | 50 | - | self | 18.0s | 200ms | self | guard + heal |
+| Last Stand | Normal | Special | 50 | - | self | 28.8s | 200ms | self | guard + heal |
 | Hyper Beam | Normal | Special | 52 | 30 | 0.60 | 13.5s | 700ms | beam | recharge |
 | Mega Punch | Normal | Special | 55 | 20 | 0.18 | 12.0s | 450ms | melee | stun |
 
@@ -101,16 +102,16 @@ slot 5 with no cooldown: they need a full energy bar, which only fills by dealin
 | Move | Type | Category | Lv | Dmg | Range | Cooldown | Wind-up | Hitbox | Effect |
 |---|---|---|---|---|---|---|---|---|---|
 | Ember | Fire | Normal | 1 | 6 | 0.40 | 1.8s | 250ms | projectile | burn |
-| Smokescreen | Fire | Normal | 5 | - | self | 7.0s | 150ms | self | smoke cloud + back off |
+| Smokescreen | Fire | Normal | 5 | - | self | 11.2s | 150ms | self | smoke cloud + back off |
 | Fire Fang | Fire | Normal | 8 | 9 | 0.16 | 1.3s | 200ms | melee | burn |
 | Flame Dash | Fire | Normal | 11 | 9 | 0.30 | 1.8s | 300ms | melee | lunge |
 | Incinerate | Fire | Normal | 14 | 8 | 0.35 | 2.0s | 250ms | projectile | steal energy |
-| Heat Up | Fire | Normal | 17 | - | self | 8.0s | 300ms | self | rage |
+| Heat Up | Fire | Normal | 17 | - | self | 12.8s | 300ms | self | rage |
 | Fire Punch | Fire | Normal | 18 | 11 | 0.18 | 2.3s | 200ms | melee | burn |
 | Fire Spin | Fire | Normal | 20 | 6 | 0.35 | 2.6s | 300ms | projectile | root |
 | Flame Wheel | Fire | Normal | 24 | 11 | 0.24 | 2.0s | 300ms | melee | burn |
 | Scorch Mark | Fire | Normal | 26 | 8 | 0.40 | 2.2s | 250ms | projectile | mark |
-| Will-o-Wisp | Fire | Normal | 28 | - | 0.45 | 7.0s | 300ms | cone | weaken |
+| Will-o-Wisp | Fire | Normal | 28 | - | 0.45 | 11.2s | 300ms | cone | weaken |
 | Fire Breath | Fire | Special | 32 | 16 | 0.50 | 12.0s | 450ms | cone | burn |
 | Fireball | Fire | Normal | 36 | 10 | 0.50 | 2.2s | 350ms | projectile | burn |
 | Flare Blitz | Fire | Normal | 40 | 18 | 0.25 | 2.8s | 350ms | melee | recoil |
@@ -125,19 +126,19 @@ slot 5 with no cooldown: they need a full energy bar, which only fills by dealin
 |---|---|---|---|---|---|---|---|---|---|
 | Bubble | Water | Normal | 1 | 6 | 0.45 | 1.6s | 250ms | projectile | slow |
 | Water Gun | Water | Normal | 5 | 7 | 0.45 | 1.4s | 200ms | projectile | - |
-| Withdraw | Water | Normal | 8 | - | self | 9.0s | 300ms | self | harden |
+| Withdraw | Water | Normal | 8 | - | self | 14.4s | 300ms | self | harden |
 | Aqua Jet | Water | Normal | 11 | 7 | 0.32 | 1.1s | 100ms | melee | lunge |
 | Aqua Tail | Water | Normal | 14 | 10 | 0.20 | 1.8s | 250ms | melee | knockback |
-| Rain Dance | Water | Normal | 17 | - | self | 9.0s | 300ms | self | haste |
+| Rain Dance | Water | Normal | 17 | - | self | 14.4s | 300ms | self | haste |
 | Aqua Fist | Water | Normal | 20 | 11 | 0.18 | 2.3s | 200ms | melee | slow |
 | Whirlpool | Water | Normal | 20 | 6 | 0.35 | 2.8s | 300ms | projectile | root |
-| Bubble Shield | Water | Normal | 22 | - | self | 10.0s | 300ms | self | shield |
+| Bubble Shield | Water | Normal | 22 | - | self | 16.0s | 300ms | self | shield |
 | Brine | Water | Normal | 24 | 10 | 0.40 | 2.0s | 300ms | projectile | execute |
 | Scald | Water | Normal | 26 | 10 | 0.45 | 2.2s | 250ms | projectile | burn |
 | Dive | Water | Normal | 28 | 14 | 0.30 | 3.5s | 900ms | melee | vanish |
 | Water Jet | Water | Special | 32 | 14 | 0.55 | 10.5s | 350ms | cone | knockback |
-| Healing Rain | Water | Normal | 34 | - | self | 10.0s | 400ms | self | team heal |
-| Aqua Ring | Water | Normal | 36 | - | self | 9.0s | 300ms | self | cleanse |
+| Healing Rain | Water | Normal | 34 | - | self | 16.0s | 400ms | self | team heal |
+| Aqua Ring | Water | Normal | 36 | - | self | 14.4s | 300ms | self | cleanse |
 | Waterfall | Water | Normal | 40 | 12 | 0.22 | 2.4s | 300ms | melee | stun |
 | Hydro Pump | Water | Special | 46 | 20 | 0.60 | 13.5s | 550ms | cone | slow |
 | Hydro Cannon | Water | Special | 52 | 28 | 0.55 | 13.5s | 600ms | cone | recharge |
@@ -151,16 +152,16 @@ slot 5 with no cooldown: they need a full energy bar, which only fills by dealin
 | Absorb | Grass | Normal | 5 | 6 | 0.35 | 1.4s | 200ms | projectile | drain |
 | Leech Seed | Grass | Normal | 8 | 2 | 0.45 | 7.0s | 300ms | projectile | leech |
 | Razor Leaf | Grass | Normal | 11 | 9 | 0.45 | 1.8s | 250ms | projectile | - |
-| Stun Spore | Grass | Normal | 14 | - | 0.40 | 7.0s | 300ms | cone | paralyze |
-| Growth | Grass | Normal | 17 | - | self | 9.0s | 300ms | self | rage |
-| Spore Cloud | Grass | Normal | 18 | - | 0.45 | 8.0s | 300ms | cone | weaken |
+| Stun Spore | Grass | Normal | 14 | - | 0.40 | 11.2s | 300ms | cone | paralyze |
+| Growth | Grass | Normal | 17 | - | self | 14.4s | 300ms | self | rage |
+| Spore Cloud | Grass | Normal | 18 | - | 0.45 | 12.8s | 300ms | cone | weaken |
 | Bramble Snare | Grass | Normal | 18 | 6 | 0.60 | 7.0s | 300ms | self | trap |
 | Bullet Seed | Grass | Normal | 20 | 4 | 0.40 | 1.9s | 250ms | projectile | hits 2-4x |
 | Seed Bomb | Grass | Normal | 24 | 11 | 0.40 | 2.2s | 300ms | projectile | knockback |
 | Vine Whip | Grass | Normal | 28 | 10 | 0.45 | 2.0s | 300ms | projectile | pull |
-| Synthesis | Grass | Normal | 32 | - | self | 7.5s | 400ms | self | heal |
+| Synthesis | Grass | Normal | 32 | - | self | 12.0s | 400ms | self | heal |
 | Giga Drain | Grass | Normal | 36 | 10 | 0.40 | 2.6s | 350ms | projectile | drain |
-| Sleep Powder | Grass | Normal | 40 | - | 0.40 | 9.0s | 400ms | cone | freeze |
+| Sleep Powder | Grass | Normal | 40 | - | 0.40 | 14.4s | 400ms | cone | freeze |
 | Petal Storm | Grass | Special | 46 | 18 | 0.50 | 12.6s | 450ms | projectile | slow |
 | Frenzy Plant | Grass | Special | 52 | 28 | 0.50 | 13.5s | 600ms | projectile | recharge |
 | Leaf Blade | Grass | Special | 57 | 22 | 0.25 | 12.0s | 350ms | melee | lunge |
@@ -171,17 +172,17 @@ slot 5 with no cooldown: they need a full energy bar, which only fills by dealin
 |---|---|---|---|---|---|---|---|---|---|
 | Powder Snow | Ice | Normal | 1 | 6 | 0.40 | 1.6s | 250ms | projectile | slow |
 | Ice Fang | Ice | Normal | 5 | 9 | 0.16 | 1.3s | 200ms | melee | slow |
-| Mist | Ice | Normal | 8 | - | self | 9.0s | 300ms | self | cleanse |
+| Mist | Ice | Normal | 8 | - | self | 14.4s | 300ms | self | cleanse |
 | Icy Wind | Ice | Normal | 11 | 8 | 0.50 | 1.9s | 300ms | projectile | slow |
 | Icicle Spear | Ice | Normal | 14 | 3 | 0.40 | 1.8s | 250ms | projectile | hits 2-4x |
-| Frost Armor | Ice | Normal | 17 | - | self | 9.0s | 300ms | self | harden |
+| Frost Armor | Ice | Normal | 17 | - | self | 14.4s | 300ms | self | harden |
 | Ice Punch | Ice | Normal | 20 | 11 | 0.18 | 2.3s | 200ms | melee | stun |
 | Frost Breath | Ice | Normal | 24 | 10 | 0.45 | 2.4s | 300ms | projectile | - |
 | Ice Shard | Ice | Special | 28 | 14 | 0.50 | 10.5s | 350ms | cone | slow |
 | Frost Mine | Ice | Normal | 30 | 8 | 0.60 | 7.5s | 300ms | self | trap |
 | Avalanche | Ice | Normal | 32 | 12 | 0.30 | 2.6s | 400ms | projectile | knockback |
 | Hail Storm | Ice | Special | 36 | 15 | 0.60 | 12.0s | 500ms | cone | slow |
-| Mirror Ice | Ice | Normal | 36 | - | self | 8.0s | 100ms | self | counter |
+| Mirror Ice | Ice | Normal | 36 | - | self | 12.8s | 100ms | self | counter |
 | Freeze Ray | Ice | Normal | 40 | 8 | 0.55 | 5.0s | 400ms | projectile | freeze |
 | Blizzard | Ice | Special | 46 | 19 | 0.60 | 13.5s | 550ms | cone | slow |
 | Glacier Crash | Ice | Special | 52 | 22 | 0.25 | 13.5s | 500ms | melee | stun |
@@ -192,7 +193,7 @@ slot 5 with no cooldown: they need a full energy bar, which only fills by dealin
 | Move | Type | Category | Lv | Dmg | Range | Cooldown | Wind-up | Hitbox | Effect |
 |---|---|---|---|---|---|---|---|---|---|
 | Spark | Electric | Normal | 1 | 7 | 0.20 | 1.0s | 150ms | melee | - |
-| Thunder Wave | Electric | Normal | 5 | - | 0.50 | 7.0s | 250ms | strike | paralyze |
+| Thunder Wave | Electric | Normal | 5 | - | 0.50 | 11.2s | 250ms | strike | paralyze |
 | Thunder Fang | Electric | Normal | 8 | 9 | 0.16 | 2.3s | 200ms | melee | stun |
 | Shock Wave | Electric | Normal | 11 | 8 | 0.50 | 1.8s | 250ms | strike | - |
 | Volt Sap | Electric | Normal | 14 | 6 | 0.30 | 1.8s | 200ms | strike | steal energy |
@@ -219,9 +220,9 @@ slot 5 with no cooldown: they need a full energy bar, which only fills by dealin
 | Air Cutter | Flying | Normal | 5 | 6 | 0.42 | 1.6s | 250ms | projectile | - |
 | Wing Attack | Flying | Normal | 8 | 9 | 0.25 | 1.6s | 200ms | melee | - |
 | Aerial Ace | Flying | Normal | 11 | 8 | 0.30 | 1.5s | 200ms | melee | lunge |
-| Feather Dance | Flying | Normal | 14 | - | 0.45 | 7.0s | 300ms | cone | weaken |
-| Tailwind | Flying | Normal | 17 | - | self | 9.0s | 200ms | self | haste |
-| Roost | Flying | Normal | 20 | - | self | 7.0s | 300ms | self | heal |
+| Feather Dance | Flying | Normal | 14 | - | 0.45 | 11.2s | 300ms | cone | weaken |
+| Tailwind | Flying | Normal | 17 | - | self | 14.4s | 200ms | self | haste |
+| Roost | Flying | Normal | 20 | - | self | 11.2s | 300ms | self | heal |
 | Crosswind | Flying | Normal | 22 | 8 | 0.40 | 3.0s | 250ms | projectile | swap places |
 | Twister | Flying | Normal | 24 | 8 | 0.45 | 2.0s | 300ms | projectile | knockback |
 | Sky Uppercut | Flying | Normal | 26 | 12 | 0.18 | 2.4s | 250ms | melee | knockback |
@@ -239,13 +240,13 @@ slot 5 with no cooldown: they need a full energy bar, which only fills by dealin
 | Move | Type | Category | Lv | Dmg | Range | Cooldown | Wind-up | Hitbox | Effect |
 |---|---|---|---|---|---|---|---|---|---|
 | Mud Slap | Ground | Normal | 1 | 6 | 0.38 | 1.6s | 250ms | projectile | slow |
-| Sand Attack | Ground | Normal | 5 | - | 0.45 | 6.0s | 250ms | cone | weaken |
+| Sand Attack | Ground | Normal | 5 | - | 0.45 | 9.6s | 250ms | cone | weaken |
 | Rock Throw | Ground | Normal | 8 | 8 | 0.42 | 1.7s | 250ms | projectile | - |
 | Sand Tomb | Ground | Normal | 11 | 6 | 0.40 | 2.6s | 300ms | projectile | root |
 | Rock Smash | Ground | Normal | 12 | 9 | 0.17 | 1.8s | 200ms | melee | knockback |
 | Stomp | Ground | Normal | 14 | 10 | 0.20 | 2.4s | 300ms | melee | stun |
 | Mud Bomb | Ground | Normal | 16 | 9 | 0.45 | 2.0s | 300ms | projectile | weaken |
-| Stone Skin | Ground | Normal | 17 | - | self | 9.0s | 300ms | self | harden |
+| Stone Skin | Ground | Normal | 17 | - | self | 14.4s | 300ms | self | harden |
 | Bone Rush | Ground | Normal | 20 | 4 | 0.25 | 1.8s | 200ms | melee | hits 2-4x |
 | Ricochet | Ground | Normal | 21 | 8 | 0.45 | 2.0s | 250ms | projectile | chain |
 | Dig | Ground | Normal | 24 | 15 | 0.30 | 3.5s | 900ms | melee | vanish |
@@ -265,7 +266,7 @@ slot 5 with no cooldown: they need a full energy bar, which only fills by dealin
 | Karate Chop | Fighting | Normal | 1 | 7 | 0.17 | 1.0s | 150ms | melee | - |
 | Comet Punch | Fighting | Normal | 4 | 4 | 0.18 | 1.6s | 150ms | melee | hits 2-4x |
 | Low Kick | Fighting | Normal | 6 | 8 | 0.19 | 1.6s | 200ms | melee | slow |
-| Bulk Up | Fighting | Normal | 10 | - | self | 9.0s | 300ms | self | rage |
+| Bulk Up | Fighting | Normal | 10 | - | self | 14.4s | 300ms | self | rage |
 | Vacuum Wave | Fighting | Normal | 12 | 7 | 0.45 | 1.6s | 100ms | projectile | - |
 | Brick Break | Fighting | Normal | 15 | 11 | 0.17 | 2.0s | 250ms | melee | disrupt |
 | Drain Punch | Fighting | Normal | 22 | 10 | 0.17 | 2.2s | 250ms | melee | drain |
