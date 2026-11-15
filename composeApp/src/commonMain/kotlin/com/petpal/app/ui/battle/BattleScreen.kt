@@ -1,11 +1,13 @@
 package com.petpal.app.ui.battle
 
+import com.petpal.app.ui.components.PixelSmall
+import com.petpal.app.ui.components.pixelPanel
+import com.petpal.app.ui.components.PixelProgress
+import com.petpal.app.ui.components.PixelCard
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.rotate
@@ -16,7 +18,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
+import androidx.compose.material.icons.sharp.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -99,7 +101,7 @@ private fun Lobby(vm: BattleViewModel, message: String?, format: BattleFormat) {
         LinkKind.entries.forEach { kind -> LinkCard(kind, vm) }
         NeuButton(outlined = true,
             onClick = vm::practice,
-            icon = Icons.Rounded.SmartToy,
+            icon = Icons.Sharp.SmartToy,
             text = when (format) {
                 BattleFormat.SOLO -> "Practice vs CPU"
                 BattleFormat.TEAMS -> "3v3 vs CPUs (with CPU partners)"
@@ -118,9 +120,9 @@ private fun Lobby(vm: BattleViewModel, message: String?, format: BattleFormat) {
 
 @Composable
 private fun BossCard(vm: BattleViewModel) {
-    ElevatedCard(
+    PixelCard(
         Modifier.fillMaxWidth(),
-        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+        containerColor = MaterialTheme.colorScheme.errorContainer,
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Event: Boss battle", style = MaterialTheme.typography.titleMedium)
@@ -130,7 +132,7 @@ private fun BossCard(vm: BattleViewModel) {
                     "Retry as often as you like until the end of November.",
                 style = MaterialTheme.typography.bodySmall,
             )
-            NeuButton(outlined = true, onClick = vm::boss, icon = Icons.Rounded.EmojiEvents, text = "Fight the boss",
+            NeuButton(outlined = true, onClick = vm::boss, icon = Icons.Sharp.EmojiEvents, text = "Fight the boss",
                 filled = true, modifier = Modifier.fillMaxWidth())
         }
     }
@@ -141,14 +143,14 @@ private fun FormatPicker(format: BattleFormat, onPick: (BattleFormat) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Format", style = MaterialTheme.typography.titleMedium)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            NeuButton(outlined = true, onClick = { onPick(BattleFormat.SOLO) }, text = "1v1", icon = Icons.Rounded.Person,
+            NeuButton(outlined = true, onClick = { onPick(BattleFormat.SOLO) }, text = "1v1", icon = Icons.Sharp.Person,
                 selected = format == BattleFormat.SOLO, modifier = Modifier.weight(1f))
-            NeuButton(outlined = true, onClick = { onPick(BattleFormat.TEAMS) }, text = "Teams", icon = Icons.Rounded.Diversity3,
+            NeuButton(outlined = true, onClick = { onPick(BattleFormat.TEAMS) }, text = "Teams", icon = Icons.Sharp.Diversity3,
                 selected = format == BattleFormat.TEAMS, modifier = Modifier.weight(1f))
-            NeuButton(outlined = true, onClick = { onPick(BattleFormat.FFA) }, text = "FFA", icon = Icons.Rounded.EmojiEvents,
+            NeuButton(outlined = true, onClick = { onPick(BattleFormat.FFA) }, text = "FFA", icon = Icons.Sharp.EmojiEvents,
                 selected = format == BattleFormat.FFA, modifier = Modifier.weight(1f))
         }
-        NeuButton(outlined = true, onClick = { onPick(BattleFormat.RAID) }, text = "Raid", icon = Icons.Rounded.Shield,
+        NeuButton(outlined = true, onClick = { onPick(BattleFormat.RAID) }, text = "Raid", icon = Icons.Sharp.Shield,
             selected = format == BattleFormat.RAID, modifier = Modifier.fillMaxWidth())
         if (format != BattleFormat.SOLO) Text(
             when (format) {
@@ -194,9 +196,9 @@ private fun Room(r: RoomUi, link: LinkKind?, vm: BattleViewModel) {
             ListItem(
                 headlineContent = { Text(p.name + tag) },
                 supportingContent = { Text("Lv ${p.level}") },
-                leadingContent = { Icon(Icons.Rounded.Pets, null, tint = color) },
+                leadingContent = { Icon(Icons.Sharp.Pets, null, tint = color) },
                 trailingContent = when {
-                    r.host && !r.ffa && !r.raid -> { { Icon(Icons.Rounded.SwapHoriz, "Switch team") } }
+                    r.host && !r.ffa && !r.raid -> { { Icon(Icons.Sharp.SwapHoriz, "Switch team") } }
                     else -> null
                 },
                 modifier = Modifier.clip(MaterialTheme.shapes.medium)
@@ -215,11 +217,11 @@ private fun Room(r: RoomUi, link: LinkKind?, vm: BattleViewModel) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 members.forEach { PlayerRow(it, color) }
             }
-            if (!r.host) NeuButton(outlined = true, onClick = { vm.switchTeam(r.you) }, text = "Switch team", icon = Icons.Rounded.SwapHoriz,
+            if (!r.host) NeuButton(outlined = true, onClick = { vm.switchTeam(r.you) }, text = "Switch team", icon = Icons.Sharp.SwapHoriz,
                 modifier = Modifier.fillMaxWidth())
         }
         if (r.host) NeuButton(outlined = true,
-            onClick = vm::startRoom, enabled = r.canStart, filled = true, icon = Icons.Rounded.PlayArrow,
+            onClick = vm::startRoom, enabled = r.canStart, filled = true, icon = Icons.Sharp.PlayArrow,
             text = when {
                 r.canStart -> if (r.raid) (if (r.players.size == 1) "Start solo raid" else "Start raid (${r.players.size} raiders)") else "Start (${r.players.size} players)"
                 r.ffa -> "Need at least 2 players"
@@ -227,7 +229,7 @@ private fun Room(r: RoomUi, link: LinkKind?, vm: BattleViewModel) {
             },
             modifier = Modifier.fillMaxWidth(),
         )
-        NeuButton(outlined = true, onClick = vm::leave, text = if (r.host) "Close room" else "Leave", icon = Icons.Rounded.Close,
+        NeuButton(outlined = true, onClick = vm::leave, text = if (r.host) "Close room" else "Leave", icon = Icons.Sharp.Close,
             modifier = Modifier.fillMaxWidth())
     }
 }
@@ -238,10 +240,10 @@ private fun LinkCard(kind: LinkKind, vm: BattleViewModel) {
     val ask = rememberLinkPermission(kind) { ok -> if (ok) pending?.invoke(); pending = null }
     val available = remember(kind) { vm.isAvailable(kind) }
     val surface = MaterialTheme.colorScheme.surfaceVariant
-    Card(colors = CardDefaults.cardColors(containerColor = surface)) {
+    PixelCard(containerColor = surface) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Rounded.WifiTethering, null)
+                Icon(Icons.Sharp.WifiTethering, null)
                 Spacer(Modifier.width(10.dp))
                 Text(kind.label, style = MaterialTheme.typography.titleMedium)
             }
@@ -251,12 +253,12 @@ private fun LinkCard(kind: LinkKind, vm: BattleViewModel) {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     NeuButton(outlined = true,
                         onClick = { pending = { vm.host(kind) }; ask() },
-                        text = "Host", icon = Icons.Rounded.Podcasts, filled = true, surface = surface,
+                        text = "Host", icon = Icons.Sharp.Podcasts, filled = true, surface = surface,
                         modifier = Modifier.weight(1f),
                     )
                     NeuButton(outlined = true,
                         onClick = { pending = { vm.search(kind) }; ask() },
-                        text = "Join", icon = Icons.Rounded.Search, surface = surface,
+                        text = "Join", icon = Icons.Sharp.Search, surface = surface,
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -268,19 +270,19 @@ private fun LinkCard(kind: LinkKind, vm: BattleViewModel) {
 @Composable
 private fun OnlineCard(vm: BattleViewModel) {
     val surface = MaterialTheme.colorScheme.surfaceVariant
-    Card(colors = CardDefaults.cardColors(containerColor = surface)) {
+    PixelCard(containerColor = surface) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Rounded.Public, null)
+                Icon(Icons.Sharp.Public, null)
                 Spacer(Modifier.width(10.dp))
                 Text("Online ranked", style = MaterialTheme.typography.titleMedium)
             }
             Text("1v1 against a random player. Wins raise your rating; the top 10 make the leaderboard. On the last day of every month, #1 gets a free pet.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                NeuButton(outlined = true, onClick = vm::findOnline, text = "Find match", icon = Icons.Rounded.TravelExplore,
+                NeuButton(outlined = true, onClick = vm::findOnline, text = "Find match", icon = Icons.Sharp.TravelExplore,
                     filled = true, surface = surface, modifier = Modifier.weight(1f))
-                NeuButton(outlined = true, onClick = vm::showLeaderboard, text = "Top 10", icon = Icons.Rounded.Leaderboard,
+                NeuButton(outlined = true, onClick = vm::showLeaderboard, text = "Top 10", icon = Icons.Sharp.Leaderboard,
                     surface = surface, modifier = Modifier.weight(1f))
             }
         }
@@ -313,9 +315,9 @@ private fun LeaderboardScreen(s: BattleUiState, vm: BattleViewModel) {
             else RankRow(me, highlight = true)
         }
         Spacer(Modifier.height(8.dp))
-        NeuButton(outlined = true, onClick = vm::findOnline, text = "Find match", icon = Icons.Rounded.TravelExplore, filled = true,
+        NeuButton(outlined = true, onClick = vm::findOnline, text = "Find match", icon = Icons.Sharp.TravelExplore, filled = true,
             modifier = Modifier.fillMaxWidth())
-        NeuButton(outlined = true, onClick = vm::leave, text = "Back", icon = Icons.Rounded.Close, modifier = Modifier.fillMaxWidth())
+        NeuButton(outlined = true, onClick = vm::leave, text = "Back", icon = Icons.Sharp.Close, modifier = Modifier.fillMaxWidth())
     }
 }
 
@@ -352,7 +354,7 @@ private fun Waiting(title: String, hint: String?, onCancel: () -> Unit) {
             Text(it, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        NeuButton(outlined = true, onClick = onCancel, text = "Cancel", icon = Icons.Rounded.Close)
+        NeuButton(outlined = true, onClick = onCancel, text = "Cancel", icon = Icons.Sharp.Close)
     }
 }
 
@@ -371,13 +373,13 @@ private fun Searching(s: BattleUiState, vm: BattleViewModel) {
         s.peers.forEach { p ->
             ListItem(
                 headlineContent = { Text(p.name) },
-                leadingContent = { Icon(Icons.Rounded.PhoneAndroid, null) },
-                trailingContent = { Icon(Icons.Rounded.ChevronRight, null) },
+                leadingContent = { Icon(Icons.Sharp.PhoneAndroid, null) },
+                trailingContent = { Icon(Icons.Sharp.ChevronRight, null) },
                 modifier = Modifier.clip(MaterialTheme.shapes.medium).clickable { vm.join(p) },
             )
         }
         Spacer(Modifier.weight(1f))
-        NeuButton(outlined = true, onClick = vm::leave, text = "Back", icon = Icons.Rounded.Close, modifier = Modifier.fillMaxWidth())
+        NeuButton(outlined = true, onClick = vm::leave, text = "Back", icon = Icons.Sharp.Close, modifier = Modifier.fillMaxWidth())
     }
 }
 
@@ -406,10 +408,10 @@ private fun Fight(f: FightState, vm: BattleViewModel) {
                 Box(Modifier.weight(1f)) { TerrainBadge(f) }
                 Text("${f.snap.timeLeftMs / 1000}s", style = MaterialTheme.typography.titleMedium, color = Color.White)
                 Icon(
-                    if (soundOn) Icons.Rounded.VolumeUp else Icons.Rounded.VolumeOff,
+                    if (soundOn) Icons.Sharp.VolumeUp else Icons.Sharp.VolumeOff,
                     contentDescription = if (soundOn) "Mute sounds" else "Unmute sounds",
                     tint = Color.White.copy(alpha = 0.85f),
-                    modifier = Modifier.padding(start = 6.dp).size(28.dp).clip(CircleShape)
+                    modifier = Modifier.padding(start = 6.dp).size(28.dp).clip(PixelSmall)
                         .clickable { soundOn = !soundOn; sound.enabled = soundOn }.padding(4.dp),
                 )
             }
@@ -449,9 +451,9 @@ private fun Fight(f: FightState, vm: BattleViewModel) {
                 }
             }
             if (f.result != null) {
-                Card(
+                PixelCard(
                     Modifier.align(Alignment.Center).padding(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                 ) {
                     // Arm the button after a beat so taps meant for move buttons don't skip the result.
                     var armed by remember { mutableStateOf(false) }
@@ -462,12 +464,12 @@ private fun Fight(f: FightState, vm: BattleViewModel) {
                         val pad = PaddingValues(horizontal = 10.dp, vertical = 12.dp)
                         if (f.raid != null) {
                             NeuButton(outlined = true, onClick = vm::leave, modifier = Modifier.fillMaxWidth(), text = "Back to lobby",
-                                icon = Icons.Rounded.Close, enabled = armed, contentPadding = pad,
+                                icon = Icons.Sharp.Close, enabled = armed, contentPadding = pad,
                                 surface = MaterialTheme.colorScheme.tertiaryContainer)
                         } else {
                             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                                 NeuButton(outlined = true, onClick = vm::battleAgain, modifier = Modifier.weight(1f), text = "Battle again",
-                                    icon = Icons.Rounded.Replay, filled = true, enabled = armed, contentPadding = pad,
+                                    icon = Icons.Sharp.Replay, filled = true, enabled = armed, contentPadding = pad,
                                     surface = MaterialTheme.colorScheme.tertiaryContainer)
                                 NeuButton(outlined = true, onClick = vm::leave, modifier = Modifier.weight(1f), text = "Back to lobby",
                                     enabled = armed, contentPadding = pad, surface = MaterialTheme.colorScheme.tertiaryContainer)
@@ -482,9 +484,9 @@ private fun Fight(f: FightState, vm: BattleViewModel) {
                 }
             }
             if (f.raid != null && f.snap.ended && f.result == null && raidFloorCleared(f)) {
-                Card(
+                PixelCard(
                     Modifier.align(Alignment.Center).padding(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                 ) {
                     Column(Modifier.padding(18.dp), horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -492,11 +494,10 @@ private fun Fight(f: FightState, vm: BattleViewModel) {
                         if (f.raid.floor < f.raid.floors) {
                             val left = floorCountdown(f.raid.floor)
                             Text("Next floor in ${left}s", style = MaterialTheme.typography.headlineMedium, color = EmberGold)
-                            LinearProgressIndicator(
+                            PixelProgress(
                                 progress = { left / (Raid.BANNER_MS / 1000f) },
                                 modifier = Modifier.width(160.dp).height(6.dp),
                                 color = EmberGold, trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                                strokeCap = StrokeCap.Round, gapSize = 0.dp, drawStopIndicator = {},
                             )
                         }
                         Text(
@@ -556,7 +557,7 @@ private fun TerrainBadge(f: FightState) {
                 color = EmberGold, maxLines = 1)
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Rounded.Terrain, null, Modifier.size(14.dp), tint = t.accent())
+            Icon(Icons.Sharp.Terrain, null, Modifier.size(14.dp), tint = t.accent())
             Spacer(Modifier.width(4.dp))
             Text(
                 t.label + (if (t.effectName.isNotEmpty()) " · ${t.effectName}" else "") + if (home) " · Home turf!" else "",
@@ -574,17 +575,14 @@ private fun EnergyRow(me: FighterSnap) {
     val full = me.energy >= BattleRules.MAX_ENERGY
     val energyColor = if (full) EmberGold else EmberOrange
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(Icons.Rounded.Bolt, null, Modifier.size(16.dp), tint = energyColor)
+        Icon(Icons.Sharp.Bolt, null, Modifier.size(16.dp), tint = energyColor)
         Text(if (full) " FULL" else " ${me.energy}", style = MaterialTheme.typography.labelSmall,
             modifier = Modifier.width(40.dp))
-        LinearProgressIndicator(
+        PixelProgress(
             progress = { me.energy / BattleRules.MAX_ENERGY.toFloat() },
             modifier = Modifier.weight(1f).height(8.dp),
             color = energyColor,
             trackColor = MaterialTheme.colorScheme.surfaceVariant,
-            strokeCap = StrokeCap.Round,
-            gapSize = 0.dp,
-            drawStopIndicator = {},
         )
     }
 }
@@ -595,8 +593,7 @@ private fun EvadeButton(me: FighterSnap, modifier: Modifier, onClick: () -> Unit
     val enabled = cd == 0L && !me.has(Status.STUN) && !me.has(Status.ROOT) && !me.has(Status.VANISH)
     Box(
         modifier.height(64.dp).clip(MaterialTheme.shapes.medium)
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .border(2.dp, ClearSky.copy(alpha = if (enabled) 1f else 0.3f), MaterialTheme.shapes.medium)
+            .pixelPanel(MaterialTheme.colorScheme.surfaceVariant, ClearSky.copy(alpha = if (enabled) 1f else 0.3f), lift = 0.dp, borderWidth = 2.dp)
             .clickable(enabled = enabled, onClick = onClick),
     ) {
         if (cd > 0) {
@@ -608,7 +605,7 @@ private fun EvadeButton(me: FighterSnap, modifier: Modifier, onClick: () -> Unit
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            Icon(Icons.Rounded.KeyboardDoubleArrowUp, null, Modifier.size(20.dp).rotate(-90f), tint = ClearSky)
+            Icon(Icons.Sharp.KeyboardDoubleArrowUp, null, Modifier.size(20.dp).rotate(-90f), tint = ClearSky)
             Text("Evade", style = MaterialTheme.typography.labelSmall, maxLines = 1)
             Text(if (cd > 0) "${(cd / 100) / 10.0}s" else "back off", style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
@@ -624,8 +621,7 @@ private fun MoveButton(m: Move, cd: Long, info: FighterInfo, me: FighterSnap, te
     val total = BattleStats.cooldown(info, m, terrain).coerceAtLeast(1)
     Box(
         modifier.height(64.dp).clip(MaterialTheme.shapes.medium)
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .border(2.dp, m.category.color().copy(alpha = if (enabled) 1f else 0.3f), MaterialTheme.shapes.medium)
+            .pixelPanel(MaterialTheme.colorScheme.surfaceVariant, m.category.color().copy(alpha = if (enabled) 1f else 0.3f), lift = 0.dp, borderWidth = 2.dp)
             .clickable(enabled = enabled, onClick = onClick),
     ) {
         if (cd > 0) { // cooldown sweep drains left to right
@@ -660,7 +656,7 @@ private fun HpBar(name: String, level: String, f: FighterSnap, color: Color, com
     Column(modifier) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             // Same color as the ring and tag over this pet on the field.
-            Box(Modifier.size(9.dp).background(color, CircleShape))
+            Box(Modifier.size(9.dp).background(color, PixelSmall))
             Spacer(Modifier.width(4.dp))
             Text("$name  $level", style = if (compact) MaterialTheme.typography.labelSmall else MaterialTheme.typography.labelMedium,
                 maxLines = 1, overflow = TextOverflow.Ellipsis, color = Color.White, modifier = Modifier.weight(1f, fill = false))
@@ -673,14 +669,11 @@ private fun HpBar(name: String, level: String, f: FighterSnap, color: Color, com
                     color = Color.White.copy(alpha = 0.8f))
             }
         }
-        LinearProgressIndicator(
+        PixelProgress(
             progress = { f.hp.toFloat() / f.maxHp },
             modifier = Modifier.fillMaxWidth().height(if (compact) 6.dp else 10.dp),
             color = color,
             trackColor = Color.White.copy(alpha = 0.3f),
-            strokeCap = StrokeCap.Round,
-            gapSize = 0.dp,
-            drawStopIndicator = {},
         )
         if (!compact) Text(if (f.hp <= 0) "DOWN" else "${f.hp}/${f.maxHp}", style = MaterialTheme.typography.labelSmall,
             color = Color.White.copy(alpha = 0.8f))
@@ -1086,7 +1079,7 @@ internal fun Arena(fight: FightState, modifier: Modifier, alerts: Boolean = true
         val sx = w / ARENA_W
         val sy = h / ARENA_H
         fun pos(s: FighterSnap) = Offset(s.x * sx, s.y * sy)
-        val spriteDp = 72.dp
+        val spriteDp = 60.dp // sprites fill their box edge to edge
         val hurtboxDash = with(androidx.compose.ui.platform.LocalDensity.current) {
             remember(this) { PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx())) }
         }
@@ -1205,7 +1198,7 @@ internal fun Arena(fight: FightState, modifier: Modifier, alerts: Boolean = true
                 contentAlignment = Alignment.Center) {
                 Text(label, style = MaterialTheme.typography.labelSmall, color = if (col.luminance() > 0.5f) Color.Black else Color.White,
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.background(col, RoundedCornerShape(6.dp)).padding(horizontal = 5.dp, vertical = 1.dp))
+                    modifier = Modifier.background(col, PixelSmall).padding(horizontal = 5.dp, vertical = 1.dp))
             }
         }
         // "YOU" marker bobbing above your pet
@@ -1217,8 +1210,8 @@ internal fun Arena(fight: FightState, modifier: Modifier, alerts: Boolean = true
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text("YOU", style = MaterialTheme.typography.labelSmall, color = Color.White,
-                modifier = Modifier.background(meColor, RoundedCornerShape(6.dp)).padding(horizontal = 6.dp, vertical = 1.dp))
-            Icon(Icons.Rounded.ArrowDropDown, null, Modifier.size(20.dp).offset(y = (-6).dp), tint = meColor)
+                modifier = Modifier.background(meColor, PixelSmall).padding(horizontal = 6.dp, vertical = 1.dp))
+            Icon(Icons.Sharp.ArrowDropDown, null, Modifier.size(20.dp).offset(y = (-6).dp), tint = meColor)
         }
         if (alerts) DebuffAlert(f.snap.fighters.getOrNull(f.me), fxMs)
     }
@@ -1258,21 +1251,21 @@ private fun fighterTag(f: FightState, i: Int) = when {
 private fun teamOf(f: FightState, i: Int) = f.teams[i]
 
 private fun statusIcons(f: FighterSnap) = buildList {
-    if (f.has(Status.BURN)) add(Icons.Rounded.LocalFireDepartment to Color(0xFFE5532D))
-    if (f.has(Status.SLOW)) add(Icons.Rounded.AcUnit to ClearSky)
-    if (f.has(Status.STUN)) add(Icons.Rounded.Bolt to Sunflower)
-    if (f.has(Status.RAGE)) add(Icons.Rounded.KeyboardDoubleArrowUp to Color(0xFFD9534F))
-    if (f.has(Status.GUARD)) add(Icons.Rounded.Shield to ClearSky)
-    if (f.has(Status.HASTE)) add(Icons.Rounded.Speed to Color.White)
-    if (f.has(Status.HARDEN)) add(Icons.Rounded.VerifiedUser to Color(0xFFBDBDBD))
-    if (f.has(Status.ROOT)) add(Icons.Rounded.Grass to Color(0xFF3F9A4A))
-    if (f.has(Status.WEAKEN)) add(Icons.Rounded.ArrowDownward to Color(0xFFBDBDBD))
-    if (f.has(Status.PARALYZE)) add(Icons.Rounded.FlashOn to Sunflower)
-    if (f.has(Status.LEECH)) add(Icons.Rounded.Spa to Color(0xFF4CAF6A))
-    if (f.has(Status.EVADE)) add(Icons.Rounded.KeyboardDoubleArrowUp to ClearSky)
-    if (f.has(Status.COUNTER)) add(Icons.Rounded.Replay to Color.White)
-    if (f.has(Status.SHIELD)) add(Icons.Rounded.Shield to Color(0xFF7FD3FF))
-    if (f.has(Status.MARKED)) add(Icons.Rounded.GpsFixed to Color(0xFFE53935))
+    if (f.has(Status.BURN)) add(Icons.Sharp.LocalFireDepartment to Color(0xFFE5532D))
+    if (f.has(Status.SLOW)) add(Icons.Sharp.AcUnit to ClearSky)
+    if (f.has(Status.STUN)) add(Icons.Sharp.Bolt to Sunflower)
+    if (f.has(Status.RAGE)) add(Icons.Sharp.KeyboardDoubleArrowUp to Color(0xFFD9534F))
+    if (f.has(Status.GUARD)) add(Icons.Sharp.Shield to ClearSky)
+    if (f.has(Status.HASTE)) add(Icons.Sharp.Speed to Color.White)
+    if (f.has(Status.HARDEN)) add(Icons.Sharp.VerifiedUser to Color(0xFFBDBDBD))
+    if (f.has(Status.ROOT)) add(Icons.Sharp.Grass to Color(0xFF3F9A4A))
+    if (f.has(Status.WEAKEN)) add(Icons.Sharp.ArrowDownward to Color(0xFFBDBDBD))
+    if (f.has(Status.PARALYZE)) add(Icons.Sharp.FlashOn to Sunflower)
+    if (f.has(Status.LEECH)) add(Icons.Sharp.Spa to Color(0xFF4CAF6A))
+    if (f.has(Status.EVADE)) add(Icons.Sharp.KeyboardDoubleArrowUp to ClearSky)
+    if (f.has(Status.COUNTER)) add(Icons.Sharp.Replay to Color.White)
+    if (f.has(Status.SHIELD)) add(Icons.Sharp.Shield to Color(0xFF7FD3FF))
+    if (f.has(Status.MARKED)) add(Icons.Sharp.GpsFixed to Color(0xFFE53935))
 }
 
 /** A snare on the floor: a faint ring while arming, then a spiky ring in the move's color. */
@@ -1292,70 +1285,70 @@ internal fun DrawScope.drawTrap(t: TrapSnap, c: Offset, r: Float) {
 }
 
 fun Move.icon(): ImageVector = when (this) {
-    Move.SUN_RAY, Move.SOLAR_BEAM, Move.SOLAR_FLARE -> Icons.Rounded.WbSunny
-    Move.SHADOW_SWIPE, Move.SHADOW_CLAW, Move.NIGHT_TERROR -> Icons.Rounded.DarkMode
-    Move.FLAME_BURST, Move.INFERNO, Move.DRAGON_FURY -> Icons.Rounded.Fireplace
-    Move.MOON_HOP, Move.MOON_KICK, Move.LUNAR_STRIKE -> Icons.Rounded.Brightness3
-    Move.RALLY_BARK, Move.PACK_CALL, Move.ALPHA_HOWL -> Icons.Rounded.Groups
-    Move.STATIC_EYE, Move.STORM_EYE, Move.TEMPEST_EYE -> Icons.Rounded.Visibility
-    Move.SHELL_UP, Move.FORTRESS, Move.CITADEL -> Icons.Rounded.Security
-    Move.WISP_FLAME, Move.FOXFIRE, Move.NINE_TAILS -> Icons.Rounded.AutoAwesome
-    Move.SPLASH_WAVE, Move.TIDAL_WAVE, Move.TSUNAMI -> Icons.Rounded.Waves
-    Move.BEAR_SWIPE, Move.MAUL, Move.GRIZZLY_RAMPAGE -> Icons.Rounded.FrontHand
-    Move.FROST_SLIDE, Move.POLAR_CRASH, Move.EMPEROR_BLIZZARD -> Icons.Rounded.AcUnit
-    Move.SPIKE_ROLL, Move.NEEDLE_STORM, Move.QUILL_BARRAGE -> Icons.Rounded.Park
-    Move.ECHO_SHRIEK, Move.VAMPIRE_FANG, Move.BLOOD_MOON -> Icons.Rounded.NightsStay
-    Move.ANTLER_JAB, Move.VERDANT_CHARGE, Move.SPIRIT_STAMPEDE -> Icons.Rounded.Forest
-    Move.PEBBLE_TOSS, Move.RIVER_RUSH, Move.RAPID_CURRENT -> Icons.Rounded.Pool
-    Move.BAMBOO_SMACK, Move.BAMBOO_STORM, Move.PANDA_QUAKE -> Icons.Rounded.Spa
-    Move.TAIL_LASH, Move.MAGMA_TAIL, Move.VOLCANO_ROAR -> Icons.Rounded.Volcano
-    Move.SNATCH, Move.TRASH_TOSS, Move.MIDNIGHT_HEIST -> Icons.Rounded.Masks
-    Move.EUCALYPTUS_DART, Move.DROWSY_SLAM, Move.DREAM_STORM -> Icons.Rounded.Bedtime
-    Move.FIN_SLICE, Move.JAW_LOCK, Move.FEEDING_FRENZY -> Icons.Rounded.SetMeal
-    Move.TONGUE_SNAP, Move.MIRAGE_SWAP, Move.PRISM_BLAST -> Icons.Rounded.Palette
-    Move.LOG_TOSS, Move.TIMBER_TRAP, Move.GREAT_DAM -> Icons.Rounded.Carpenter
+    Move.SUN_RAY, Move.SOLAR_BEAM, Move.SOLAR_FLARE -> Icons.Sharp.WbSunny
+    Move.SHADOW_SWIPE, Move.SHADOW_CLAW, Move.NIGHT_TERROR -> Icons.Sharp.DarkMode
+    Move.FLAME_BURST, Move.INFERNO, Move.DRAGON_FURY -> Icons.Sharp.Fireplace
+    Move.MOON_HOP, Move.MOON_KICK, Move.LUNAR_STRIKE -> Icons.Sharp.Brightness3
+    Move.RALLY_BARK, Move.PACK_CALL, Move.ALPHA_HOWL -> Icons.Sharp.Groups
+    Move.STATIC_EYE, Move.STORM_EYE, Move.TEMPEST_EYE -> Icons.Sharp.Visibility
+    Move.SHELL_UP, Move.FORTRESS, Move.CITADEL -> Icons.Sharp.Security
+    Move.WISP_FLAME, Move.FOXFIRE, Move.NINE_TAILS -> Icons.Sharp.AutoAwesome
+    Move.SPLASH_WAVE, Move.TIDAL_WAVE, Move.TSUNAMI -> Icons.Sharp.Waves
+    Move.BEAR_SWIPE, Move.MAUL, Move.GRIZZLY_RAMPAGE -> Icons.Sharp.FrontHand
+    Move.FROST_SLIDE, Move.POLAR_CRASH, Move.EMPEROR_BLIZZARD -> Icons.Sharp.AcUnit
+    Move.SPIKE_ROLL, Move.NEEDLE_STORM, Move.QUILL_BARRAGE -> Icons.Sharp.Park
+    Move.ECHO_SHRIEK, Move.VAMPIRE_FANG, Move.BLOOD_MOON -> Icons.Sharp.NightsStay
+    Move.ANTLER_JAB, Move.VERDANT_CHARGE, Move.SPIRIT_STAMPEDE -> Icons.Sharp.Forest
+    Move.PEBBLE_TOSS, Move.RIVER_RUSH, Move.RAPID_CURRENT -> Icons.Sharp.Pool
+    Move.BAMBOO_SMACK, Move.BAMBOO_STORM, Move.PANDA_QUAKE -> Icons.Sharp.Spa
+    Move.TAIL_LASH, Move.MAGMA_TAIL, Move.VOLCANO_ROAR -> Icons.Sharp.Volcano
+    Move.SNATCH, Move.TRASH_TOSS, Move.MIDNIGHT_HEIST -> Icons.Sharp.Masks
+    Move.EUCALYPTUS_DART, Move.DROWSY_SLAM, Move.DREAM_STORM -> Icons.Sharp.Bedtime
+    Move.FIN_SLICE, Move.JAW_LOCK, Move.FEEDING_FRENZY -> Icons.Sharp.SetMeal
+    Move.TONGUE_SNAP, Move.MIRAGE_SWAP, Move.PRISM_BLAST -> Icons.Sharp.Palette
+    Move.LOG_TOSS, Move.TIMBER_TRAP, Move.GREAT_DAM -> Icons.Sharp.Carpenter
     else -> when (effect) {
-        Effect.SHIELD -> Icons.Rounded.Shield
-        Effect.AID -> Icons.Rounded.VolunteerActivism
-        Effect.TRAP -> Icons.Rounded.Adjust
-        Effect.MARK -> Icons.Rounded.GpsFixed
-        Effect.SWAP -> Icons.Rounded.SyncAlt
-        Effect.DISRUPT -> Icons.Rounded.HourglassBottom
-        Effect.CHAIN -> Icons.Rounded.Link
-        Effect.GUARD -> Icons.Rounded.Shield
-        Effect.RAGE -> Icons.Rounded.Campaign
-        Effect.HASTE -> Icons.Rounded.Speed
-        Effect.HARDEN -> Icons.Rounded.VerifiedUser
-        Effect.HEAL -> Icons.Rounded.Healing
-        Effect.BATTLE_CRY -> Icons.Rounded.RecordVoiceOver
-        Effect.FORTRESS -> Icons.Rounded.Security
-        Effect.COUNTER -> Icons.Rounded.Replay
-        Effect.BLINK -> Icons.Rounded.SwapHoriz
-        Effect.CLEANSE -> Icons.Rounded.Autorenew
-        Effect.ENERGIZE -> Icons.Rounded.BatteryChargingFull
-        Effect.SUMMON -> Icons.Rounded.PersonAdd
-        Effect.VANISH -> if (element == Element.GROUND || element == Element.WATER) Icons.Rounded.VerticalAlignBottom
-            else Icons.Rounded.Flight
-        Effect.WEAKEN -> Icons.Rounded.ArrowDownward
-        Effect.PARALYZE -> Icons.Rounded.FlashOn
-        Effect.LEECH -> Icons.Rounded.Spa
-        Effect.RECHARGE -> Icons.Rounded.FlashAuto
+        Effect.SHIELD -> Icons.Sharp.Shield
+        Effect.AID -> Icons.Sharp.VolunteerActivism
+        Effect.TRAP -> Icons.Sharp.Adjust
+        Effect.MARK -> Icons.Sharp.GpsFixed
+        Effect.SWAP -> Icons.Sharp.SyncAlt
+        Effect.DISRUPT -> Icons.Sharp.HourglassBottom
+        Effect.CHAIN -> Icons.Sharp.Link
+        Effect.GUARD -> Icons.Sharp.Shield
+        Effect.RAGE -> Icons.Sharp.Campaign
+        Effect.HASTE -> Icons.Sharp.Speed
+        Effect.HARDEN -> Icons.Sharp.VerifiedUser
+        Effect.HEAL -> Icons.Sharp.Healing
+        Effect.BATTLE_CRY -> Icons.Sharp.RecordVoiceOver
+        Effect.FORTRESS -> Icons.Sharp.Security
+        Effect.COUNTER -> Icons.Sharp.Replay
+        Effect.BLINK -> Icons.Sharp.SwapHoriz
+        Effect.CLEANSE -> Icons.Sharp.Autorenew
+        Effect.ENERGIZE -> Icons.Sharp.BatteryChargingFull
+        Effect.SUMMON -> Icons.Sharp.PersonAdd
+        Effect.VANISH -> if (element == Element.GROUND || element == Element.WATER) Icons.Sharp.VerticalAlignBottom
+            else Icons.Sharp.Flight
+        Effect.WEAKEN -> Icons.Sharp.ArrowDownward
+        Effect.PARALYZE -> Icons.Sharp.FlashOn
+        Effect.LEECH -> Icons.Sharp.Spa
+        Effect.RECHARGE -> Icons.Sharp.FlashAuto
         else -> when (element) {
             Element.NORMAL -> when (effect) {
-                Effect.LUNGE -> Icons.Rounded.KeyboardDoubleArrowRight
-                Effect.DRAIN -> Icons.Rounded.Restaurant
-                Effect.STUN -> Icons.Rounded.Face
-                Effect.KNOCKBACK -> Icons.Rounded.Moving
-                else -> if (this == Move.CLAW || this == Move.FURY_SWIPES) Icons.Rounded.Pets else Icons.Rounded.SportsMma
+                Effect.LUNGE -> Icons.Sharp.KeyboardDoubleArrowRight
+                Effect.DRAIN -> Icons.Sharp.Restaurant
+                Effect.STUN -> Icons.Sharp.Face
+                Effect.KNOCKBACK -> Icons.Sharp.Moving
+                else -> if (this == Move.CLAW || this == Move.FURY_SWIPES) Icons.Sharp.Pets else Icons.Sharp.SportsMma
             }
-            Element.FIRE -> if (category == MoveCategory.SPECIAL) Icons.Rounded.LocalFireDepartment else Icons.Rounded.Whatshot
-            Element.WATER -> if (effect == Effect.SLOW) Icons.Rounded.BubbleChart else Icons.Rounded.WaterDrop
-            Element.GRASS -> if (category == MoveCategory.SPECIAL) Icons.Rounded.Grass else Icons.Rounded.Spa
-            Element.ICE -> Icons.Rounded.AcUnit
-            Element.ELECTRIC -> Icons.Rounded.Bolt
-            Element.FLYING -> Icons.Rounded.Air
-            Element.GROUND -> Icons.Rounded.Landscape
-            Element.FIGHTING -> Icons.Rounded.SportsMma
+            Element.FIRE -> if (category == MoveCategory.SPECIAL) Icons.Sharp.LocalFireDepartment else Icons.Sharp.Whatshot
+            Element.WATER -> if (effect == Effect.SLOW) Icons.Sharp.BubbleChart else Icons.Sharp.WaterDrop
+            Element.GRASS -> if (category == MoveCategory.SPECIAL) Icons.Sharp.Grass else Icons.Sharp.Spa
+            Element.ICE -> Icons.Sharp.AcUnit
+            Element.ELECTRIC -> Icons.Sharp.Bolt
+            Element.FLYING -> Icons.Sharp.Air
+            Element.GROUND -> Icons.Sharp.Landscape
+            Element.FIGHTING -> Icons.Sharp.SportsMma
         }
     }
 }

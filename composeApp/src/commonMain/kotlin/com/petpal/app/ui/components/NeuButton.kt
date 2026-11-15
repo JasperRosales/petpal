@@ -1,98 +1,26 @@
 package com.petpal.app.ui.components
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.sharp.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.compositeOver
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * Neumorphic ("soft UI") surface: same color as the background, lifted by a dark
- * shadow bottom-right (optional highlight top-left; off by default). When pressed (or [pressed] is
- * forced, e.g. a selected toggle) the shadows collapse and an inset shade appears.
- *
- * Shadows are faked with stacked translucent rounded rects so this stays pure common code.
+ * Pixel-art button: flat fill, chunky stepped border and a hard drop shadow. Pressing it
+ * (or [selected]) pushes it down onto its shadow, like an arcade button.
  */
-fun Modifier.neumorphic(
-    cornerRadius: Dp,
-    depth: Float, // 1 = raised, 0 = pressed/inset
-    background: Color,
-    shadow: Color,
-    highlight: Color,
-    elevation: Dp = 4.dp,
-): Modifier = drawBehind {
-    val r = cornerRadius.toPx()
-    val off = elevation.toPx() * depth
-    val blurSteps = 8
-    val spread = elevation.toPx() * 1.2f
-
-    if (depth > 0.01f) {
-        fun layer(color: Color, dx: Float, dy: Float) {
-            for (i in blurSteps downTo 1) {
-                val grow = spread * i / blurSteps
-                drawRoundRect(
-                    color = color.copy(alpha = color.alpha * depth / (blurSteps * 0.9f)),
-                    topLeft = Offset(dx - grow, dy - grow),
-                    size = size.copy(width = size.width + grow * 2, height = size.height + grow * 2),
-                    cornerRadius = CornerRadius(r + grow),
-                )
-            }
-        }
-        if (highlight.alpha > 0f) layer(highlight, -off, -off)
-        layer(shadow, off, off)
-    }
-
-    drawRoundRect(background, cornerRadius = CornerRadius(r))
-
-    if (depth < 0.99f) insetShade(r, 1f - depth, shadow, highlight)
-}
-
-private fun DrawScope.insetShade(r: Float, amount: Float, shadow: Color, highlight: Color) {
-    drawRoundRect(
-        brush = Brush.linearGradient(
-            0f to shadow.copy(alpha = shadow.alpha * 0.55f * amount),
-            0.45f to Color.Transparent,
-            0.8f to Color.Transparent,
-            1f to highlight.copy(alpha = highlight.alpha * 0.5f * amount),
-            start = Offset.Zero,
-            end = Offset(size.width, size.height),
-        ),
-        cornerRadius = CornerRadius(r),
-    )
-}
-
-/** Theme-derived neumorphic colors. Dark shadow only: no white top-left glow. */
-@Composable
-fun neuColors(surface: Color = MaterialTheme.colorScheme.background): Triple<Color, Color, Color> {
-    val isDark = surface.luminance() < 0.5f
-    val shadow = if (isDark) Color.Black.copy(alpha = 0.6f) else Color(0xFF0B1A0E).copy(alpha = 0.22f)
-    return Triple(surface, shadow, Color.Transparent)
-}
-
 @Composable
 fun NeuButton(
     onClick: () -> Unit,
@@ -106,41 +34,37 @@ fun NeuButton(
     filled: Boolean = false,
     shape: NeuShape = NeuShape.Rounded,
     contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-    surface: Color = MaterialTheme.colorScheme.background, // must match what the button sits on
-    /** Flat with a border instead of raised; selected = thick accent border, tint and a check. */
+    surface: Color = MaterialTheme.colorScheme.background, // what the button sits on
+    /** Flat with a border instead of raised; selected = accent border, tint and a check. */
     outlined: Boolean = false,
 ) {
     val interaction = remember { MutableInteractionSource() }
     val isPressed by interaction.collectIsPressedAsState()
-    val depth by animateFloatAsState(if (isPressed || selected) 0f else 1f, label = "neuDepth")
-    val (bg, shadow, highlight) = neuColors(surface)
-    val fill = if (filled) accent else bg
-    val content = when {
-        filled -> MaterialTheme.colorScheme.onPrimary
-        else -> accent
+    val down = isPressed || (selected && !outlined)
+    val base = MaterialTheme.colorScheme.surfaceContainerHigh.compositeOver(surface)
+    val fill = when {
+        filled -> accent
+        outlined && selected -> accent.copy(alpha = 0.2f).compositeOver(base)
+        down -> accent.copy(alpha = 0.12f).compositeOver(base)
+        else -> base
     }
-    val radius = when (shape) { NeuShape.Rounded -> 18.dp; NeuShape.Circle -> 100.dp }
-    val clipShape = if (shape == NeuShape.Circle) CircleShape else RoundedCornerShape(radius)
-    val look = if (!outlined) Modifier.neumorphic(radius, depth, fill, shadow, highlight).clip(clipShape)
-    else {
-        val tint = when {
-            filled -> accent
-            selected -> accent.copy(alpha = 0.16f).compositeOver(bg)
-            isPressed -> accent.copy(alpha = 0.08f).compositeOver(bg)
-            else -> bg
-        }
-        Modifier.clip(clipShape).background(tint).border(
-            if (selected) 2.5.dp else 1.dp,
-            if (selected || filled) accent else MaterialTheme.colorScheme.outline,
-            clipShape,
-        )
+    val border = when {
+        filled -> Color.Black.copy(alpha = 0.7f).compositeOver(accent)
+        selected || !outlined -> accent
+        else -> MaterialTheme.colorScheme.outline
     }
-    val shownIcon = if (outlined && selected) Icons.Rounded.Check else icon
+    val content = if (filled) MaterialTheme.colorScheme.onPrimary else accent
+    val lift = if (down || outlined) 0.dp else 4.dp
+    val shownIcon = if (outlined && selected) Icons.Sharp.Check else icon
+    val steps = if (shape == NeuShape.Circle) 3 else 2
 
+    // Reserve the shadow's space always, and shift the face into it when pressed.
     Box(
         modifier
             .alpha(if (enabled) 1f else 0.45f)
-            .then(look)
+            .padding(end = 4.dp, bottom = 4.dp)
+            .offset(x = 4.dp - lift, y = 4.dp - lift)
+            .pixelPanel(fill, border, lift = lift, borderWidth = if (outlined && !selected) 2.dp else 3.dp, steps = steps)
             .clickable(interaction, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)
             .padding(contentPadding),
         contentAlignment = Alignment.Center,

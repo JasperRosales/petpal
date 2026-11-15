@@ -1,12 +1,14 @@
 package com.petpal.app.ui.onboarding
 
+import com.petpal.app.ui.components.PixelProgress
+import com.petpal.app.ui.components.PixelCard
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.*
+import androidx.compose.material.icons.automirrored.sharp.ArrowBack
+import androidx.compose.material.icons.sharp.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -65,14 +67,14 @@ private fun Intro(onStart: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterVertically),
     ) {
-        Icon(Icons.Rounded.Psychology, null, Modifier.size(72.dp), tint = MaterialTheme.colorScheme.primary)
+        Icon(Icons.Sharp.Psychology, null, Modifier.size(72.dp), tint = MaterialTheme.colorScheme.primary)
         Text("Meet your partner", style = MaterialTheme.typography.headlineMedium)
         Text(
             "Answer ${PersonalityQuiz.questions.size} quick questions about yourself. Your answers decide which pet hatches for you. You only get one partner, so answer honestly.",
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        NeuButton(onClick = onStart, text = "Start", icon = Icons.Rounded.PlayArrow, filled = true)
+        NeuButton(onClick = onStart, text = "Start", icon = Icons.Sharp.PlayArrow, filled = true)
     }
 }
 
@@ -84,11 +86,10 @@ private fun Question(step: Int, vm: OnboardingViewModel) {
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { if (step == 0) vm.started = false else vm.back() }) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") }
-            LinearProgressIndicator(
+            IconButton(onClick = { if (step == 0) vm.started = false else vm.back() }) { Icon(Icons.AutoMirrored.Sharp.ArrowBack, "Back") }
+            PixelProgress(
                 progress = { step.toFloat() / PersonalityQuiz.questions.size },
                 modifier = Modifier.weight(1f),
-                drawStopIndicator = {},
             )
             Text("  ${step + 1}/${PersonalityQuiz.questions.size}", style = MaterialTheme.typography.labelLarge)
         }
@@ -125,10 +126,10 @@ private fun Result(result: PersonalityQuiz.Result, onAdopt: (String) -> Unit) {
         Text("Egg, Baby, Kid, Teen, Adult", style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(species.trait, textAlign = TextAlign.Center)
-        Card(Modifier.fillMaxWidth()) {
+        PixelCard(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Rounded.Psychology, null, tint = MaterialTheme.colorScheme.tertiary)
+                    Icon(Icons.Sharp.Psychology, null, tint = MaterialTheme.colorScheme.tertiary)
                     Spacer(Modifier.width(8.dp))
                     Text("Your personality", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
                     Text("${result.matchPercent}% match", style = MaterialTheme.typography.labelLarge,
@@ -138,8 +139,7 @@ private fun Result(result: PersonalityQuiz.Result, onAdopt: (String) -> Unit) {
                 result.traits.forEach { (trait, value) ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(trait.label, style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(76.dp))
-                        LinearProgressIndicator(progress = { value }, modifier = Modifier.weight(1f).height(8.dp),
-                            drawStopIndicator = {})
+                        PixelProgress(progress = { value }, modifier = Modifier.weight(1f).height(8.dp))
                         Text("  ${(value * 100).toInt()}%", style = MaterialTheme.typography.labelSmall,
                             modifier = Modifier.width(44.dp))
                     }
@@ -151,10 +151,10 @@ private fun Result(result: PersonalityQuiz.Result, onAdopt: (String) -> Unit) {
                 }
             }
         }
-        Card(Modifier.fillMaxWidth()) {
+        PixelCard(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Rounded.AutoAwesome, null, tint = MaterialTheme.colorScheme.tertiary)
+                    Icon(Icons.Sharp.AutoAwesome, null, tint = MaterialTheme.colorScheme.tertiary)
                     Spacer(Modifier.width(8.dp))
                     Text("Passive: ${passive.label}", style = MaterialTheme.typography.titleSmall)
                 }
@@ -193,7 +193,7 @@ private fun Result(result: PersonalityQuiz.Result, onAdopt: (String) -> Unit) {
         NeuButton(
             onClick = { onAdopt(name) },
             text = "Hatch my egg",
-            icon = Icons.Rounded.Egg,
+            icon = Icons.Sharp.Egg,
             filled = true,
             modifier = Modifier.fillMaxWidth(),
         )

@@ -1,5 +1,6 @@
 package com.petpal.app.ui.habits
 
+import com.petpal.app.ui.components.PixelCard
 import com.petpal.app.domain.logic.PetEngine
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,8 +19,8 @@ import com.petpal.app.domain.model.*
 import com.petpal.app.ui.home.label
 import com.petpal.app.ui.theme.PetPalIcons
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.DeleteSweep
+import androidx.compose.material.icons.sharp.Close
+import androidx.compose.material.icons.sharp.DeleteSweep
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.datetime.*
@@ -69,7 +70,7 @@ fun HabitsScreen(vm: HabitsViewModel = koinViewModel()) {
             Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text("Battle log", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
                 if (s.battles.isNotEmpty()) TextButton(onClick = { confirmClear = true }) {
-                    Icon(Icons.Rounded.DeleteSweep, null, Modifier.size(18.dp))
+                    Icon(Icons.Sharp.DeleteSweep, null, Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
                     Text("Clear all")
                 }
@@ -98,7 +99,7 @@ fun HabitsScreen(vm: HabitsViewModel = koinViewModel()) {
                 },
                 trailingContent = {
                     IconButton(onClick = { vm.deleteBattle(b.id) }) {
-                        Icon(Icons.Rounded.Close, contentDescription = "Remove this entry",
+                        Icon(Icons.Sharp.Close, contentDescription = "Remove this entry",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 },
@@ -125,7 +126,7 @@ private fun HabitCard(type: HabitType, count: Int) {
     val container = when (type) {
         HabitType.STEPS -> MaterialTheme.colorScheme.primaryContainer
     }
-    Card(colors = CardDefaults.cardColors(containerColor = container)) {
+    PixelCard(containerColor = container) {
         Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(PetPalIcons.forHabit(type), null)
             Spacer(Modifier.width(12.dp))

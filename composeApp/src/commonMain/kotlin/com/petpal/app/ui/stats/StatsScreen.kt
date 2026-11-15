@@ -1,5 +1,6 @@
 package com.petpal.app.ui.stats
 
+import com.petpal.app.ui.components.PixelCard
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -72,7 +73,7 @@ fun StatsScreen(vm: StatsViewModel = koinViewModel()) {
         ChartCard("Steps per day", s.steps, unit = "steps", MaterialTheme.colorScheme.primary)
         ChartCard("Battles per day", s.battles, unit = "battles", MaterialTheme.colorScheme.tertiary)
 
-        ElevatedCard(Modifier.fillMaxWidth()) {
+        PixelCard(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("This week", style = MaterialTheme.typography.titleMedium)
                 TotalRow("Steps", s.steps.sumOf { it.count }.withCommas())
@@ -87,7 +88,7 @@ fun StatsScreen(vm: StatsViewModel = koinViewModel()) {
 @Composable
 private fun ChartCard(title: String, days: List<DayCount>, unit: String, color: androidx.compose.ui.graphics.Color) {
     var selected by remember { mutableStateOf<Int?>(null) }
-    ElevatedCard(Modifier.fillMaxWidth()) {
+    PixelCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium)
             // Tap a bar to read its value (selective labelling, no number on every bar)

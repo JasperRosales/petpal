@@ -18,7 +18,7 @@ import com.petpal.app.domain.battle.MoveCategory
 import com.petpal.app.domain.battle.SpeciesKit
 import com.petpal.app.domain.model.Pet
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.PlayCircle
+import androidx.compose.material.icons.sharp.PlayCircle
 import com.petpal.app.ui.battle.MovePreviewDialog
 import com.petpal.app.ui.battle.color
 import com.petpal.app.ui.battle.icon
@@ -44,7 +44,7 @@ fun MoveRow(
         }
         Text(trailing, style = MaterialTheme.typography.labelSmall, color = move.category.color())
         if (onView != null) IconButton(onClick = onView, modifier = Modifier.size(36.dp)) {
-            Icon(Icons.Rounded.PlayCircle, contentDescription = "View ${move.label}", tint = move.tint())
+            Icon(Icons.Sharp.PlayCircle, contentDescription = "View ${move.label}", tint = move.tint())
         }
     }
 }

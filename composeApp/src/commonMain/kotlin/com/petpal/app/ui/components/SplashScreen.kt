@@ -43,7 +43,7 @@ fun SplashScreen(onDone: () -> Unit) {
             // A mystery egg (spot colors differ per launch), not any one species
             val eggSpecies = remember { Species.entries.random() }
             PetSprite(
-                stage = Stage.EGG, mood = Mood.HAPPY, species = eggSpecies, size = 140.dp,
+                stage = Stage.EGG, mood = Mood.HAPPY, species = eggSpecies, size = 104.dp,
                 modifier = Modifier.graphicsLayer {
                     scaleX = pop.value; scaleY = pop.value
                     translationY = -10.dp.toPx() * bob

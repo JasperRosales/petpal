@@ -1,5 +1,7 @@
 package com.petpal.app.ui.pets
 
+import com.petpal.app.ui.components.PixelProgress
+import com.petpal.app.ui.components.PixelCard
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -82,9 +84,9 @@ fun PetsScreen(snackbar: SnackbarHostState, vm: PetsViewModel = koinViewModel())
             Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            if (state.monthlyGift) ElevatedCard(
+            if (state.monthlyGift) PixelCard(
                 Modifier.fillMaxWidth(),
-                colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
             ) {
                 Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
@@ -131,7 +133,7 @@ fun PetsScreen(snackbar: SnackbarHostState, vm: PetsViewModel = koinViewModel())
 private fun UnlockCard(state: PetsState, onRandom: () -> Unit, onChoose: () -> Unit) {
     val walked = PetEngine.stepsSinceUnlock(state.pets, state.lifetimeSteps)
     val allOwned = state.pets.size >= Species.entries.size
-    ElevatedCard(Modifier.fillMaxWidth()) {
+    PixelCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("Unlock a pet", style = MaterialTheme.typography.titleSmall)
             Text(if (allOwned) "You've unlocked every pet!" else "Steps since your last unlock: ${walked.withCommas()}",
@@ -141,10 +143,9 @@ private fun UnlockCard(state: PetsState, onRandom: () -> Unit, onChoose: () -> U
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text("${kind.label} · ${kind.steps.withCommas()} steps", style = MaterialTheme.typography.bodyMedium)
-                        LinearProgressIndicator(
+                        PixelProgress(
                             progress = { (walked.toFloat() / kind.steps).coerceIn(0f, 1f) },
                             modifier = Modifier.fillMaxWidth().padding(top = 4.dp, end = 12.dp),
-                            drawStopIndicator = {},
                         )
                     }
                     TextButton(enabled = ready, onClick = if (kind == UnlockKind.CHOOSE) onChoose else onRandom) {
@@ -159,10 +160,9 @@ private fun UnlockCard(state: PetsState, onRandom: () -> Unit, onChoose: () -> U
 @Composable
 private fun PetRow(pet: Pet, active: Boolean, onSwitch: () -> Unit) {
     val accent = MaterialTheme.colorScheme.primary
-    ElevatedCard(
-        Modifier.fillMaxWidth().then(
-            if (active) Modifier.border(2.dp, accent, MaterialTheme.shapes.medium) else Modifier
-        ),
+    PixelCard(
+        Modifier.fillMaxWidth(),
+        borderColor = if (active) accent else MaterialTheme.colorScheme.outline,
     ) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             PetSprite(pet.stage, Mood.HAPPY, pet.species, size = 52.dp)

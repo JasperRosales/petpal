@@ -76,7 +76,7 @@ fun UpdatePrompt(vm: UpdateViewModel = koinViewModel()) {
                     modifier = Modifier.heightIn(max = 220.dp).verticalScroll(rememberScrollState()),
                 )
                 s.progress?.let {
-                    LinearProgressIndicator(progress = { it }, modifier = Modifier.fillMaxWidth())
+                    PixelProgress(progress = { it }, modifier = Modifier.fillMaxWidth())
                     Text("Downloading ${(it * 100).toInt()}%", style = MaterialTheme.typography.bodySmall)
                 }
                 s.error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }

@@ -1,6 +1,15 @@
 package com.petpal.app.ui.navigation
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.dp
+import com.petpal.app.ui.components.pixelPanel
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -31,13 +40,13 @@ import com.petpal.app.ui.habits.HabitsScreen
 import com.petpal.app.ui.home.HomeScreen
 import com.petpal.app.ui.pets.PetsScreen
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Pets
+import androidx.compose.material.icons.sharp.Pets
 import com.petpal.app.ui.stats.StatsScreen
 import com.petpal.app.ui.theme.PetPalIcons
 
 private enum class Tab(val route: String, val label: String, val icon: ImageVector) {
     Home("home", "Home", PetPalIcons.Home),
-    Pets("pets", "Pets", Icons.Rounded.Pets),
+    Pets("pets", "Pets", Icons.Sharp.Pets),
     Habits("habits", "Habits", PetPalIcons.Habits),
     Battle("battle", "Battle", PetPalIcons.Battle),
     Stats("stats", "Stats", PetPalIcons.Stats),
@@ -93,9 +102,10 @@ private fun MainTabs(stepPermissionGranted: Boolean, requestStepPermission: () -
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
-            if (!battleFullscreen.value) NavigationBar {
+            if (!battleFullscreen.value) PixelTabBar {
                 Tab.entries.forEach { tab ->
-                    NavigationBarItem(
+                    PixelTab(
+                        tab = tab,
                         selected = entry?.destination?.hierarchy?.any { it.route == tab.route } == true,
                         onClick = {
                             nav.navigate(tab.route) {
@@ -104,8 +114,6 @@ private fun MainTabs(stepPermissionGranted: Boolean, requestStepPermission: () -
                                 restoreState = true
                             }
                         },
-                        icon = { Icon(tab.icon, null) },
-                        label = { Text(tab.label) },
                     )
                 }
             }
@@ -120,5 +128,37 @@ private fun MainTabs(stepPermissionGranted: Boolean, requestStepPermission: () -
             composable(Tab.Stats.route) { StatsScreen() }
         }
         }
+    }
+}
+
+/** Bottom bar as a pixel strip: thick top rule, tabs in a row. */
+@Composable
+private fun PixelTabBar(content: @Composable RowScope.() -> Unit) {
+    val line = MaterialTheme.colorScheme.outline
+    Row(
+        Modifier.fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface)
+            .drawBehind { drawRect(line, size = Size(size.width, 3.dp.toPx())) }
+            .navigationBarsPadding()
+            .padding(start = 6.dp, end = 6.dp, top = 9.dp, bottom = 6.dp),
+        content = content,
+    )
+}
+
+@Composable
+private fun RowScope.PixelTab(tab: Tab, selected: Boolean, onClick: () -> Unit) {
+    val accent = MaterialTheme.colorScheme.primary
+    val tint = if (selected) accent else MaterialTheme.colorScheme.onSurfaceVariant
+    Column(
+        Modifier.weight(1f)
+            .clickable(remember { MutableInteractionSource() }, indication = null, role = Role.Tab, onClick = onClick),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(
+            Modifier.size(48.dp, 32.dp)
+                .then(if (selected) Modifier.pixelPanel(MaterialTheme.colorScheme.primaryContainer, accent, lift = 0.dp, borderWidth = 2.dp) else Modifier),
+            contentAlignment = Alignment.Center,
+        ) { Icon(tab.icon, tab.label, tint = tint, modifier = Modifier.size(22.dp)) }
+        Text(tab.label, color = tint, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 3.dp))
     }
 }

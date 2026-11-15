@@ -12,7 +12,7 @@ reference docs are generated from it, so never edit them by hand.
 | Make a passive or effect actually do something | [`domain/battle/BattleEngine.kt`](../composeApp/src/commonMain/kotlin/com/petpal/app/domain/battle/BattleEngine.kt) |
 | Change how a move looks, reads or sounds | [`ui/battle/`](../composeApp/src/commonMain/kotlin/com/petpal/app/ui/battle) |
 | Give a pet its personality-quiz odds | [`domain/logic/PersonalityQuiz.kt`](../composeApp/src/commonMain/kotlin/com/petpal/app/domain/logic/PersonalityQuiz.kt) |
-| Give a pet colors or new art features | [`ui/components/PetSprite.kt`](../composeApp/src/commonMain/kotlin/com/petpal/app/ui/components/PetSprite.kt) |
+| Give a pet colors or new art features | [`ui/components/pet/`](../composeApp/src/commonMain/kotlin/com/petpal/app/ui/components/pet/) (one `PetModel` class per species) |
 | Rebuild the reference docs | `DocsGenerator` (command at the end) |
 
 `docs/PETS.md` and `docs/MOVES.md` are generated. Edit the Kotlin, then regenerate.
@@ -256,22 +256,26 @@ test and adjust `bias` for the whole roster, not just the new pet.
 
 ### 6. Colors and art
 
-`PetSprite.kt`:
+Each species is a `PetModel` subclass in `ui/components/pet/` (`LandPets.kt`, `WingedPets.kt`,
+`WaterPets.kt`), registered in the exhaustive `modelFor` in `PetArt.kt`, so the compiler fails
+until the new species has a model:
 
-- `Species.colors()` is an exhaustive `when`; the compiler fails until you add a palette:
+```kotlin
+internal class Crab : PetModel(Species.CRAB, Color(0xFFE8634A), Color(0xFFA83A2A), Color(0xFFF6C7A8)) {
+    override val build = 0.98f to 0.7f   // body width/height scale
+    override fun PetCanvas.behind() { /* claws */ }
+}
+```
 
-  ```kotlin
-  Species.CRAB -> Triple(Color(0xFFE8634A), Color(0xFFA83A2A), Color(0xFFF6C7A8))
-  ```
-
-  The triple is body, dark shade, belly/light shade.
-
-- Optional shape hooks, all with safe `else` branches: `build()` (body width/height),
-  `eyeStyle()`, the "behind the body", "ears/things on top" and "face" blocks, and the
-  `SIDE_TAILS` set for long side tails. A new pet with only colors will render using the generic
-  body, but give it at least one recognisable feature.
-
-- Eggs are drawn separately per species in `PetArt.egg(species)`. Check the egg looks distinct
+- The three colors are body, dark shade, belly/light shade.
+- Optional hooks, in paint order: `behind` (wings, tails), `onTop` (ears, horns), `afterBody`,
+  `feet`, `markings`, `afterOutline` (masks), `eyeX`/`eyeY`, `snout`/`mouth`, `front`. Flags:
+  `sideTail`, `eyes`, `blush`, `hasNose`, `hasFeet`. `handDrawn(stage)` returns a full 20x20
+  sprite instead (see `Eagle`). A model with only colors renders the generic body, but give it
+  at least one recognisable feature.
+- `PetSprite` crops each sprite to its drawn pixels and scales it to fill the box, so every pet
+  shows at the same size no matter how much of the grid it uses.
+- Eggs are drawn per species in `PetArt.egg(species)`. Check the egg looks distinct
   from its neighbours.
 
 ### 7. Tests and docs

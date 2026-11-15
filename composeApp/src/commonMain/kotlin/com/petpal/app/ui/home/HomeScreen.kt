@@ -1,5 +1,7 @@
 package com.petpal.app.ui.home
 
+import com.petpal.app.ui.components.PixelProgress
+import com.petpal.app.ui.components.PixelCard
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.graphics.Color
@@ -14,7 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.sharp.Lock
 import androidx.compose.ui.draw.alpha
 import com.petpal.app.domain.battle.Move
 import com.petpal.app.domain.battle.SpeciesKit
@@ -145,7 +147,7 @@ private fun EvolutionCard(pet: Pet, mood: Mood) {
     val dim = MaterialTheme.colorScheme.onSurfaceVariant
     val accent = MaterialTheme.colorScheme.primary
     var selected by remember(pet.stage) { mutableStateOf(pet.stage) }
-    ElevatedCard(Modifier.fillMaxWidth()) {
+    PixelCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("Evolution", style = MaterialTheme.typography.titleSmall)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -170,9 +172,9 @@ private fun EvolutionCard(pet: Pet, mood: Mood) {
             }
 
             val next = PetEngine.nextStage(pet.stage)
-            LinearProgressIndicator(
+            PixelProgress(
                 progress = { PetEngine.stageProgress(pet) },
-                modifier = Modifier.fillMaxWidth().height(8.dp).clip(MaterialTheme.shapes.small),
+                modifier = Modifier.fillMaxWidth(),
             )
             Text(
                 if (next == null) "Fully evolved!"
@@ -214,7 +216,7 @@ private fun EvolutionCard(pet: Pet, mood: Mood) {
 @Composable
 private fun PassiveCard(pet: Pet) {
     val passive = PetEngine.passive(pet)
-    ElevatedCard(Modifier.fillMaxWidth()) {
+    PixelCard(Modifier.fillMaxWidth()) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(PetPalIcons.Xp, null, tint = MaterialTheme.colorScheme.tertiary)
             Spacer(Modifier.width(12.dp))
@@ -236,7 +238,7 @@ private fun MovesCard(pet: Pet, onRelearn: (Move, Move?) -> Unit) {
     var preview by remember { mutableStateOf<Move?>(null) }
     var relearning by remember { mutableStateOf(false) }
     preview?.let { MovePreviewDialog(pet, it) { preview = null } }
-    ElevatedCard(Modifier.fillMaxWidth()) {
+    PixelCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             val unique = SpeciesKit.unique(pet.species, pet.stage, pet.uniquePicks)
             val used = pet.moves.size + if (unique != null) 1 else 0
@@ -324,7 +326,7 @@ private fun RelearnDialog(pet: Pet, onDismiss: () -> Unit, onConfirm: (Move, Mov
 private fun LockedRow(label: String, unlock: String) {
     val dim = MaterialTheme.colorScheme.onSurfaceVariant
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.alpha(0.45f)) {
-        Icon(Icons.Rounded.Lock, null, Modifier.size(20.dp), tint = dim)
+        Icon(Icons.Sharp.Lock, null, Modifier.size(20.dp), tint = dim)
         Spacer(Modifier.width(10.dp))
         Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
         Text(unlock, style = MaterialTheme.typography.labelSmall, color = dim)
