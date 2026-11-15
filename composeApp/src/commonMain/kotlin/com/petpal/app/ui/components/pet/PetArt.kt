@@ -118,17 +118,28 @@ internal object PetArt {
         return g.rows()
     }
 
-    /** Opens or closes hand-drawn eyes ('E'): awake = ink with a shine, sleepy = a closed line. */
+    /**
+     * Opens or closes hand-drawn eyes ('E', shine 'w'): awake = ink with a shine; sleepy = every eye
+     * row but the last is painted over with the skin beside it, leaving a closed line.
+     */
     fun withMood(rows: List<String>, mood: Mood): List<String> {
         val eyeRows = rows.indices.filter { 'E' in rows[it] }
-        val lid = if (mood == Mood.SLEEPY && eyeRows.size > 1) eyeRows.first() else -1
+        val last = if (mood == Mood.SLEEPY && eyeRows.size > 1) eyeRows.last() else -1
         return rows.mapIndexed { y, r ->
             val chars = r.toCharArray()
-            for (x in chars.indices) when (chars[x]) {
-                'E' -> chars[x] = if (y == lid) chars.getOrNull(x - 1)?.takeIf { it != 'E' } ?: chars.getOrElse(x - 2) { 'b' } else 'e'
-                'w' -> if (mood == Mood.SLEEPY && 'E' in r) chars[x] = 'e'
+            val eyeRow = y in eyeRows
+            for (x in chars.indices) when {
+                chars[x] == 'E' && (last < 0 || y == last) -> chars[x] = 'e'
+                chars[x] == 'w' && eyeRow && y == last -> chars[x] = 'e'
+                (chars[x] == 'E' || (chars[x] == 'w' && eyeRow)) && last >= 0 -> chars[x] = skinLeftOf(r, x)
             }
             chars.concatToString()
         }
+    }
+
+    private fun skinLeftOf(row: String, x: Int): Char {
+        var i = x - 1
+        while (i >= 0 && (row[i] == 'E' || row[i] == 'w')) i--
+        return row.getOrNull(i)?.takeIf { it != '.' && it != 'o' } ?: 'b'
     }
 }

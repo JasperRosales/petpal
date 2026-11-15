@@ -91,7 +91,7 @@ private val Still: State<Float> = mutableFloatStateOf(0f)
 
 private val spriteCache = HashMap<Long, Sprite>()
 
-/** Bitmaps are tiny (<= 20x20) and there are few combinations, so keep them for the app's lifetime. */
+/** Bitmaps are tiny (<= 24x28) and there are few combinations, so keep them for the app's lifetime. */
 private fun spriteBitmap(stage: Stage, mood: Mood, species: Species, fried: Boolean, bone: Boolean): Sprite {
     val key = if (fried) -1L else ((species.ordinal.toLong() shl 16) or (stage.ordinal.toLong() shl 8) or mood.ordinal.toLong()) or
         (if (bone) 1L shl 40 else 0L)

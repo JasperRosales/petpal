@@ -7,9 +7,9 @@ import com.petpal.app.domain.model.Stage
 import com.petpal.app.ui.theme.*
 
 /**
- * One species' look: a hand-drawn 20x20 sprite per stage plus its three body colours.
- * Sprite chars are palette keys ('o' outline, 'b' body, 'd' dark, 'l' belly, 'E' eye, ...);
- * '.' is empty. Side-on pets face left; the battle arena mirrors them to face their target.
+ * One species' look: a front-facing 24-wide pixel sprite per stage (baby, kid, teen, adult each
+ * gain their own features) plus its three body colours. Sprite chars are palette keys
+ * ('o' outline, 'b' body, 'd' dark, 'l' belly, 'E' eye, 'w' shine, ...); '.' is empty.
  */
 internal abstract class PetModel(
     val species: Species,

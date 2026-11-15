@@ -68,8 +68,8 @@ android {
         applicationId = "com.petpal.app"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 40
-        versionName = "0.32.0"
+        versionCode = 41
+        versionName = "0.33.0"
     }
     signingConfigs {
         if (keystoreProps.isNotEmpty()) create("release") {
