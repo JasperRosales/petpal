@@ -47,6 +47,8 @@ val SpriteCheek = Color(0xFFF2A08E)
 val SpritePink = Color(0xFFF2A0B4)
 val SpriteYellow = Color(0xFFF5C542)
 val SpriteRed = Color(0xFFD9534F)
+val SpriteBlue = Color(0xFF3D7FD9)
+val SpriteBranch = Color(0xFF8B5A2B)
 
 // Ember (shared with Isha / Zoih): dark canvas + orange accent
 val EmberCanvas = Color(0xFF181612)

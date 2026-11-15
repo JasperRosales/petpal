@@ -65,6 +65,7 @@ internal object PetArt {
         'b' to Color(0xFFE7E1D1), 'd' to Color(0xFFB6AE99), 'l' to Color(0xFFF8F4E8),
         'c' to Color(0xFFD8D2C2), 'p' to Color(0xFFD8D2C2), 'y' to Color(0xFFE7E1D1),
         'h' to Color(0xFFF8F4E8), 'g' to Color(0xFFC9C2AF), 'r' to Color(0xFFB6AE99), 'w' to Color.White,
+        'u' to Color(0xFFB6AE99), 'n' to Color(0xFF8A8270),
     )
 
     /** Skull with hollow eyes, ribcage, bony arms and legs. */

@@ -1067,9 +1067,12 @@ internal fun Move.coreTint(): Color = when (element) {
 
 @Composable
 internal fun Arena(fight: FightState, modifier: Modifier, alerts: Boolean = true) {
-    val f = fight.copy(snap = rememberSmoothSnap(fight.snap))
-    val fxMs = rememberFxClock()
-    val bob by rememberInfiniteTransition().animateFloat(
+    // Composition only follows the 20 Hz snapshots; the per-frame glide is read in draw/layout lambdas,
+    // so a frame redraws without recomposing the whole arena.
+    val f = fight
+    val track = rememberSmoothSnap(fight.snap)
+    val smooth = track::snap
+    val bob = rememberInfiniteTransition().animateFloat(
         0f, 1f, infiniteRepeatable(tween(500), RepeatMode.Reverse),
     )
     val meColor = MaterialTheme.colorScheme.primary
@@ -1085,9 +1088,10 @@ internal fun Arena(fight: FightState, modifier: Modifier, alerts: Boolean = true
         }
         ArenaFloor(f.terrain, Modifier.matchParentSize())
         Canvas(Modifier.matchParentSize()) {
+            val snap = smooth()
             val hurtboxStroke = Stroke(2.5.dp.toPx(), pathEffect = hurtboxDash)
-            f.snap.traps.forEach { tr -> drawTrap(tr, Offset(tr.x * sx, tr.y * sy), Trap.RADIUS * minOf(sx, sy)) }
-            f.snap.fighters.forEachIndexed { i, s ->
+            snap.traps.forEach { tr -> drawTrap(tr, Offset(tr.x * sx, tr.y * sy), Trap.RADIUS * minOf(sx, sy)) }
+            snap.fighters.forEachIndexed { i, s ->
                 val c = pos(s)
                 if (s.hp <= 0) return@forEachIndexed
                 val ring = fighterColor(f, i, meColor)
@@ -1101,7 +1105,7 @@ internal fun Arena(fight: FightState, modifier: Modifier, alerts: Boolean = true
                     drawOval(ring.copy(alpha = 0.9f), tl, hr, style = hurtboxStroke)
                 }
             }
-            f.snap.fighters.forEachIndexed { i, s ->
+            snap.fighters.forEachIndexed { i, s ->
                 val c = pos(s)
                 val info = f.fighters[i]
                 val r = 38.dp.toPx()
@@ -1124,15 +1128,13 @@ internal fun Arena(fight: FightState, modifier: Modifier, alerts: Boolean = true
                 }
                 drawMove(s, info, sx, sy)
             }
-            f.snap.fighters.forEach { s -> if (s.hurtAgeMs < 260) drawImpact(pos(s), s.hurtAgeMs / 260f) }
+            snap.fighters.forEach { s -> if (s.hurtAgeMs < 260) drawImpact(pos(s), s.hurtAgeMs / 260f) }
         }
         val density = androidx.compose.ui.platform.LocalDensity.current
         val half = with(density) { (spriteDp / 2).roundToPx() }
         f.snap.fighters.forEachIndexed { i, s ->
             val info = f.fighters[i]
-            val hurt = s.hurtAgeMs < 300
-            val c = pos(s) + statusShake(s, fxMs, density.density)
-            val (scX, scY) = statusScale(s)
+            val crowd = f.snap.fighters.size > 2
             PetSprite(
                 stage = info.stage,
                 mood = if (s.hp < s.maxHp * 0.3f) Mood.SAD else Mood.HAPPY,
@@ -1141,14 +1143,21 @@ internal fun Arena(fight: FightState, modifier: Modifier, alerts: Boolean = true
                 fried = s.has(Status.FRIED),
                 bone = info.variant == FighterVariant.SKELETON,
                 modifier = Modifier
-                    .offset { IntOffset(c.x.roundToInt() - half, c.y.roundToInt() - half) }
+                    .offset {
+                        val sm = smooth().fighters[i]
+                        val c = pos(sm) + statusShake(sm, track.ms, density.density)
+                        IntOffset(c.x.roundToInt() - half, c.y.roundToInt() - half)
+                    }
                     .graphicsLayer {
-                        scaleX = s.facing * scX
+                        val s = smooth().fighters[i]
+                        val hurt = s.hurtAgeMs < 300
+                        val (scX, scY) = statusScale(s)
+                        scaleX = -s.facing * scX // art faces left
                         scaleY = scY
                         transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 1f)
                         alpha = when {
                             s.has(Status.DORMANT) -> 0f // still buried
-                            s.hp <= 0 && f.snap.fighters.size > 2 -> 0.25f // knocked out
+                            s.hp <= 0 && crowd -> 0.25f // knocked out
                             s.has(Status.VANISH) -> 0f // flying high or underground
                             s.has(Status.EVADE) -> 0.5f // dashing, can't be hit
                             hurt && (s.hurtAgeMs / 75) % 2 == 0L -> 0.35f
@@ -1160,11 +1169,11 @@ internal fun Arena(fight: FightState, modifier: Modifier, alerts: Boolean = true
         // Debuffs sit on top of the sprites so they read clearly.
         if (f.snap.fighters.any { it.status and DEBUFFS != 0 }) Canvas(Modifier.matchParentSize()) {
             val r = 38.dp.toPx()
-            f.snap.fighters.forEach { s -> drawStatusFx(s, pos(s), r, fxMs) }
+            smooth().fighters.forEach { s -> drawStatusFx(s, pos(s), r, track.ms) }
         }
         // Smokescreen clouds drift over the pets: puffs swell in, then thin out before vanishing.
         if (f.snap.smokes.isNotEmpty()) Canvas(Modifier.matchParentSize()) {
-            f.snap.smokes.forEach { sm ->
+            smooth().smokes.forEach { sm ->
                 val t = sm.ageMs / Smoke.DURATION_MS.toFloat()
                 val alpha = (minOf(1f, sm.ageMs / 250f) * (1f - t * t)).coerceIn(0f, 1f)
                 val c = Offset(sm.x * sx, sm.y * sy)
@@ -1180,21 +1189,20 @@ internal fun Arena(fight: FightState, modifier: Modifier, alerts: Boolean = true
         }
         // Fireball explosions: a white-hot flash that swells to the blast radius, a shockwave ring and flying embers.
         if (f.snap.blasts.isNotEmpty()) Canvas(Modifier.matchParentSize()) {
-            f.snap.blasts.forEach { b -> drawBlast(Offset(b.x * sx, b.y * sy), BLAST_RADIUS * minOf(sx, sy), b.ageMs) }
+            smooth().blasts.forEach { b -> drawBlast(Offset(b.x * sx, b.y * sy), BLAST_RADIUS * minOf(sx, sy), b.ageMs) }
         }
         // Tag over every other pet in its color: ALLY / FOE in team fights, the name in a free-for-all.
         val tagLift = with(density) { (spriteDp / 2 + 18.dp).roundToPx() }
         val tagW = with(density) { 90.dp.roundToPx() }
         f.snap.fighters.forEachIndexed { i, s ->
             if (i == f.me || s.hp <= 0 || s.has(Status.VANISH)) return@forEachIndexed
-            val c = pos(s)
             val col = fighterColor(f, i, meColor)
             val label = when {
                 isFfa(f) -> f.fighters[i].name
                 teamOf(f, i) == teamOf(f, f.me) -> "ALLY · ${f.fighters[i].name}"
                 else -> "FOE · ${f.fighters[i].name}"
             }
-            Box(Modifier.width(90.dp).offset { IntOffset(c.x.roundToInt() - tagW / 2, c.y.roundToInt() - tagLift) },
+            Box(Modifier.width(90.dp).offset { val c = pos(smooth().fighters[i]); IntOffset(c.x.roundToInt() - tagW / 2, c.y.roundToInt() - tagLift) },
                 contentAlignment = Alignment.Center) {
                 Text(label, style = MaterialTheme.typography.labelSmall, color = if (col.luminance() > 0.5f) Color.Black else Color.White,
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
@@ -1202,18 +1210,20 @@ internal fun Arena(fight: FightState, modifier: Modifier, alerts: Boolean = true
             }
         }
         // "YOU" marker bobbing above your pet
-        val mine = pos(f.snap.fighters[f.me])
         val markerW = with(density) { 44.dp.roundToPx() }
-        val lift = with(density) { (spriteDp / 2 + 30.dp + 6.dp * bob).roundToPx() }
         Column(
-            Modifier.width(44.dp).offset { IntOffset(mine.x.roundToInt() - markerW / 2, mine.y.roundToInt() - lift) },
+            Modifier.width(44.dp).offset {
+                val mine = pos(smooth().fighters[f.me])
+                val lift = (spriteDp / 2 + 30.dp + 6.dp * bob.value).roundToPx()
+                IntOffset(mine.x.roundToInt() - markerW / 2, mine.y.roundToInt() - lift)
+            },
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text("YOU", style = MaterialTheme.typography.labelSmall, color = Color.White,
                 modifier = Modifier.background(meColor, PixelSmall).padding(horizontal = 6.dp, vertical = 1.dp))
             Icon(Icons.Sharp.ArrowDropDown, null, Modifier.size(20.dp).offset(y = (-6).dp), tint = meColor)
         }
-        if (alerts) DebuffAlert(f.snap.fighters.getOrNull(f.me), fxMs)
+        if (alerts) DebuffAlert(f.snap.fighters.getOrNull(f.me), track::ms)
     }
 }
 
@@ -1395,25 +1405,41 @@ fun MoveCategory.color(): Color = when (this) {
  * glide positions from the previous snapshot and advance animation clocks between them.
  */
 @Composable
-private fun rememberSmoothSnap(snap: BattleSnapshot): BattleSnapshot {
-    val clock = remember { kotlin.time.TimeSource.Monotonic.markNow() }
-    var now by remember { mutableLongStateOf(0L) }
-    LaunchedEffect(Unit) { while (true) withFrameMillis { now = clock.elapsedNow().inWholeMilliseconds } }
+private fun rememberSmoothSnap(snap: BattleSnapshot): SmoothTrack {
     val track = remember { SmoothTrack(snap) }
-    val t = clock.elapsedNow().inWholeMilliseconds
-    if (track.cur !== snap) {
-        track.prev = track.render(t) // glide from where it was drawn, not where it was
-        track.gap = (t - track.at).coerceIn(30, 120).let { (track.gap * 3 + it) / 4 }
-        track.cur = snap
-        track.at = t
-    }
-    return track.render(maxOf(now, t))
+    LaunchedEffect(Unit) { while (true) withFrameMillis { track.frame.longValue = track.clock.elapsedNow().inWholeMilliseconds } }
+    track.update(snap)
+    return track
 }
 
+/** Holds the last two snapshots; [snap] reads the frame clock, so call it from draw/layout lambdas. */
 private class SmoothTrack(var cur: BattleSnapshot) {
+    val clock = kotlin.time.TimeSource.Monotonic.markNow()
+    val frame = mutableLongStateOf(0L)
     var prev: BattleSnapshot = cur
     var at = 0L
     var gap = 50L
+    private var memoAt = -1L
+    private var memoFor: BattleSnapshot? = null
+    private var memo: BattleSnapshot = cur
+
+    /** Ms clock for looping effects; reading it subscribes the caller to every frame. */
+    val ms: Long get() = frame.longValue
+
+    fun update(snap: BattleSnapshot) {
+        if (cur === snap) return
+        val t = clock.elapsedNow().inWholeMilliseconds
+        prev = render(t) // glide from where it was drawn, not where it was
+        gap = (t - at).coerceIn(30, 120).let { (gap * 3 + it) / 4 }
+        cur = snap
+        at = t
+    }
+
+    fun snap(): BattleSnapshot {
+        val now = maxOf(frame.longValue, at)
+        if (now != memoAt || memoFor !== cur) { memo = render(now); memoAt = now; memoFor = cur }
+        return memo
+    }
 
     fun render(now: Long): BattleSnapshot {
         if (cur.ended) return cur

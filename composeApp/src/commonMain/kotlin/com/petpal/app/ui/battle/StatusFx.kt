@@ -48,15 +48,6 @@ private val LeechGreen = Color(0xFF4CAF6A)
 private val MarkRed = Color(0xFFE53935)
 private const val TAU = (2 * PI).toFloat()
 
-/** Ms clock that ticks every frame, for looping status animations. */
-@Composable
-internal fun rememberFxClock(): Long {
-    val start = remember { kotlin.time.TimeSource.Monotonic.markNow() }
-    var now by remember { mutableLongStateOf(0L) }
-    LaunchedEffect(Unit) { while (true) withFrameMillis { now = start.elapsedNow().inWholeMilliseconds } }
-    return now
-}
-
 /** Paralysis jolts and stun wobble applied to the sprite, in px. */
 internal fun statusShake(s: FighterSnap, ms: Long, px: Float): Offset = when {
     s.has(Status.PARALYZE) && ms % Mechanics.PARALYZE_TWITCH_EVERY < Mechanics.PARALYZE_TWITCH_MS ->
@@ -198,7 +189,7 @@ private fun headline(bits: Int): Pair<String, Color>? = when {
  * lasts, a big call-out and a buzz the moment a new one lands.
  */
 @Composable
-internal fun BoxScope.DebuffAlert(me: FighterSnap?, ms: Long) {
+internal fun BoxScope.DebuffAlert(me: FighterSnap?, ms: () -> Long) {
     val bits = if (me == null || me.hp <= 0) 0 else me.status and DEBUFFS
     val haptic = LocalHapticFeedback.current
     var prev by remember { mutableIntStateOf(0) }
@@ -218,7 +209,7 @@ internal fun BoxScope.DebuffAlert(me: FighterSnap?, ms: Long) {
     }
     val main = headline(bits)
     if (main != null) Canvas(Modifier.matchParentSize()) {
-        val a = 0.28f + 0.12f * sin(ms / 160f)
+        val a = 0.28f + 0.12f * sin(ms() / 160f)
         val edge = size.minDimension * 0.22f
         val col = main.second.copy(alpha = a)
         drawRect(Brush.verticalGradient(listOf(col, Color.Transparent), 0f, edge))
